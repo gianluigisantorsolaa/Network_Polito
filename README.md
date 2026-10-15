@@ -1,4 +1,4 @@
-\# Appunti di Network \& Cloud Technologies and Security - PoliTo
+# Appunti di Network \& Cloud Technologies and Security - PoliTo
 
 
 
@@ -6,11 +6,11 @@ Questi appunti riprendono e rielaborano i contenuti presenti su \[polito-student
 
 
 
-\---
+---
 
 
 
-\## Contributi e Modifiche
+## Contributi e Modifiche
 
 
 
@@ -20,13 +20,13 @@ Ogni modifica, correzione o aggiunta è \*\*ben accetta\*\*.
 
 Se volete contribuire:
 
-\* \*\*Avete notato un errore o un'imprecisione?\*\* Potete correggere direttamente il codice LaTeX.
+* \*\*Avete notato un errore o un'imprecisione?\*\* Potete correggere direttamente il codice LaTeX.
 
-\* \*\*Volete aggiungere una sezione o un approfondimento spiegato a lezione?\*\* Sentitevi liberi di modificare i file `.tex` e caricare le vostre modifiche.
+* \*\*Volete aggiungere una sezione o un approfondimento spiegato a lezione?\*\* Sentitevi liberi di modificare i file `.tex` e caricare le vostre modifiche.
 
 
 
-\---
+---
 
 
 
