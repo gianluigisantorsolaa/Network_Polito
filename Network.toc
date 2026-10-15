@@ -1,0 +1,550 @@
+\contentsline {part}{I\hspace {1em}Computer Network}{1}{part.1}%
+\contentsline {chapter}{\numberline {1}IPv4}{2}{chapter.1}%
+\contentsline {section}{\numberline {1.1}IP addressing: terminology}{2}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Special IPv4 addresses}{2}{section.1.2}%
+\contentsline {subsection}{\numberline {1.2.1}Network identifier}{2}{subsection.1.2.1}%
+\contentsline {subsection}{\numberline {1.2.2}Broadcast addresses}{3}{subsection.1.2.2}%
+\contentsline {subsubsection}{Limited broadcast}{3}{section*.2}%
+\contentsline {subsubsection}{Directed broadcast}{3}{section*.3}%
+\contentsline {subsection}{\numberline {1.2.3}Loopback addresses}{3}{subsection.1.2.3}%
+\contentsline {section}{\numberline {1.3}IP addressing classes}{3}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}Class A}{4}{subsection.1.3.1}%
+\contentsline {subsection}{\numberline {1.3.2}Class B}{4}{subsection.1.3.2}%
+\contentsline {subsection}{\numberline {1.3.3}Class C}{4}{subsection.1.3.3}%
+\contentsline {section}{\numberline {1.4}CIDR: Classless Interdomain Routing}{4}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}General format}{4}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.4.2}Valid netmask values}{4}{subsection.1.4.2}%
+\contentsline {subsection}{\numberline {1.4.3}CIDR examples}{5}{subsection.1.4.3}%
+\contentsline {subsection}{\numberline {1.4.4}Valid and invalid network identifiers}{5}{subsection.1.4.4}%
+\contentsline {section}{\numberline {1.5}IPv4 addressing: a complete example}{5}{section.1.5}%
+\contentsline {section}{\numberline {1.6}IP routing}{6}{section.1.6}%
+\contentsline {subsection}{\numberline {1.6.1}General forwarding rule}{6}{subsection.1.6.1}%
+\contentsline {subsection}{\numberline {1.6.2}Example of a routing table}{6}{subsection.1.6.2}%
+\contentsline {section}{\numberline {1.7}Methodology for IPv4 address allocation}{7}{section.1.7}%
+\contentsline {subsection}{\numberline {1.7.1}Identification of IP networks}{8}{subsection.1.7.1}%
+\contentsline {subsection}{\numberline {1.7.2}Computation of required addresses}{8}{subsection.1.7.2}%
+\contentsline {subsection}{\numberline {1.7.3}Allocation of address blocks}{8}{subsection.1.7.3}%
+\contentsline {subsection}{\numberline {1.7.4}Selection of a global address range}{8}{subsection.1.7.4}%
+\contentsline {subsection}{\numberline {1.7.5}Determination of netmasks}{9}{subsection.1.7.5}%
+\contentsline {subsection}{\numberline {1.7.6}Assignment of host addresses}{9}{subsection.1.7.6}%
+\contentsline {section}{\numberline {1.8}IPv4 multicast}{9}{section.1.8}%
+\contentsline {subsection}{\numberline {1.8.1}Definition and purpose}{9}{subsection.1.8.1}%
+\contentsline {subsection}{\numberline {1.8.2}Multicast addressing}{10}{subsection.1.8.2}%
+\contentsline {subsection}{\numberline {1.8.3}Host group membership}{10}{subsection.1.8.3}%
+\contentsline {subsection}{\numberline {1.8.4}Multicast operation within IEEE 802 networks}{10}{subsection.1.8.4}%
+\contentsline {subsection}{\numberline {1.8.5}Multicast routing across networks}{10}{subsection.1.8.5}%
+\contentsline {subsection}{\numberline {1.8.6}Deployment considerations}{11}{subsection.1.8.6}%
+\contentsline {chapter}{\numberline {2}Routing}{12}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Introduction and taxonomy}{12}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Routing and forwarding}{12}{subsection.2.1.1}%
+\contentsline {section}{\numberline {2.2}Classification of proactive routing algorithms}{13}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Non-adaptive algorithms}{13}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Adaptive algorithms}{14}{subsection.2.2.2}%
+\contentsline {subsubsection}{Centralized routing}{14}{section*.4}%
+\contentsline {subsubsection}{Isolated routing}{14}{section*.5}%
+\contentsline {subsubsection}{Distributed routing}{15}{section*.6}%
+\contentsline {section}{\numberline {2.3}Distance vector routing}{15}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Cold start example}{15}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Convergence Problems}{16}{subsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.2.1}The Count-to-Infinity Mechanism}{16}{subsubsection.2.3.2.1}%
+\contentsline {section}{\numberline {2.4}Mitigation mechanisms}{17}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Split Horizon}{17}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}Path hold down}{18}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}Route poisoning}{19}{subsection.2.4.3}%
+\contentsline {section}{\numberline {2.5}Assessment of distance vector algorithms}{19}{section.2.5}%
+\contentsline {section}{\numberline {2.6}Path vector routing}{19}{section.2.6}%
+\contentsline {section}{\numberline {2.7}Link state routing}{20}{section.2.7}%
+\contentsline {subsection}{\numberline {2.7.1}Link state information}{21}{subsection.2.7.1}%
+\contentsline {subsection}{\numberline {2.7.2}Properties of link state routing}{21}{subsection.2.7.2}%
+\contentsline {subsection}{\numberline {2.7.3}Generation of link state advertisements}{21}{subsection.2.7.3}%
+\contentsline {section}{\numberline {2.8}Hierarchical routing}{21}{section.2.8}%
+\contentsline {subsection}{\numberline {2.8.1}Strictly hierarchical routing}{22}{subsection.2.8.1}%
+\contentsline {subsection}{\numberline {2.8.2}Loosely hierarchical routing}{22}{subsection.2.8.2}%
+\contentsline {section}{\numberline {2.9}Internet routing architecture}{23}{section.2.9}%
+\contentsline {subsection}{\numberline {2.9.1}Routing protocols}{23}{subsection.2.9.1}%
+\contentsline {subsection}{\numberline {2.9.2}Redistribution between routing domains}{24}{subsection.2.9.2}%
+\contentsline {section}{\numberline {2.10}Autonomous systems}{24}{section.2.10}%
+\contentsline {subsection}{\numberline {2.10.1}AS identification}{25}{subsection.2.10.1}%
+\contentsline {section}{\numberline {2.11}Exterior and interior routing}{25}{section.2.11}%
+\contentsline {subsection}{\numberline {2.11.1}Administrative aspects}{27}{subsection.2.11.1}%
+\contentsline {section}{\numberline {2.12}Scalability and route aggregation}{27}{section.2.12}%
+\contentsline {section}{\numberline {2.13}Internet exchange points}{28}{section.2.13}%
+\contentsline {section}{\numberline {2.14}Summary of routing protocols}{28}{section.2.14}%
+\contentsline {subsection}{\numberline {2.14.1}Interior and exterior gateway protocols}{28}{subsection.2.14.1}%
+\contentsline {section}{\numberline {2.15}Interior gateway protocols}{29}{section.2.15}%
+\contentsline {subsection}{\numberline {2.15.1}Distance vector based IGPs}{29}{subsection.2.15.1}%
+\contentsline {subsection}{\numberline {2.15.2}Link state based IGPs}{29}{subsection.2.15.2}%
+\contentsline {subsubsection}{Open Shortest Path First}{30}{section*.10}%
+\contentsline {section}{\numberline {2.16}Exterior gateway protocols}{30}{section.2.16}%
+\contentsline {subsection}{\numberline {2.16.1}Border Gateway Protocol}{30}{subsection.2.16.1}%
+\contentsline {subsubsection}{Operational characteristics}{31}{section*.11}%
+\contentsline {subsection}{\numberline {2.16.2}Inter-Domain Routing Protocol}{31}{subsection.2.16.2}%
+\contentsline {chapter}{\numberline {3}IPv6}{32}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Motivation for a new version of the internet protocol}{32}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Limitations of the IPv4 address space}{32}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Nominal size of the IPv4 space}{32}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Classful addressing and reserved blocks}{33}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Hierarchical allocation and fragmentation of the address space}{33}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Growth in the number of connected devices}{34}{subsection.3.2.4}%
+\contentsline {section}{\numberline {3.3}Interim IPv4-based mitigations}{34}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Variable-length subnet masks and address tailoring}{34}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Private address spaces}{34}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Network address translation}{34}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}Application-layer gateways and RSIP}{35}{subsection.3.3.4}%
+\contentsline {section}{\numberline {3.4}Management of the global IPv4 address pool}{35}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}IANA and regional internet registries}{35}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Status of IPv4 address exhaustion}{36}{subsection.3.4.2}%
+\contentsline {section}{\numberline {3.5}Routing scalability in IPv4}{37}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Growth of global routing tables}{37}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Route aggregation and CIDR}{37}{subsection.3.5.2}%
+\contentsline {subsection}{\numberline {3.5.3}Interim policies for routing scalability}{38}{subsection.3.5.3}%
+\contentsline {section}{\numberline {3.6}Historical development of IPv6}{38}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}The IP next generation effort}{38}{subsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.6.2}Early proposals}{38}{subsection.3.6.2}%
+\contentsline {subsection}{\numberline {3.6.3}Selection of IPv6}{39}{subsection.3.6.3}%
+\contentsline {section}{\numberline {3.7}IPv6 address space}{39}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Scientific criteria for determining address length}{39}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}Justification for 128-bit addressing}{39}{subsection.3.7.2}%
+\contentsline {section}{\numberline {3.8}Representation of IPv6 addresses}{40}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}Standard textual notation}{40}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}Omission of leading zeros}{41}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.3}Compression of zero sequences}{41}{subsection.3.8.3}%
+\contentsline {subsection}{\numberline {3.8.4}Interpretation of compressed forms}{41}{subsection.3.8.4}%
+\contentsline {section}{\numberline {3.9}Routing and addressing principles}{41}{section.3.9}%
+\contentsline {subsection}{\numberline {3.9.1}General routing model}{41}{subsection.3.9.1}%
+\contentsline {subsection}{\numberline {3.9.2}IPv6 address structure}{42}{subsection.3.9.2}%
+\contentsline {subsection}{\numberline {3.9.3}Prefixes}{42}{subsection.3.9.3}%
+\contentsline {subsection}{\numberline {3.9.4}Subnetworks, links and on-link determination}{42}{subsection.3.9.4}%
+\contentsline {section}{\numberline {3.10}Classification of IPv6 addresses}{43}{section.3.10}%
+\contentsline {subsection}{\numberline {3.10.1}Multicast addresses}{43}{subsection.3.10.1}%
+\contentsline {subsection}{\numberline {3.10.2}Unicast addresses}{44}{subsection.3.10.2}%
+\contentsline {subsubsection}{Global unicast}{44}{section*.12}%
+\contentsline {subsubsection}{Link-local addresses}{45}{section*.13}%
+\contentsline {subsubsection}{Site-local addresses}{45}{section*.14}%
+\contentsline {subsubsection}{Unique local addresses}{45}{section*.15}%
+\contentsline {subsubsection}{IPv4-embedded addresses}{45}{section*.16}%
+\contentsline {subsubsection}{Loopback address}{46}{section*.17}%
+\contentsline {subsubsection}{Unspecified address}{46}{section*.18}%
+\contentsline {subsection}{\numberline {3.10.3}Anycast addresses}{46}{subsection.3.10.3}%
+\contentsline {section}{\numberline {3.11}Modifications to protocol architecture}{46}{section.3.11}%
+\contentsline {subsection}{\numberline {3.11.1}Integration of auxiliary protocols}{46}{subsection.3.11.1}%
+\contentsline {subsection}{\numberline {3.11.2}Protocols preserved with upgrades}{46}{subsection.3.11.2}%
+\contentsline {section}{\numberline {3.12}Transition from IPv4 to IPv6}{47}{section.3.12}%
+\contentsline {subsection}{\numberline {3.12.1}Objectives of the transition}{47}{subsection.3.12.1}%
+\contentsline {subsection}{\numberline {3.12.2}Fundamental transition strategies}{47}{subsection.3.12.2}%
+\contentsline {subsection}{\numberline {3.12.3}Dual-stack operation}{47}{subsection.3.12.3}%
+\contentsline {subsection}{\numberline {3.12.4}Need for translation mechanisms}{48}{subsection.3.12.4}%
+\contentsline {subsection}{\numberline {3.12.5}Tunneling mechanisms}{48}{subsection.3.12.5}%
+\contentsline {section}{\numberline {3.13}Phases of IPv6 deployment}{49}{section.3.13}%
+\contentsline {subsection}{\numberline {3.13.1}Isolated IPv6 networks}{49}{subsection.3.13.1}%
+\contentsline {subsection}{\numberline {3.13.2}Expansion of IPv6 islands}{49}{subsection.3.13.2}%
+\contentsline {subsection}{\numberline {3.13.3}Native IPv6 connectivity}{50}{subsection.3.13.3}%
+\contentsline {subsection}{\numberline {3.13.4}IPv6 dominance and residual IPv4 support}{50}{subsection.3.13.4}%
+\contentsline {section}{\numberline {3.14}IPv6 packet header structure}{51}{section.3.14}%
+\contentsline {subsection}{\numberline {3.14.1}Comparison with the IPv4 header}{51}{subsection.3.14.1}%
+\contentsline {subsection}{\numberline {3.14.2}Fixed-length main header}{51}{subsection.3.14.2}%
+\contentsline {subsection}{\numberline {3.14.3}Removed IPv4 header fields}{52}{subsection.3.14.3}%
+\contentsline {subsubsection}{Header checksum}{52}{section*.19}%
+\contentsline {subsubsection}{Fragmentation fields}{52}{section*.20}%
+\contentsline {subsubsection}{Header length}{52}{section*.21}%
+\contentsline {section}{\numberline {3.15}Extension headers and header chaining}{52}{section.3.15}%
+\contentsline {subsection}{\numberline {3.15.1}General structure of extension headers}{52}{subsection.3.15.1}%
+\contentsline {subsection}{\numberline {3.15.2}Header chaining mechanism}{53}{subsection.3.15.2}%
+\contentsline {section}{\numberline {3.16}Selected extension headers}{53}{section.3.16}%
+\contentsline {subsection}{\numberline {3.16.1}Hop-by-hop options header}{53}{subsection.3.16.1}%
+\contentsline {subsection}{\numberline {3.16.2}Routing extension header}{54}{subsection.3.16.2}%
+\contentsline {subsection}{\numberline {3.16.3}Fragment extension header}{55}{subsection.3.16.3}%
+\contentsline {subsection}{\numberline {3.16.4}IPsec-related extension headers}{55}{subsection.3.16.4}%
+\contentsline {subsubsection}{Authentication header (AH)}{55}{section*.22}%
+\contentsline {subsubsection}{Encapsulating security payload (ESP)}{55}{section*.23}%
+\contentsline {section}{\numberline {3.17}Interfacing IPv6 with the lower layer}{55}{section.3.17}%
+\contentsline {subsection}{\numberline {3.17.1}Encapsulation of IPv6 packets}{55}{subsection.3.17.1}%
+\contentsline {subsection}{\numberline {3.17.2}Mapping IPv6 addresses to link-layer identifiers}{56}{subsection.3.17.2}%
+\contentsline {subsubsection}{Multicast address mapping}{56}{section*.24}%
+\contentsline {subsubsection}{Unicast address mapping and neighbor discovery}{56}{section*.25}%
+\contentsline {subsection}{\numberline {3.17.3}Neighbor discovery and address resolution}{57}{subsection.3.17.3}%
+\contentsline {section}{\numberline {3.18}ICMPv6}{57}{section.3.18}%
+\contentsline {subsection}{\numberline {3.18.1}Functions and purpose}{57}{subsection.3.18.1}%
+\contentsline {subsection}{\numberline {3.18.2}Message format}{58}{subsection.3.18.2}%
+\contentsline {section}{\numberline {3.19}ICMPv6 error messages}{58}{section.3.19}%
+\contentsline {subsection}{\numberline {3.19.1}Destination unreachable}{58}{subsection.3.19.1}%
+\contentsline {subsection}{\numberline {3.19.2}Packet too big}{59}{subsection.3.19.2}%
+\contentsline {subsection}{\numberline {3.19.3}Time exceeded}{59}{subsection.3.19.3}%
+\contentsline {subsection}{\numberline {3.19.4}Parameter problem}{59}{subsection.3.19.4}%
+\contentsline {section}{\numberline {3.20}ICMPv6 informational messages}{59}{section.3.20}%
+\contentsline {subsection}{\numberline {3.20.1}Echo request and echo reply}{59}{subsection.3.20.1}%
+\contentsline {section}{\numberline {3.21}Neighbor discovery messages}{59}{section.3.21}%
+\contentsline {subsection}{\numberline {3.21.1}Neighbor solicitation}{60}{subsection.3.21.1}%
+\contentsline {subsection}{\numberline {3.21.2}Neighbor advertisement}{60}{subsection.3.21.2}%
+\contentsline {section}{\numberline {3.22}Multicast listener management}{60}{section.3.22}%
+\contentsline {subsection}{\numberline {3.22.1}Multicast listener queries}{61}{subsection.3.22.1}%
+\contentsline {subsection}{\numberline {3.22.2}Multicast listener reports}{61}{subsection.3.22.2}%
+\contentsline {section}{\numberline {3.23}ICMPv6 redirect messages}{61}{section.3.23}%
+\contentsline {section}{\numberline {3.24}Device configuration in IPv6}{62}{section.3.24}%
+\contentsline {subsection}{\numberline {3.24.1}Required configuration information}{62}{subsection.3.24.1}%
+\contentsline {subsection}{\numberline {3.24.2}Configuration models}{63}{subsection.3.24.2}%
+\contentsline {subsubsection}{Manual configuration}{63}{section*.26}%
+\contentsline {subsubsection}{Stateful configuration}{63}{section*.27}%
+\contentsline {subsubsection}{Stateless configuration}{63}{section*.28}%
+\contentsline {subsubsection}{Hybrid configuration}{64}{section*.29}%
+\contentsline {section}{\numberline {3.25}Interface identifiers}{64}{section.3.25}%
+\contentsline {subsection}{\numberline {3.25.1}Sources of interface identifiers}{64}{subsection.3.25.1}%
+\contentsline {subsection}{\numberline {3.25.2}EUI-48 to EUI-64 conversion}{64}{subsection.3.25.2}%
+\contentsline {section}{\numberline {3.26}Privacy considerations}{65}{section.3.26}%
+\contentsline {subsection}{\numberline {3.26.1}Traceability concerns}{65}{subsection.3.26.1}%
+\contentsline {subsection}{\numberline {3.26.2}Privacy extension algorithm}{65}{subsection.3.26.2}%
+\contentsline {section}{\numberline {3.27}Address usage and selection}{66}{section.3.27}%
+\contentsline {section}{\numberline {3.28}Prefix acquisition}{66}{section.3.28}%
+\contentsline {subsection}{\numberline {3.28.1}Sources of prefixes}{66}{subsection.3.28.1}%
+\contentsline {section}{\numberline {3.29}Router and prefix discovery}{67}{section.3.29}%
+\contentsline {subsection}{\numberline {3.29.1}Router solicitation}{67}{subsection.3.29.1}%
+\contentsline {subsection}{\numberline {3.29.2}Router advertisement}{67}{subsection.3.29.2}%
+\contentsline {subsection}{\numberline {3.29.3}Prefix information option}{68}{subsection.3.29.3}%
+\contentsline {subsection}{\numberline {3.29.4}MTU and link-layer address options}{69}{subsection.3.29.4}%
+\contentsline {section}{\numberline {3.30}Duplicate address detection}{69}{section.3.30}%
+\contentsline {section}{\numberline {3.31}Stateless configuration procedures}{69}{section.3.31}%
+\contentsline {subsection}{\numberline {3.31.1}Basic stateless configuration}{69}{subsection.3.31.1}%
+\contentsline {subsection}{\numberline {3.31.2}Stateless configuration with router guidance}{70}{subsection.3.31.2}%
+\contentsline {subsection}{\numberline {3.31.3}Renumbering}{70}{subsection.3.31.3}%
+\contentsline {section}{\numberline {3.32}Stateful DHCPv6 configuration}{70}{section.3.32}%
+\contentsline {section}{\numberline {3.33}Stateless DHCPv6}{70}{section.3.33}%
+\contentsline {chapter}{\numberline {4}LANs and VLANs}{71}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Historical background}{71}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Origins of wide area and local area networks}{71}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Early coexistence of heterogeneous technologies}{71}{subsection.4.1.2}%
+\contentsline {section}{\numberline {4.2}LAN devices}{71}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Layer 1 devices}{72}{subsection.4.2.1}%
+\contentsline {subsubsection}{Repeaters}{72}{section*.30}%
+\contentsline {subsubsection}{Hubs}{72}{section*.31}%
+\contentsline {subsection}{\numberline {4.2.2}Layer 2 devices}{73}{subsection.4.2.2}%
+\contentsline {subsubsection}{Bridges and switches}{73}{section*.32}%
+\contentsline {subsection}{\numberline {4.2.3}Layer 3 devices}{73}{subsection.4.2.3}%
+\contentsline {section}{\numberline {4.3}Collision and broadcast domains}{73}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Repeaters}{73}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Bridges}{73}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}General characteristics}{73}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}Switched Ethernet}{74}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Transparent bridges}{74}{subsection.4.5.3}%
+\contentsline {section}{\numberline {4.6}Components of a transparent bridge}{74}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}The filtering database}{74}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Forwarding process}{75}{subsection.4.6.2}%
+\contentsline {section}{\numberline {4.7}Backward learning}{75}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}Operation in multi-bridge networks}{75}{subsection.4.7.1}%
+\contentsline {subsection}{\numberline {4.7.2}Transient learning phase}{75}{subsection.4.7.2}%
+\contentsline {subsection}{\numberline {4.7.3}Attacks on the filtering database}{76}{subsection.4.7.3}%
+\contentsline {section}{\numberline {4.8}Bridges in meshed topologies}{76}{section.4.8}%
+\contentsline {subsection}{\numberline {4.8.1}Broadcast storms}{76}{subsection.4.8.1}%
+\contentsline {subsection}{\numberline {4.8.2}Learning inconsistencies}{77}{subsection.4.8.2}%
+\contentsline {section}{\numberline {4.9}Introduction to spanning tree}{77}{section.4.9}%
+\contentsline {section}{\numberline {4.10}Layer 2 versus layer 3 in campus networks}{77}{section.4.10}%
+\contentsline {subsection}{\numberline {4.10.1}Considerations on protocol layer choice}{77}{subsection.4.10.1}%
+\contentsline {section}{\numberline {4.11}Single versus multiple LANs in a campus}{77}{section.4.11}%
+\contentsline {subsection}{\numberline {4.11.1}Motivation for multiple LANs}{77}{subsection.4.11.1}%
+\contentsline {subsection}{\numberline {4.11.2}Physical separation versus virtual segmentation}{78}{subsection.4.11.2}%
+\contentsline {section}{\numberline {4.12}Virtual LANs}{78}{section.4.12}%
+\contentsline {subsection}{\numberline {4.12.1}Concept and motivation}{78}{subsection.4.12.1}%
+\contentsline {subsection}{\numberline {4.12.2}VLAN aware switch architecture}{78}{subsection.4.12.2}%
+\contentsline {section}{\numberline {4.13}Interconnecting VLANs}{79}{section.4.13}%
+\contentsline {subsection}{\numberline {4.13.1}Layer 2 separation}{79}{subsection.4.13.1}%
+\contentsline {subsection}{\numberline {4.13.2}Inter-VLAN routing}{79}{subsection.4.13.2}%
+\contentsline {subsection}{\numberline {4.13.3}VLANs and IP addressing}{80}{subsection.4.13.3}%
+\contentsline {section}{\numberline {4.14}Association of frames to VLANs}{80}{section.4.14}%
+\contentsline {subsection}{\numberline {4.14.1}VLANs on a single switch}{80}{subsection.4.14.1}%
+\contentsline {subsection}{\numberline {4.14.2}VLANs across multiple switches}{80}{subsection.4.14.2}%
+\contentsline {subsection}{\numberline {4.14.3}IEEE 802.1Q tagging}{80}{subsection.4.14.3}%
+\contentsline {section}{\numberline {4.15}Port types}{81}{section.4.15}%
+\contentsline {subsection}{\numberline {4.15.1}Access ports}{81}{subsection.4.15.1}%
+\contentsline {subsection}{\numberline {4.15.2}Trunk ports}{82}{subsection.4.15.2}%
+\contentsline {section}{\numberline {4.16}Methods for assigning hosts to VLANs}{82}{section.4.16}%
+\contentsline {section}{\numberline {4.17}VLANs and spanning tree}{82}{section.4.17}%
+\contentsline {section}{\numberline {4.18}Limitations to VLAN isolation}{83}{section.4.18}%
+\contentsline {section}{\numberline {4.19}VLAN aware and VLAN unaware switches}{83}{section.4.19}%
+\contentsline {section}{\numberline {4.20}Ethernet LAN design considerations}{83}{section.4.20}%
+\contentsline {chapter}{\numberline {5}Quality of Service}{85}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Fundamentals of media coding}{85}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}From analog signals to digital representations}{85}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}The media coding pipeline}{85}{subsection.5.1.2}%
+\contentsline {section}{\numberline {5.2}Sampling and quantization}{86}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Sampling of analog signals}{86}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Quantization of samples}{86}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Quantization error and its effects}{86}{subsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.2.4}Resolution, bit rate and resource trade-offs}{87}{subsection.5.2.4}%
+\contentsline {section}{\numberline {5.3}Coding of samples and compression}{87}{section.5.3}%
+\contentsline {subsection}{\numberline {5.3.1}From raw samples to encoded bit streams}{87}{subsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.3.2}Lossless and lossy compression}{87}{subsection.5.3.2}%
+\contentsline {subsection}{\numberline {5.3.3}Redundancy in multimedia signals}{88}{subsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.3.4}Combined spatial and temporal reduction}{88}{subsection.5.3.4}%
+\contentsline {section}{\numberline {5.4}Networked multimedia applications}{89}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Overview of multimedia services in packet networks}{89}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Distinctive characteristics of multimedia traffic}{89}{subsection.5.4.2}%
+\contentsline {subsubsection}{Streaming}{89}{section*.33}%
+\contentsline {subsubsection}{Interactivity}{89}{section*.34}%
+\contentsline {subsubsection}{Large bandwidth and group communication}{89}{section*.35}%
+\contentsline {section}{\numberline {5.5}Requirements imposed by multimedia applications}{90}{section.5.5}%
+\contentsline {subsection}{\numberline {5.5.1}Requirements associated with streaming}{90}{subsection.5.5.1}%
+\contentsline {subsection}{\numberline {5.5.2}Requirements associated with interactivity}{90}{subsection.5.5.2}%
+\contentsline {subsection}{\numberline {5.5.3}Requirements associated with high bandwidth}{90}{subsection.5.5.3}%
+\contentsline {subsection}{\numberline {5.5.4}Requirements associated with group communication}{90}{subsection.5.5.4}%
+\contentsline {section}{\numberline {5.6}Delay and its implications for multimedia systems}{90}{section.5.6}%
+\contentsline {subsection}{\numberline {5.6.1}The nature of delay in multimedia communication}{90}{subsection.5.6.1}%
+\contentsline {subsection}{\numberline {5.6.2}Variability of delay}{91}{subsection.5.6.2}%
+\contentsline {section}{\numberline {5.7}Countermeasures for supporting multimedia traffic}{91}{section.5.7}%
+\contentsline {subsection}{\numberline {5.7.1}Countermeasures implemented in end systems}{91}{subsection.5.7.1}%
+\contentsline {subsection}{\numberline {5.7.2}Countermeasures implemented within the network}{91}{subsection.5.7.2}%
+\contentsline {section}{\numberline {5.8}Quality of service support}{91}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Quality of service support: classification}{92}{section.5.9}%
+\contentsline {subsection}{\numberline {5.9.1}Purpose of classification}{92}{subsection.5.9.1}%
+\contentsline {subsection}{\numberline {5.9.2}Basis for classification}{92}{subsection.5.9.2}%
+\contentsline {subsection}{\numberline {5.9.3}Complexity and hardware support}{93}{subsection.5.9.3}%
+\contentsline {section}{\numberline {5.10}Quality of service support: packet scheduling}{93}{section.5.10}%
+\contentsline {subsection}{\numberline {5.10.1}Traditional queuing}{93}{subsection.5.10.1}%
+\contentsline {subsection}{\numberline {5.10.2}Multiple queues and scheduling}{93}{subsection.5.10.2}%
+\contentsline {subsection}{\numberline {5.10.3}Scheduling algorithms}{94}{subsection.5.10.3}%
+\contentsline {subsubsection}{Priority queuing}{94}{section*.36}%
+\contentsline {subsubsection}{Round robin scheduling}{94}{section*.37}%
+\contentsline {subsubsection}{Weighted round robin}{95}{section*.38}%
+\contentsline {subsubsection}{Fair queuing}{95}{section*.39}%
+\contentsline {subsubsection}{Weighted fair queuing}{95}{section*.40}%
+\contentsline {section}{\numberline {5.11}Quality of service support: traffic control}{96}{section.5.11}%
+\contentsline {subsection}{\numberline {5.11.1}Traffic control performed a priori}{96}{subsection.5.11.1}%
+\contentsline {subsubsection}{Network engineering}{96}{section*.41}%
+\contentsline {subsubsection}{Traffic engineering}{96}{section*.42}%
+\contentsline {subsection}{\numberline {5.11.2}Traffic control performed a posteriori}{96}{subsection.5.11.2}%
+\contentsline {subsubsection}{Packet-level control}{96}{section*.43}%
+\contentsline {subsubsection}{Flow-level control}{96}{section*.44}%
+\contentsline {subsection}{\numberline {5.11.3}Shaping and policing mechanisms}{97}{subsection.5.11.3}%
+\contentsline {subsubsection}{Token bucket mechanism}{97}{section*.45}%
+\contentsline {section}{\numberline {5.12}Quality of service frameworks}{97}{section.5.12}%
+\contentsline {subsection}{\numberline {5.12.1}Integrated services}{97}{subsection.5.12.1}%
+\contentsline {subsection}{\numberline {5.12.2}Differentiated services}{97}{subsection.5.12.2}%
+\contentsline {chapter}{\numberline {6}Cloud Computing}{99}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Understanding cloud computing}{99}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Historical origins}{99}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Industrial and commercial developments}{99}{subsection.6.1.2}%
+\contentsline {section}{\numberline {6.2}Definition of cloud computing}{100}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Business drivers for cloud adoption}{100}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Capacity planning}{100}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Cost reduction}{101}{subsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.3.3}Operational overhead}{101}{subsection.6.3.3}%
+\contentsline {subsection}{\numberline {6.3.4}Organizational agility}{101}{subsection.6.3.4}%
+\contentsline {section}{\numberline {6.4}Benefits of cloud computing}{102}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Reduced investments and proportional costs}{102}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Increased scalability}{102}{subsection.6.4.2}%
+\contentsline {subsection}{\numberline {6.4.3}Increased availability and reliability}{102}{subsection.6.4.3}%
+\contentsline {section}{\numberline {6.5}Fundamental concepts in cloud computing}{103}{section.6.5}%
+\contentsline {section}{\numberline {6.6}On-premise infrastructure and cloud-based resources}{103}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Scaling of IT resources}{103}{section.6.7}%
+\contentsline {subsection}{\numberline {6.7.1}Vertical scaling}{103}{subsection.6.7.1}%
+\contentsline {subsection}{\numberline {6.7.2}Horizontal scaling}{104}{subsection.6.7.2}%
+\contentsline {subsection}{\numberline {6.7.3}Comparison of scaling models}{104}{subsection.6.7.3}%
+\contentsline {section}{\numberline {6.8}Cloud services}{104}{section.6.8}%
+\contentsline {section}{\numberline {6.9}Actors in cloud computing}{104}{section.6.9}%
+\contentsline {subsection}{\numberline {6.9.1}Cloud provider}{104}{subsection.6.9.1}%
+\contentsline {subsection}{\numberline {6.9.2}Cloud consumer}{105}{subsection.6.9.2}%
+\contentsline {section}{\numberline {6.10}Service-level agreements}{105}{section.6.10}%
+\contentsline {section}{\numberline {6.11}Cloud service owner}{105}{section.6.11}%
+\contentsline {section}{\numberline {6.12}Cloud resource administrator}{105}{section.6.12}%
+\contentsline {section}{\numberline {6.13}Additional roles in cloud computing}{106}{section.6.13}%
+\contentsline {subsection}{\numberline {6.13.1}Cloud broker}{106}{subsection.6.13.1}%
+\contentsline {subsection}{\numberline {6.13.2}Cloud auditor}{106}{subsection.6.13.2}%
+\contentsline {subsection}{\numberline {6.13.3}Cloud carrier}{106}{subsection.6.13.3}%
+\contentsline {section}{\numberline {6.14}Interactions among cloud actors}{106}{section.6.14}%
+\contentsline {section}{\numberline {6.15}Cloud characteristics}{107}{section.6.15}%
+\contentsline {subsection}{\numberline {6.15.1}On-demand usage}{107}{subsection.6.15.1}%
+\contentsline {subsection}{\numberline {6.15.2}Ubiquitous access}{107}{subsection.6.15.2}%
+\contentsline {subsection}{\numberline {6.15.3}Multitenancy and resource pooling}{108}{subsection.6.15.3}%
+\contentsline {subsection}{\numberline {6.15.4}Elasticity}{108}{subsection.6.15.4}%
+\contentsline {subsection}{\numberline {6.15.5}Measured usage}{108}{subsection.6.15.5}%
+\contentsline {subsection}{\numberline {6.15.6}Resiliency}{109}{subsection.6.15.6}%
+\contentsline {section}{\numberline {6.16}Cloud deployment models}{109}{section.6.16}%
+\contentsline {subsection}{\numberline {6.16.1}Public clouds}{109}{subsection.6.16.1}%
+\contentsline {subsection}{\numberline {6.16.2}Private clouds}{109}{subsection.6.16.2}%
+\contentsline {subsection}{\numberline {6.16.3}Community clouds}{110}{subsection.6.16.3}%
+\contentsline {subsection}{\numberline {6.16.4}Hybrid clouds}{110}{subsection.6.16.4}%
+\contentsline {subsection}{\numberline {6.16.5}Comparison of cloud deployment models}{111}{subsection.6.16.5}%
+\contentsline {section}{\numberline {6.17}Cloud delivery models}{111}{section.6.17}%
+\contentsline {subsection}{\numberline {6.17.1}Infrastructure-as-a-Service}{111}{subsection.6.17.1}%
+\contentsline {subsection}{\numberline {6.17.2}Platform-as-a-Service}{112}{subsection.6.17.2}%
+\contentsline {subsection}{\numberline {6.17.3}Software-as-a-Service}{112}{subsection.6.17.3}%
+\contentsline {subsection}{\numberline {6.17.4}Separation of responsibility}{112}{subsection.6.17.4}%
+\contentsline {subsection}{\numberline {6.17.5}Comparing cloud delivery models}{113}{subsection.6.17.5}%
+\contentsline {subsection}{\numberline {6.17.6}Combining delivery models}{113}{subsection.6.17.6}%
+\contentsline {subsection}{\numberline {6.17.7}Notable examples of cloud services}{113}{subsection.6.17.7}%
+\contentsline {subsection}{\numberline {6.17.8}Other cloud service models}{113}{subsection.6.17.8}%
+\contentsline {subsection}{\numberline {6.17.9}XaaS}{113}{subsection.6.17.9}%
+\contentsline {subsection}{\numberline {6.17.10}NIST cloud computing reference architecture}{114}{subsection.6.17.10}%
+\contentsline {subsection}{\numberline {6.17.11}Cloud-enabling technologies}{114}{subsection.6.17.11}%
+\contentsline {chapter}{\numberline {7}Virtualization}{115}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Virtualization as hardware abstraction}{115}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Why virtualization is useful}{115}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Core definitions and execution roles}{116}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}Virtual machine}{116}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}Host OS and guest OS}{116}{subsection.7.3.2}%
+\contentsline {subsection}{\numberline {7.3.3}Hypervisor and virtual machine monitor}{116}{subsection.7.3.3}%
+\contentsline {section}{\numberline {7.4}Hypervisors and their essential properties}{117}{section.7.4}%
+\contentsline {subsection}{\numberline {7.4.1}Performance}{117}{subsection.7.4.1}%
+\contentsline {subsection}{\numberline {7.4.2}Management and lifecycle control}{117}{subsection.7.4.2}%
+\contentsline {subsection}{\numberline {7.4.3}Ecosystem and extensibility}{117}{subsection.7.4.3}%
+\contentsline {subsection}{\numberline {7.4.4}Live migration}{117}{subsection.7.4.4}%
+\contentsline {subsection}{\numberline {7.4.5}Cost considerations}{118}{subsection.7.4.5}%
+\contentsline {section}{\numberline {7.5}Type 1 and type 2 hypervisors}{118}{section.7.5}%
+\contentsline {subsection}{\numberline {7.5.1}Type 1 hypervisors}{118}{subsection.7.5.1}%
+\contentsline {subsubsection}{Advantages of type 1 hypervisors}{118}{section*.46}%
+\contentsline {subsubsection}{Disadvantages of type 1 hypervisors}{118}{section*.47}%
+\contentsline {subsection}{\numberline {7.5.2}Type 2 hypervisors}{119}{subsection.7.5.2}%
+\contentsline {subsubsection}{Advantages of type 2 hypervisors}{119}{section*.48}%
+\contentsline {subsubsection}{Disadvantages of type 2 hypervisors}{119}{section*.49}%
+\contentsline {section}{\numberline {7.6}Internal organization of type 1 hypervisors}{120}{section.7.6}%
+\contentsline {subsection}{\numberline {7.6.1}Monolithic hypervisors}{120}{subsection.7.6.1}%
+\contentsline {subsection}{\numberline {7.6.2}Microkernelized hypervisors}{120}{subsection.7.6.2}%
+\contentsline {section}{\numberline {7.7}Virtual hardware and resource profiles}{120}{section.7.7}%
+\contentsline {section}{\numberline {7.8}Virtualization techniques for running guest operating systems}{121}{section.7.8}%
+\contentsline {subsection}{\numberline {7.8.1}Full virtualization}{121}{subsection.7.8.1}%
+\contentsline {subsubsection}{Example of handling CLI under full virtualization}{121}{section*.50}%
+\contentsline {subsection}{\numberline {7.8.2}Paravirtualization}{122}{subsection.7.8.2}%
+\contentsline {subsubsection}{Example of handling CLI under paravirtualization}{122}{section*.51}%
+\contentsline {subsection}{\numberline {7.8.3}Hardware-assisted virtualization}{122}{subsection.7.8.3}%
+\contentsline {subsubsection}{Example of handling CLI under hardware-assisted virtualization}{122}{section*.52}%
+\contentsline {section}{\numberline {7.9}Major types of virtualization in practice}{123}{section.7.9}%
+\contentsline {subsection}{\numberline {7.9.1}System virtualization}{123}{subsection.7.9.1}%
+\contentsline {subsection}{\numberline {7.9.2}Server virtualization}{123}{subsection.7.9.2}%
+\contentsline {subsection}{\numberline {7.9.3}Desktop virtualization}{123}{subsection.7.9.3}%
+\contentsline {subsubsection}{Local desktop virtualization}{123}{section*.53}%
+\contentsline {subsubsection}{Virtual desktop infrastructure}{124}{section*.54}%
+\contentsline {subsubsection}{Remote desktop virtualization}{124}{section*.55}%
+\contentsline {subsubsection}{Desktop as a Service}{124}{section*.56}%
+\contentsline {subsection}{\numberline {7.9.4}Storage virtualization}{124}{subsection.7.9.4}%
+\contentsline {subsection}{\numberline {7.9.5}Application virtualization}{124}{subsection.7.9.5}%
+\contentsline {section}{\numberline {7.10}Representative hypervisor platforms}{125}{section.7.10}%
+\contentsline {subsection}{\numberline {7.10.1}VMware hypervisors}{125}{subsection.7.10.1}%
+\contentsline {subsubsection}{VMware ESX and ESXi characteristics}{125}{section*.57}%
+\contentsline {subsection}{\numberline {7.10.2}Microsoft Hyper-V}{125}{subsection.7.10.2}%
+\contentsline {subsection}{\numberline {7.10.3}Kernel-based Virtual Machine}{126}{subsection.7.10.3}%
+\contentsline {chapter}{\numberline {8}Containers}{127}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Motivation for lightweight virtualization}{127}{section.8.1}%
+\contentsline {subsection}{\numberline {8.1.1}Operating system-level and application-level virtualization}{127}{subsection.8.1.1}%
+\contentsline {subsection}{\numberline {8.1.2}Controllable properties}{127}{subsection.8.1.2}%
+\contentsline {section}{\numberline {8.2}Linux control groups}{128}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}Resource accounting and limiting model}{128}{subsection.8.2.1}%
+\contentsline {subsection}{\numberline {8.2.2}Core capabilities}{128}{subsection.8.2.2}%
+\contentsline {subsubsection}{Resource limiting}{128}{section*.58}%
+\contentsline {subsubsection}{Prioritization}{129}{section*.59}%
+\contentsline {subsubsection}{Accounting}{129}{section*.60}%
+\contentsline {subsubsection}{Control and lifecycle management}{129}{section*.61}%
+\contentsline {subsection}{\numberline {8.2.3}Cgroups as an enabling mechanism for containers}{129}{subsection.8.2.3}%
+\contentsline {section}{\numberline {8.3}Linux namespaces}{129}{section.8.3}%
+\contentsline {subsection}{\numberline {8.3.1}General isolation principle}{129}{subsection.8.3.1}%
+\contentsline {subsection}{\numberline {8.3.2}Namespace types in Linux}{130}{subsection.8.3.2}%
+\contentsline {subsubsection}{Mount namespaces}{130}{section*.62}%
+\contentsline {subsubsection}{UTS namespaces}{130}{section*.63}%
+\contentsline {subsubsection}{IPC namespaces}{130}{section*.64}%
+\contentsline {subsubsection}{PID namespaces}{130}{section*.65}%
+\contentsline {subsubsection}{Network namespaces}{130}{section*.66}%
+\contentsline {subsubsection}{User namespaces}{131}{section*.67}%
+\contentsline {subsubsection}{Cgroup namespaces}{131}{section*.68}%
+\contentsline {section}{\numberline {8.4}From kernel building blocks to containers}{131}{section.8.4}%
+\contentsline {subsection}{\numberline {8.4.1}Limitations of raw cgroups and namespaces}{131}{subsection.8.4.1}%
+\contentsline {subsubsection}{Management complexity}{131}{section*.69}%
+\contentsline {subsubsection}{Portability}{132}{section*.70}%
+\contentsline {subsubsection}{Lack of datacenter-scale orchestration}{132}{section*.71}%
+\contentsline {subsection}{\numberline {8.4.2}LXC containers}{132}{subsection.8.4.2}%
+\contentsline {section}{\numberline {8.5}Containers as a software packaging and execution unit}{132}{section.8.5}%
+\contentsline {subsection}{\numberline {8.5.1}What containers do}{132}{subsection.8.5.1}%
+\contentsline {subsection}{\numberline {8.5.2}What containers do not do}{133}{subsection.8.5.2}%
+\contentsline {section}{\numberline {8.6}Containers and virtual machines}{133}{section.8.6}%
+\contentsline {subsection}{\numberline {8.6.1}Conceptual architecture comparison}{133}{subsection.8.6.1}%
+\contentsline {subsection}{\numberline {8.6.2}Performance and density}{133}{subsection.8.6.2}%
+\contentsline {subsection}{\numberline {8.6.3}Isolation and flexibility}{134}{subsection.8.6.3}%
+\contentsline {subsection}{\numberline {8.6.4}Comparison table}{134}{subsection.8.6.4}%
+\contentsline {section}{\numberline {8.7}Microservices and the role of containers}{134}{section.8.7}%
+\contentsline {subsection}{\numberline {8.7.1}Monolithic applications}{134}{subsection.8.7.1}%
+\contentsline {subsection}{\numberline {8.7.2}Microservices and the single-responsibility principle}{134}{subsection.8.7.2}%
+\contentsline {subsection}{\numberline {8.7.3}Architectural consequences}{135}{subsection.8.7.3}%
+\contentsline {subsection}{\numberline {8.7.4}Why containers fit microservices}{135}{subsection.8.7.4}%
+\contentsline {section}{\numberline {8.8}Operational challenges of microservices}{135}{section.8.8}%
+\contentsline {subsection}{\numberline {8.8.1}Communication and addressing}{135}{subsection.8.8.1}%
+\contentsline {subsection}{\numberline {8.8.2}Need for orchestration}{135}{subsection.8.8.2}%
+\contentsline {section}{\numberline {8.9}Container deployment and orchestration}{136}{section.8.9}%
+\contentsline {subsection}{\numberline {8.9.1}Manual deployment}{136}{subsection.8.9.1}%
+\contentsline {subsection}{\numberline {8.9.2}Deployment via scripting and configuration management}{136}{subsection.8.9.2}%
+\contentsline {subsection}{\numberline {8.9.3}Dedicated orchestrators}{136}{subsection.8.9.3}%
+\contentsline {subsection}{\numberline {8.9.4}Orchestration goals}{136}{subsection.8.9.4}%
+\contentsline {subsubsection}{Core goals}{136}{section*.72}%
+\contentsline {section}{\numberline {8.10}Docker as a container platform}{137}{section.8.10}%
+\contentsline {subsection}{\numberline {8.10.1}Motivations and differentiating features}{137}{subsection.8.10.1}%
+\contentsline {subsection}{\numberline {8.10.2}Key concepts and components}{137}{subsection.8.10.2}%
+\contentsline {subsubsection}{Dockerfile}{137}{section*.73}%
+\contentsline {subsubsection}{Images and layers}{137}{section*.74}%
+\contentsline {subsubsection}{Containers}{137}{section*.75}%
+\contentsline {subsubsection}{Docker daemon and host}{138}{section*.76}%
+\contentsline {subsubsection}{Registries}{138}{section*.77}%
+\contentsline {subsection}{\numberline {8.10.3}Workflow: Dockerfile to image to container}{138}{subsection.8.10.3}%
+\contentsline {subsection}{\numberline {8.10.4}Docker architecture}{138}{subsection.8.10.4}%
+\contentsline {section}{\numberline {8.11}Why orchestration becomes necessary}{139}{section.8.11}%
+\contentsline {section}{\numberline {8.12}Kubernetes as a container orchestration platform}{139}{section.8.12}%
+\contentsline {subsection}{\numberline {8.12.1}Cluster model}{139}{subsection.8.12.1}%
+\contentsline {subsection}{\numberline {8.12.2}Control plane responsibilities}{139}{subsection.8.12.2}%
+\contentsline {subsection}{\numberline {8.12.3}Node agents and runtime}{139}{subsection.8.12.3}%
+\contentsline {section}{\numberline {8.13}Kubernetes object model}{140}{section.8.13}%
+\contentsline {subsection}{\numberline {8.13.1}Pods}{140}{subsection.8.13.1}%
+\contentsline {subsection}{\numberline {8.13.2}Deployments}{141}{subsection.8.13.2}%
+\contentsline {subsection}{\numberline {8.13.3}Services}{141}{subsection.8.13.3}%
+\contentsline {section}{\numberline {8.14}Network policy}{142}{section.8.14}%
+\contentsline {section}{\numberline {8.15}Core orchestration functions in Kubernetes}{142}{section.8.15}%
+\contentsline {subsection}{\numberline {8.15.1}Rolling deployments}{142}{subsection.8.15.1}%
+\contentsline {subsection}{\numberline {8.15.2}Service discovery}{143}{subsection.8.15.2}%
+\contentsline {subsection}{\numberline {8.15.3}Load balancing}{143}{subsection.8.15.3}%
+\contentsline {subsection}{\numberline {8.15.4}Health checking and self-healing}{143}{subsection.8.15.4}%
+\contentsline {subsection}{\numberline {8.15.5}Cluster networking}{143}{subsection.8.15.5}%
+\contentsline {subsection}{\numberline {8.15.6}Autoscaling}{143}{subsection.8.15.6}%
+\contentsline {subsection}{\numberline {8.15.7}Declarative configuration}{143}{subsection.8.15.7}%
+\contentsline {chapter}{\numberline {9}Network Softwarization}{145}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Logical planes in a network device}{145}{section.9.1}%
+\contentsline {subsection}{\numberline {9.1.1}Management plane}{145}{subsection.9.1.1}%
+\contentsline {subsection}{\numberline {9.1.2}Control plane}{145}{subsection.9.1.2}%
+\contentsline {subsection}{\numberline {9.1.3}Data plane}{146}{subsection.9.1.3}%
+\contentsline {section}{\numberline {9.2}Software-defined networking}{146}{section.9.2}%
+\contentsline {subsection}{\numberline {9.2.1}Original SDN idea}{146}{subsection.9.2.1}%
+\contentsline {subsection}{\numberline {9.2.2}The SDN pillars}{146}{subsection.9.2.2}%
+\contentsline {subsubsection}{Separation of control and data planes}{146}{section*.78}%
+\contentsline {subsubsection}{A simple data plane as a plumbing substrate}{146}{section*.79}%
+\contentsline {subsubsection}{Centralized control as a logical property}{147}{section*.80}%
+\contentsline {subsubsection}{Context-based forwarding and control}{147}{section*.81}%
+\contentsline {section}{\numberline {9.3}SDN control abstractions and deployment models}{147}{section.9.3}%
+\contentsline {subsection}{\numberline {9.3.1}The ``big switch'' abstraction}{147}{subsection.9.3.1}%
+\contentsline {subsection}{\numberline {9.3.2}Physically centralized, logically centralized, and embedded control}{148}{subsection.9.3.2}%
+\contentsline {subsection}{\numberline {9.3.3}State distribution and the CAP constraint}{148}{subsection.9.3.3}%
+\contentsline {section}{\numberline {9.4}Layered SDN architecture}{148}{section.9.4}%
+\contentsline {subsection}{\numberline {9.4.1}Application plane}{148}{subsection.9.4.1}%
+\contentsline {subsection}{\numberline {9.4.2}Control plane}{149}{subsection.9.4.2}%
+\contentsline {subsection}{\numberline {9.4.3}Data plane}{149}{subsection.9.4.3}%
+\contentsline {section}{\numberline {9.5}OpenFlow as a southbound protocol}{149}{section.9.5}%
+\contentsline {subsection}{\numberline {9.5.1}Basic capabilities}{149}{subsection.9.5.1}%
+\contentsline {subsection}{\numberline {9.5.2}Context-based control path}{149}{subsection.9.5.2}%
+\contentsline {section}{\numberline {9.6}Reactive and proactive rule installation}{150}{section.9.6}%
+\contentsline {subsection}{\numberline {9.6.1}Reactive installation}{150}{subsection.9.6.1}%
+\contentsline {subsection}{\numberline {9.6.2}Proactive installation}{150}{subsection.9.6.2}%
+\contentsline {section}{\numberline {9.7}Flow granularity: fine-grained and aggregated forwarding}{150}{section.9.7}%
+\contentsline {subsection}{\numberline {9.7.1}Fine-grained forwarding}{150}{subsection.9.7.1}%
+\contentsline {subsection}{\numberline {9.7.2}Aggregated forwarding}{151}{subsection.9.7.2}%
+\contentsline {section}{\numberline {9.8}Flow rules and flow table entries}{151}{section.9.8}%
+\contentsline {subsection}{\numberline {9.8.1}Flow rules as an abstraction}{151}{subsection.9.8.1}%
+\contentsline {subsection}{\numberline {9.8.2}Flow modification messages}{151}{subsection.9.8.2}%
+\contentsline {subsection}{\numberline {9.8.3}Structure of a flow table entry}{151}{subsection.9.8.3}%
+\contentsline {subsection}{\numberline {9.8.4}Matching semantics}{152}{subsection.9.8.4}%
+\contentsline {subsection}{\numberline {9.8.5}Common actions}{152}{subsection.9.8.5}%
+\contentsline {subsection}{\numberline {9.8.6}Illustrative flow table example}{152}{subsection.9.8.6}%
+\contentsline {section}{\numberline {9.9}SDN controller platforms}{153}{section.9.9}%
+\contentsline {subsection}{\numberline {9.9.1}Functional responsibilities}{153}{subsection.9.9.1}%
+\contentsline {subsection}{\numberline {9.9.2}Examples of controller ecosystems}{153}{subsection.9.9.2}%
+\contentsline {section}{\numberline {9.10}Service function chaining}{153}{section.9.10}%
+\contentsline {subsection}{\numberline {9.10.1}Service chains and middleboxes}{153}{subsection.9.10.1}%
+\contentsline {subsection}{\numberline {9.10.2}Operational challenges}{154}{subsection.9.10.2}%
+\contentsline {subsection}{\numberline {9.10.3}Traffic steering with SDN}{154}{subsection.9.10.3}%
+\contentsline {section}{\numberline {9.11}Network functions virtualization}{154}{section.9.11}%
+\contentsline {subsection}{\numberline {9.11.1}Principles and components}{154}{subsection.9.11.1}%
+\contentsline {subsection}{\numberline {9.11.2}Service chains with NFV}{155}{subsection.9.11.2}%
+\contentsline {section}{\numberline {9.12}ETSI NFV framework and terminology}{155}{section.9.12}%
+\contentsline {subsection}{\numberline {9.12.1}Core terms}{155}{subsection.9.12.1}%
+\contentsline {subsection}{\numberline {9.12.2}Management and orchestration functions}{155}{subsection.9.12.2}%
+\contentsline {subsection}{\numberline {9.12.3}Single-domain and multi-domain orchestration}{156}{subsection.9.12.3}%
