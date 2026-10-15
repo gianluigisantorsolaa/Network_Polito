@@ -1,0 +1,14 @@
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.xdv
+*.bbl
+*.blg
+
+# Nota: Se vuoi che il PDF NON venga caricato (metodo automatico), 
+# de-commenta la riga sotto togliendo il #
+# *.pdf
