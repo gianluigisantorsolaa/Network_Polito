@@ -4,7 +4,7 @@ Questi appunti riprendono e rielaborano i contenuti presenti su [polito-students
 
 ## Contributi e Modifiche
 
-Ogni modifica, correzione o aggiunta è **super ben accetta**! La collaborazione è il modo migliore per avere appunti perfetti per l'esame. 
+Ogni modifica, correzione o aggiunta è **super ben accetta**. La collaborazione è il modo migliore per avere appunti perfetti per l'esame. 
 
 Se volete contribuire:
 * **Avete notato un errore o un'imprecisione?** Potete correggere direttamente il codice LaTeX.
