@@ -11,13 +11,7 @@ Questi appunti riprendono e rielaborano i contenuti presenti su \[polito-student
 
 
 ## Contributi e Modifiche
-
-
-
 Ogni modifica, correzione o aggiunta è \*\*ben accetta\*\*. 
-
-
-
 Se volete contribuire:
 
 * \*\*Avete notato un errore o un'imprecisione?\*\* Potete correggere direttamente il codice LaTeX.
