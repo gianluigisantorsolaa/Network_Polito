@@ -6,6 +6,8 @@
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
+\usepackage{subcaption}
+
 
 \usepackage{booktabs,array}
 \usepackage{enumitem}
@@ -2521,7 +2523,7 @@ Repeaters extend the maximum physical length of a network by compensating for si
 \safeimg[width=3.54306in,height=1.25278in]{media/image16.png}
 \end{center}
 
-Between Physical domain with different cables used, but with same protocol example CSMA/CD.................(TODO)is possibible to connect them with a repeater that reapeat all the bits to the other port
+
 
 \begin{center}
 	\safeimg[width=3.54306in,height=1.25278in]{media/image92.png}
@@ -2547,7 +2549,15 @@ Bridges operate at the data link layer and interconnect LAN segments that may us
 
 Bridges create separate collision domains while retaining a single broadcast domain. Modern bridges are implemented as switches and include hardware acceleration for forwarding decisions.
 
+\begin{center}
+	\safeimg[width=3.54306in,height=1.25278in]{media/image105.png}
+\end{center}
+
 It is crucial to remember that while bridges and switches successfully segment collision domains, they merge all connected segments into a single, unified \textbf{broadcast domain}, unlike routers
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image106.png}
+\end{center}
 
 \subsection{Layer 3 devices}
 
@@ -2611,22 +2621,14 @@ Initially, filtering databases were perceived as mechanisms to filter unnecessar
 
 Switches include commands to inspect the filtering database. For example:
 
-Dest MAC Address Port Age
-
--\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/- -\/-\/-
-
-00-00-86-1a-a6-44 1/1 1
-
-00-00-c9-10-b3-0f 1/1 0
-
-00-00-f8-31-1c-3b 1/2 4
-
-...
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image107.png}
+\end{center}
 
 \subsection{Forwarding process}
 
 When a bridge receives a frame on port $X$, the following operations occur:
-
+ cdscds
 \begin{enumerate}
 \item if the frame contains errors (such as CRC errors), it is discarded;
 \item if the destination MAC address exists in the filtering database, let the associated port be $Y$:
@@ -2637,11 +2639,20 @@ When a bridge receives a frame on port $X$, the following operations occur:
 \item if the destination address is unknown, the switch performs \textbf{flooding}, meaning the frame is forwarded on all ports except $X$.
 \end{enumerate}
 
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image108.png}
+\end{center}
+
+
 \textbf{Important Note:} The forwarding process relies \textit{exclusively} on the destination MAC address. The source MAC address is completely ignored during this phase and is never taken into account to make forwarding decisions.   
 
 \section{Backward learning}
 
 Backward learning updates the filtering database based on observed source addresses. When a frame with source address $S$ is received on port $P$, the bridge infers that $S$ is reachable via $P$. If the filtering database does not contain $S$, a new entry is added. If it does, the entry is updated and its ageing timer is reset.
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image109.png}
+\end{center}
 
 Backward learning ignores the destination address; it relies solely on the ingress port of each frame.
 
@@ -2672,6 +2683,27 @@ Backward learning alone does not prevent loops. In networks containing redundant
 \item unstable filtering databases, where entries oscillate between ports and never reach a stable configuration.
 \end{itemize}
 
+\begin{figure}[htbp]
+	\centering
+	% Immagine di sinistra: Broadcast frame
+	\begin{subfigure}[b]{0.48\textwidth}
+		\centering
+		\includegraphics[height=5cm, keepaspectratio]{media/image110.png} 
+		\caption{Time 1: Broadcast frame}
+		\label{fig:broadcast_stage}
+	\end{subfigure}
+	\hfill
+	% Immagine di destra: Loop
+	\begin{subfigure}[b]{0.48\textwidth}
+		\centering
+		\includegraphics[height=5cm, keepaspectratio]{media/image111.png} 
+		\caption{Time 2: Loop!}
+		\label{fig:loop_stage}
+	\end{subfigure}
+	\caption{Comparison between the initial broadcast forwarding and the critical network evolution over time.}
+	\label{fig:network_comparison}
+\end{figure}
+
 Because Ethernet frames lack a time to live field, bridges cannot rely on automatic expiration to suppress loops. Disabling physical links is the only intrinsic solution unless loop detection mechanisms are deployed.
 
 \subsection{Broadcast storms}
@@ -2691,7 +2723,12 @@ To prevent loops, bridges implement the spanning tree algorithm. The algorithm i
 
 Routers, in contrast, separate broadcast domains and do not forward link layer broadcasts. They rewrite MAC addresses on forwarded frames and operate at the network layer. Different IP networks must be assigned to a router's interfaces to ensure correct forwarding semantics.
 
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image112.png}
+\end{center}
+
 This logical disabling of links explains why STP is strictly suited for LANs and not WANs: in a WAN, automatically disabling an expensive intercontinental fiber-optic link to prevent loops would be an unacceptable waste of financial resources. In campus LANs, however, loops are often intentionally introduced by administrators to provide physical redundancy; if an active link fails, STP automatically detects the failure and restores the usage of a previously disabled link without requiring human intervention.
+
 \section{Layer 2 versus layer 3 in campus networks}
 
 \subsection{Considerations on protocol layer choice}
@@ -2720,29 +2757,39 @@ Several issues motivate the subdivision of a campus into multiple LANs:
 
 One approach to creating multiple LANs is to deploy physically separate networks. If $N$ LANs must span $M$ rack rooms, the number of required switches becomes $N \times M$, and the number of interconnecting links becomes $N \times (M-1)$. strategy wastes resources and complicates maintenance. This
 
+To solve the single broadcast domain problem, the classic solution consists of dividing the network into separate subnets, assigning dedicated hardware (separate switches) to each department.
+
+If a commercial switch has 24 or 48 physical ports but a department only has 4 or 5 hosts, most of the switch's physical ports remain unused. Multiplying this scenario for each department, infrastructure costs and hardware waste become unsustainable.
+
 Virtual LANs provide a more efficient alternative.
 
 \section{Virtual LANs}
-
 \subsection{Concept and motivation}
 
-A virtual LAN allows multiple logical LANs to coexist on a single physical infrastructure. The same switches and cabling support multiple broadcast domains. Ports are assigned to VLANs by configuration rather than by physical wiring.
+A Virtual LAN (VLAN) allows multiple logical LANs to coexist on a single physical network infrastructure. The same switches and cabling can support multiple departments or groups while dividing the network into separate, logically isolated broadcast domains.
 
 \begin{center}
 	\safeimg[width=3.54306in,height=1.25278in]{media/image93.png}
 \end{center}
 
-From a logical perspective, each VLAN acts as a completely independent and isolated transparent bridge, maintaining its own separate filtering database and distinct broadcast domain while sharing the underlying physical hardware.
+VLAN membership is determined by the configuration of switch ports rather than by physical wiring. From a logical perspective, each VLAN behaves as an independent and isolated transparent bridge, maintaining its own separate filtering database and broadcast domain, while sharing the underlying physical hardware with other VLANs
 
-Advantages include:
+Main advantages:
 
 \begin{itemize}
-\item full utilization of switch ports, unlike physical segmentation where networks may occupy only a subset of ports;
-\item elimination of the need for multiple parallel backbone links;
-\item isolation of broadcast domains, as frames are not forwarded across VLAN boundaries;
-\item prevention of link layer attacks across VLANs, such as MAC flooding or ARP spoofing;
-\item logical separation of departments or groups over a shared infrastructure.
+\item \textbf{Infrastructural efficiency:} VLANs maximize the utilization of physical switch ports. For example, a single 48-port switch can serve multiple departments simultaneously, avoiding the need for dedicated physical switches for each group.
+
+\item \textbf{Reduced backbone complexity:} Multiple VLANs can share the same physical backbone infrastructure, eliminating the need for multiple parallel backbone links dedicated to separate LANs.
+
+\item \textbf{Broadcast domain isolation:} Broadcast frames generated by a host remain confined to its own VLAN and are not forwarded across VLAN boundaries. This reduces unnecessary broadcast traffic between departments.
+
+\item \textbf{Layer 2 security and isolation:} VLANs limit the scope of certain Data Link layer attacks, such as MAC flooding and ARP spoofing (ARP poisoning). These attacks are generally confined to the affected VLAN and do not automatically propagate to other VLANs. However, VLANs alone do not guarantee complete security and must be combined with appropriate network security mechanisms.
+
+\item \textbf{Organizational flexibility:} Users can be assigned to different logical networks independently of their physical location. For example, when a user moves to another office, the switch port can be reconfigured to assign the user to the same VLAN, without requiring changes to the physical cabling infrastructure.
+
 \end{itemize}
+
+Overall, VLANs provide logical network segmentation over shared physical infrastructure, improving resource utilization, reducing broadcast traffic, simplifying network design, and enabling flexible network administration.
 
 \subsection{VLAN aware switch architecture}
 
@@ -2754,13 +2801,24 @@ A switch implementing VLANs maintains conceptually separate filtering databases,
 
 In practical implementations, the filtering database is often a unified hardware table, frequently implemented using ternary content addressable memory. Entries include additional fields that identify the VLAN context.
 
-%\subsection{VLAN: forwarding database TODO}
+\subsubsection{Filtering Databases and Forwarding in VLANs}
+A switch implementing VLANs maintains conceptually separate filtering databases, one per VLAN. For VLAN $i$, the switch stores a mapping between MAC addresses and ports belonging to VLAN $i$. Backward learning occurs independently within each VLAN, meaning that when a frame arrives on a port associated with a specific VLAN, the algorithm analyzes the source MAC address and populates exclusively the database of that VLAN. The forwarding process itself is handled by a single core instance that, upon inspecting an incoming frame, consults only the filtering database corresponding to that specific VLAN context to decide the output port. 
+
+\begin{center}
+	\safeimg[width=5.54306in,height=3.25278in]{media/image113.png}
+\end{center}
+
+
+Furthermore, the spanning tree protocol computes a loop-free subset of the topology. In practical implementations, the filtering database is often a unified hardware table, frequently implemented using ternary content-addressable memory. Entries include additional fields that identify the VLAN context, allowing the hardware to logically partition the memory and keep traffic strictly isolated. 
+
 
 \section{Interconnecting VLANs}
 
-\subsection{Layer 2 separation}
+\subsubsection{Layer 2 separation}
+Layer 2 frames do not cross VLAN boundaries. A host cannot send a link layer frame directly to a station in another VLAN. As VLANs define separate broadcast domains, flooded and broadcast traffic remains confined. Therefore, VLANs require a layer 3 device for interconnection. 
 
-Layer 2 frames do not cross VLAN boundaries. A host cannot send a link layer frame directly to a station in another VLAN. As VLANs define separate broadcast domains, flooded and broadcast traffic remains confined.
+This behavior enforces the fundamental rule of VLANs: a Data Link frame can never pass directly from one VLAN to another within an L2 switching infrastructure. If a host attempts to send an L2 frame directly to a device in a different VLAN, the switch consults only the filtering database of the ingress VLAN, fails to find the destination MAC address in that specific context, and either discards the frame or floods it exclusively within the source VLAN.
+
 
 Therefore, VLANs require a layer 3 device for interconnection.
 
@@ -2769,20 +2827,25 @@ Therefore, VLANs require a layer 3 device for interconnection.
 \end{center}
 
 \subsection{Inter-VLAN routing}
+Inter VLAN communication requires a router or a device with equivalent layer 3 forwarding capability. In a traditional approach, every VLAN requires a dedicated physical switch port connected to a separate physical router interface, leading to severe port wastage and poor scalability. To overcome this, a single physical router interface may serve multiple VLANs by subdividing the interface into virtual subinterfaces configured for each VLAN, a configuration commonly known as a one-arm router or router-on-a-stick. 
 
-Inter VLAN communication requires a router or a device with equivalent layer 3 forwarding capability. The router examines the destination address, discards the incoming layer 2 header, and constructs a new frame with appropriate source and destination MAC addresses.
+When routing traffic between VLANs, the router examines the destination IP address, decapsulates the incoming layer 2 frame, and completely constructs a new frame. This process includes generating new source and destination MAC addresses (where the source becomes the router's interface MAC and the destination belongs to the final target host) and applying the appropriate 802.1Q VLAN tag before re-injecting the frame back onto the shared trunk link.
 
-A single physical router interface may serve multiple VLANs by subdividing the interface into subinterfaces configured for each VLAN. This configuration is often known as a one arm router.
+\subsubsection{VLANs and IP addressing}
+Because ARP broadcasts and other discovery protocols cannot cross VLAN boundaries, each VLAN must correspond to a distinct IP subnet. Hosts belonging to different VLANs require addresses from different IP prefixes. Consequently, assigning overlapping IP subnets to different VLANs constitutes a severe design error, as Layer 2 forwarding rules will block direct communication even if hosts appear to share the same logical subnet prefix. 
 
-\subsection{VLANs and IP addressing}
+\begin{center}
+	\safeimg[width=3.84306in,height=1.65278in]{media/image114.png}
+\end{center}
 
-Because ARP broadcasts cannot cross VLAN boundaries, each VLAN must correspond to a distinct IP subnet. Hosts belonging to different VLANs require addresses from different IP prefixes. Inter VLAN routing is then performed according to standard IP forwarding rules.
+Inter VLAN routing is then performed according to standard IP forwarding rules, relying on the router's subinterfaces as the default gateways for each respective network segment.
 
 \section{Association of frames to VLANs}
 
 \subsection{VLANs on a single switch}
+When VLANs exist only within a single switch, the simplest method to associate incoming frames with VLANs is port-based assignment (also known as static VLANs). Each port is statically configured to belong to a specific VLAN, defining its Port VLAN ID (PVID). Incoming untagged frames are assigned by the switch to the VLAN configured on that port. This method requires no changes to end hosts, which remain completely transparent to the underlying logical segmentation.
 
-When VLANs exist only within a single switch, the simplest method to associate incoming frames with VLANs is port based assignment. Each port is statically configured to belong to a specific VLAN. Incoming untagged frames are assigned to the VLAN configured on that port. This method requires no changes to end hosts.
+
 
 \begin{center}
 	\safeimg[width=4.54306in,height=2.25278in]{media/image96.png}
@@ -2799,6 +2862,7 @@ When VLANs span multiple switches, frames must be identifiable across inter swit
 
 
 To support these scenarios, a tagging mechanism is required.
+ To support these scenarios, a tagging mechanism is required. On the other hand, if inter-switch links are misconfigured—such as connecting two switches using Access ports set to different VLANs—no tags are used. This causes a dangerous security flaw called VLAN leaking, where computers from different VLANs accidentally communicate at Layer 2.
 
 \subsection{IEEE 802.1Q tagging}
 
@@ -2808,12 +2872,14 @@ IEEE 802.1Q specifies an extension of the Ethernet frame format that inserts a 4
 	\safeimg[width=3.54306in,height=1.75278in]{media/image98.png}
 \end{center}
 
+
 The tag contains:
 
 \begin{itemize}
-\item the user priority field;
-\item a canonical format indicator;
-\item a 12 bit VLAN identifier in the range 1 to 4094.
+	\item \textbf{the Tag Protocol Identifier (TPID)}, set to the hexadecimal value 0x8100 to indicate an 802.1Q framed packet;
+	\item \textbf{the Priority Code Point (PCP)} or user priority field (3 bits) for Layer 2 Quality of Service (CoS);
+	\item \textbf{the Drop Eligible Indicator (DEI)} or CFI (1 bit) used for congestion management;
+	\item \textbf{a 12-bit VLAN identifier (VID)} in the range 1 to 4094 (with 0 and 4095 reserved).
 \end{itemize}
 
 The EtherType value 0x8100 indicates that a VLAN tag follows. Tagged frames are therefore 4 bytes longer than standard untagged frames.
@@ -2822,57 +2888,63 @@ The EtherType value 0x8100 indicates that a VLAN tag follows. Tagged frames are 
 	\safeimg[width=4.54306in,height=2.75278in]{media/image99.png}
 \end{center}
 
-Tagging is used only on links that transport multiple VLANs, such as inter switch connections or connections to servers or routers that require membership in several VLANs.
+Tagging is used only on links that transport multiple VLANs, such as inter-switch connections (trunk ports) or connections to servers, hypervisors, and routers that require membership in several VLANs. End-user devices (PCs) remain untagged at the edge, relying on the switch to add or strip tags transparently.
 
 \section{Port types}
 
 \subsection{Access ports}
 
-Access ports send and receive untagged frames. They are typically used to connect end hosts. Incoming traffic is associated with the VLAN configured on the port. End systems do not need to modify their frame format.
+Access ports send and receive untagged frames, and they represent the default configuration mode for VLAN-aware switches. They are typically used at the edges of the local area network to connect end devices (such as PCs or printers) in order to preserve network transparency as much as possible. Incoming traffic is associated with the VLAN configured on the port, and end systems do not need to modify their frame format.
 
 \begin{center}
 	\safeimg[width=3.54306in,height=1.75278in]{media/image100.png}
 \end{center}
 
-The VLAN assignment configured on access ports is local to each switch and does not propagate to other switches.
+The VLAN assignment configured on access ports is local to each switch and does not propagate to other switches. However, using access ports on links that must carry multiple VLANs (such as inter-switch links) leads to misconfigurations where frames remain untagged across switches, causing unexpected communication between different VLANs.
+
 
 \subsection{Trunk ports}
 
-Trunk ports carry tagged frames. They must be configured explicitly and are used for inter switch links or for devices that participate in multiple VLANs. A trunk port may transport traffic belonging to a configurable set of VLANs.
+Trunk ports carry tagged frames and must be configured explicitly, as they are not the default mode. They are used for inter-switch connections (the network backbone) or for advanced devices that participate in multiple VLANs. A trunk port may transport traffic belonging to a configurable set of VLANs simultaneously by embedding the VLAN ID inside the frame headers.
 
 \begin{center}
 	\safeimg[width=3.54306in,height=1.75278in]{media/image101.png}
 \end{center}
+
 
 \section{Methods for assigning hosts to VLANs}
 
 Hosts may be assigned to VLANs in several ways:
 
 \begin{itemize}
-\item port based VLANs, where each port belongs to a single VLAN;
-\item transparent assignment based on static associations between MAC addresses and VLANs;
-\item authentication based assignment using IEEE 802.1X;
-\item cooperative assignment, where hosts themselves generate tagged frames and may participate in multiple VLANs.
+	\item port-based VLANs, where each port belongs to a single VLAN and handles untagged edge traffic;
+	\item transparent assignment based on static associations between MAC addresses and VLANs;
+	\item authentication-based assignment using IEEE 802.1X frameworks;
+	\item cooperative assignment, where endpoints themselves generate tagged frames and participate in multiple VLANs.
 \end{itemize}
 
-Devices such as servers or routers that require membership in multiple VLANs must use trunk connections and generate VLAN tagged frames.
+Devices such as servers or routers (like a one-arm router) that require membership in multiple VLANs must use trunk connections and perform cooperative assignment by generating VLAN-tagged frames.
+
 
 \section{VLANs and spanning tree}
 
-VLANs and the spanning tree algorithm are conceptually independent. The spanning tree defines a loop free topology at layer 2. VLANs are then deployed on this topology. Most vendors provide per VLAN spanning tree instances, although some can revert to a single spanning tree. Certain implementations require one instance per VLAN.
-
+VLANs and the spanning tree algorithm are conceptually independent. The spanning tree defines a loop-free topology at Layer 2, and VLANs are then deployed on top of this topology. When managing loops, two architectural approaches are acceptable: either executing a single spanning tree instance for the entire network (valid across all VLANs) or running an independent instance for each individual VLAN (Per-VLAN Spanning Tree). Both solutions are valid, though specific vendors—such as Cisco—rely exclusively on per-VLAN spanning tree protocols as their standard option.
 \begin{center}
 	\safeimg[width=3.54306in,height=1.75278in]{media/image102.jpg}
 \end{center}
 \section{Limitations to VLAN isolation}
 
-VLANs provide isolation at the frame forwarding level, but complete independence is not guaranteed. Links in the underlying physical topology are shared among VLANs. A broadcast storm in one VLAN may saturate an inter switch trunk link, indirectly affecting other VLANs even if they do not receive the broadcast frames.
+VLANs provide logical separation at the frame forwarding and broadcast domain level, but complete full network isolation is never guaranteed because the underlying physical infrastructure and inter-switch trunk links are shared. Consequently, broadcast frames and traffic from multiple VLANs must traverse these shared physical links. Therefore, if a broadcast storm occurs in one VLAN, the massive volume of traffic can saturate the physical bandwidth of the shared links, indirectly affecting and degrading the performance of other VLANs. Similarly, a MAC flooding attack can saturate these shared pathways even though it originates within a single VLAN.
 
 \section{VLAN aware and VLAN unaware switches}
 
 Switches may be classified as VLAN aware or VLAN unaware. VLAN aware switches support VLAN tagging and untagged frame processing. Low end consumer switches are frequently VLAN unaware and may drop tagged frames as oversized.
 
 Domestic deployments rarely support VLANs due to the required configuration complexity. In enterprise environments, unmanaged switches may appear when users connect their own devices to increase port availability. Network administrators must anticipate such situations to avoid misbehaviour.
+
+Switches are classified into two main categories: VLAN-aware switches, which support VLAN tagging and frame processing, and VLAN-unaware switches (traditional unmanaged bridges). From an economic standpoint, VLAN-unaware switches are less expensive to produce and easier to manage, which is why they are predominantly used in domestic networks where users lack advanced networking expertise. 
+
+On the contrary, enterprise environments heavily rely on professional products supporting VLAN tagging. However, VLAN-unaware switches can still be utilized effectively at the access layer of a network, provided that all connected hosts belong to the same single VLAN. Network administrators must anticipate and manage such scenarios, as users frequently connect unmanaged devices to increase port availability at the edges.
 
 \begin{center}
 	\safeimg[width=3.54306in,height=1.75278in]{media/image103.png}
@@ -2882,13 +2954,13 @@ VLAN unaware switches may be used at the access layer provided all connected hos
 
 \section{Ethernet LAN design considerations}
 
-Campus networks typically consist of an access layer, one or more distribution layers, and core routers or data center gateways. Trunk links interconnect switches transporting multiple VLANs. VLAN unaware devices may appear at the edges but must be contained to avoid interfering with VLAN separation.
+Campus networks typically consist of an access layer (with switches deployed in rooms or on each floor connecting multiple devices via access ports), distribution layers, and core infrastructure. Trunk links interconnect switches transporting multiple VLANs simultaneously, as well as connecting data center servers. VLAN-unaware devices may appear at the edges but must be properly contained to avoid interfering with overall VLAN separation.
 
 \begin{center}
 	\safeimg[width=4.54306in,height=2.75278in]{media/image104.jpg}
 \end{center}
 
-Routers are required for external connectivity and for inter VLAN communication. Modern wired LANs are based on full duplex switched Ethernet, where collision domains no longer exist and medium access control mechanisms such as CSMA/CD are obsolete. Redundant links increase robustness, and a spanning tree protocol maintains loop freedom.
+Routers are required both for external Internet connectivity and for executing inter-VLAN routing. In typical campus designs, a single core router fulfills a dual role: serving as the default gateway for devices to reach the external network, and providing the necessary Layer 3 interconnectivity for devices belonging to different VLANs. Modern wired LANs are based on full-duplex switched Ethernet, where collision domains no longer exist and medium access control mechanisms such as CSMA/CD are obsolete. Redundant links increase robustness, and a spanning tree protocol maintains loop freedom across the topology.
 
 \chapter{Quality of Service}
 
