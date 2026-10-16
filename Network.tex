@@ -2628,7 +2628,6 @@ Switches include commands to inspect the filtering database. For example:
 \subsection{Forwarding process}
 
 When a bridge receives a frame on port $X$, the following operations occur:
- cdscds
 \begin{enumerate}
 \item if the frame contains errors (such as CRC errors), it is discarded;
 \item if the destination MAC address exists in the filtering database, let the associated port be $Y$:
@@ -2769,7 +2768,7 @@ Virtual LANs provide a more efficient alternative.
 A Virtual LAN (VLAN) allows multiple logical LANs to coexist on a single physical network infrastructure. The same switches and cabling can support multiple departments or groups while dividing the network into separate, logically isolated broadcast domains.
 
 \begin{center}
-	\safeimg[width=3.54306in,height=1.25278in]{media/image93.png}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image93.png}
 \end{center}
 
 VLAN membership is determined by the configuration of switch ports rather than by physical wiring. From a logical perspective, each VLAN behaves as an independent and isolated transparent bridge, maintaining its own separate filtering database and broadcast domain, while sharing the underlying physical hardware with other VLANs
