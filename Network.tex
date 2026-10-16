@@ -2936,16 +2936,11 @@ VLANs and the spanning tree algorithm are conceptually independent. The spanning
 
 VLANs provide logical separation at the frame forwarding and broadcast domain level, but complete full network isolation is never guaranteed because the underlying physical infrastructure and inter-switch trunk links are shared. Consequently, broadcast frames and traffic from multiple VLANs must traverse these shared physical links. Therefore, if a broadcast storm occurs in one VLAN, the massive volume of traffic can saturate the physical bandwidth of the shared links, indirectly affecting and degrading the performance of other VLANs. Similarly, a MAC flooding attack can saturate these shared pathways even though it originates within a single VLAN.
 
-\section{VLAN aware and VLAN unaware switches}
+Switches are classified into two main categories: VLAN-aware switches, which support VLAN tagging and frame processing, and VLAN-unaware switches (traditional unmanaged bridges). From an economic standpoint, VLAN-unaware switches are less expensive to produce and easier to manage, which is why they are predominantly used in domestic networks where users lack advanced networking expertise. Low-end consumer switches are frequently VLAN-unaware and may drop tagged frames as oversized.
 
-Switches may be classified as VLAN aware or VLAN unaware. VLAN aware switches support VLAN tagging and untagged frame processing. Low end consumer switches are frequently VLAN unaware and may drop tagged frames as oversized.
+On the contrary, enterprise environments heavily rely on professional products supporting VLAN tagging. However, it is quite common to find VLAN-unaware switches in corporate networks. Network managers typically deploy only professional equipment, but end users often face physical limitations—such as the necessity to attach multiple hosts to a single network socket—and tend to solve these issues independently by purchasing the cheapest unmanaged switches on the market.
 
-Domestic deployments rarely support VLANs due to the required configuration complexity. In enterprise environments, unmanaged switches may appear when users connect their own devices to increase port availability. Network administrators must anticipate such situations to avoid misbehaviour.
-
-Switches are classified into two main categories: VLAN-aware switches, which support VLAN tagging and frame processing, and VLAN-unaware switches (traditional unmanaged bridges). From an economic standpoint, VLAN-unaware switches are less expensive to produce and easier to manage, which is why they are predominantly used in domestic networks where users lack advanced networking expertise. 
-
-On the contrary, enterprise environments heavily rely on professional products supporting VLAN tagging. However, VLAN-unaware switches can still be utilized effectively at the access layer of a network, provided that all connected hosts belong to the same single VLAN. Network administrators must anticipate and manage such scenarios, as users frequently connect unmanaged devices to increase port availability at the edges.
-
+Network administrators must anticipate and manage such scenarios to prevent possible network misbehaviour. Howewer, VLAN-unaware switches can still be utilized effectively at the access layer (e.g., to add new ports), provided that all connected hosts belong to the exact same single VLAN.
 \begin{center}
 	\safeimg[width=3.54306in,height=1.75278in]{media/image103.png}
 \end{center}
@@ -2961,6 +2956,9 @@ Campus networks typically consist of an access layer (with switches deployed in 
 \end{center}
 
 Routers are required both for external Internet connectivity and for executing inter-VLAN routing. In typical campus designs, a single core router fulfills a dual role: serving as the default gateway for devices to reach the external network, and providing the necessary Layer 3 interconnectivity for devices belonging to different VLANs. Modern wired LANs are based on full-duplex switched Ethernet, where collision domains no longer exist and medium access control mechanisms such as CSMA/CD are obsolete. Redundant links increase robustness, and a spanning tree protocol maintains loop freedom across the topology.
+
+
+
 
 \chapter{Quality of Service}
 
