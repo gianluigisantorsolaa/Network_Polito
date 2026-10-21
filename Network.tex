@@ -2960,7 +2960,7 @@ An inter-switch link cannot be treated as a regular access port assigned to a si
 IEEE 802.1Q specifies an extension of the Ethernet frame format that inserts a 4 byte tag between the source MAC address and the EtherType or length field. 
 
 \begin{center}
-	\safeimg[width=3.54306in,height=1.75278in]{media/image98.png}
+	\safeimg[width=4.54306in,height=2.75278in]{media/image98.png}
 \end{center}
 
 
@@ -2992,6 +2992,8 @@ Therefore, the design involves a trade-off. Keeping frames untagged at the netwo
 
 Access ports send and receive untagged frames, and they represent the default configuration mode for VLAN-aware switches. They are typically used at the edges of the local area network to connect end devices (such as PCs or printers) in order to preserve network transparency as much as possible. Incoming traffic is associated with the VLAN configured on the port, and end systems do not need to modify their frame format.
 
+An access port typically connects a single endpoint or a subnetwork of several endpoints belonging to the same VLAN: whatever arrives through the port is tagged with the VLAN configured on it, regardless of which devices (for instance other VLAN-unaware switches) are behind it. If two access ports, even on different switches connected by a trunk link, are configured with the same VLAN, the two subnetworks belong to the same VLAN and therefore to the same IP network, since each VLAN is a broadcast domain, inside which all the devices must be able to reach each other directly, without passing through a router. As a consequence, if an exercise asks for the IP address range of the devices of such subnetworks, separate ranges cannot be used: the total number of devices must be counted, and a single range sized for the global number of devices must be chosen.
+
 
 The VLAN assignment configured on access ports is local to each switch and does not propagate to other switches. However, using access ports on links that must carry multiple VLANs (such as inter-switch links) leads to misconfigurations where frames remain untagged across switches, causing unexpected communication between different VLANs.
 
@@ -3009,6 +3011,8 @@ Consequently, H1 may communicate with H4 even though the two hosts were intended
 
 Trunk ports carry tagged frames and must be configured explicitly, as they are not the default mode. They are used for inter-switch connections (the network backbone) or for advanced devices that participate in multiple VLANs. A trunk port may transport traffic belonging to a configurable set of VLANs simultaneously by embedding the VLAN ID inside the frame headers.
 
+
+Frames of different VLANs may pass through the same trunk port, so each frame must carry a tag: the layer 2 header must contain the VLAN ID, that is, the number representing the VLAN to which the frame belongs. The tag is added by a switch before sending the frame over the trunk link, and it is removed after receiving it from the trunk link. The port of a switch connected to a one-arm router is also a trunk port, because the router must manage frames belonging to different VLANs; it does so through cooperative assignment, that is, by tagging the frames it sends and removing the tag from the frames it receives. The same holds for a server that must interact at layer 2 with all the VLANs.
 \begin{center}
 	\safeimg[width=3.54306in,height=1.75278in]{media/image101.png}
 \end{center}
@@ -3087,10 +3091,31 @@ Routers are required both for external Internet connectivity and for executing i
 	\textbf{Exam note.} Exams typically contain an exercise on VLANs: a network topology is given together with the configuration of its ports (possibly an incorrect one) and the student must state which devices can communicate with each other, or how a given port must be configured. In most cases the answer follows directly from reading the figure and the configuration, applying the rules seen in this chapter.
 \end{notebox}
 
+\subsection{Example of an exam-style exercise}
+%TODO ADD IMAGE - (Vedere quaderno 19/10/2026 - Example of exam exercise)
+Consider two switches connected by an inter-switch link, with four hosts. Switch 1 has three access ports: a pink one connected to H1, a yellow one connected to H2, and a pink one connected to switch 2. Switch 2 has a green access port connected to switch 1, a green access port connected to H4 and a yellow access port connected to H3. The inter-switch ports are configured in access mode, not in trunk mode. This is not necessarily wrong, because in rare cases it may be used to consider a whole part of the network as a single VLAN, but in most scenarios it is the error to be detected.
 
+Since there is no router, there is no distinction between layer 2 and layer 3 communication: it is enough to establish whether a communication is feasible. If there were a router, a question could instead ask whether a communication is feasible at layer 2 or at layer 3, and the answer would change depending on its presence. The six possible pairs are the following:
+\begin{itemize}
+	\item H1 and H2: not feasible, because their access ports on switch 1 belong to different VLANs (pink and yellow);
+	\item H1 and H3: not feasible; the frame sent by H1 leaves switch 1 through the pink port and reaches switch 2 on a green port, but H3 is connected to a yellow port;
+	\item H1 and H4: feasible; the frame reaches switch 2 on a green port and switch 2 sends it to H4, which is connected to a green port. Whether the configuration is correct depends on the intention of the administrator, but the communication is feasible;
+	\item H2 and H3: not feasible, even though both access ports are yellow, because the VLAN ID of an access port has only local validity: using the same color, and therefore the same VLAN ID, on ports of different switches does not make them part of the same VLAN. Switch 1 drops the frame of H2, because all its other access ports are pink. This is the most common mistake in this kind of exercise;
+	\item H2 and H4: not feasible;
+	\item H3 and H4: not feasible, because they are connected to the same switch through access ports with different VLAN IDs.
+\end{itemize}
+Therefore, only the communication between H1 and H4 is allowed.
+
+In general, VLAN exercises give a topology and ask to reason about the feasibility of communications, with access ports, trunk ports and possibly routers. Alternatively, given a scenario where two ports are not configured, they may ask how to configure them so that two hosts can communicate at layer 2 or at layer 3, or whether a one-arm router can be used in a specific scenario. They require reading the whole topology, but no calculations, unlike the exercises on IP address ranges.
 
 
 \chapter{Quality of Service}
+
+IP networks operate according to the \emph{best effort} principle: the sender tries to send packets over the network and hopes that they reach the destination as fast as possible, but no guarantee is given in terms of latency or bandwidth, and the speed at which packets arrive is hard to predict. Congestion and different delays, caused by the time that packets spend in the buffers of the routers, are common.
+
+For many applications, such as the web or email, this is not an issue: a longer delay is considered acceptable. For others, mainly \textbf{multimedia applications}, which deal with media such as images, audio and video, it is almost never acceptable. If the goal of a football match is streamed five minutes late, users, who have already been informed through social networks or phone calls, will switch to another service next time; if a concert is streamed with a lot of lag, the songs cannot be understood. The communication takes place and packets reach the destination, but with a poor \textbf{quality of service (QoS)}: high latency, high delay and problems such as jitter, which will be discussed later.
+
+Introducing QoS mechanisms in a best effort network is therefore a challenge, and it somehow contrasts with the best effort principle itself. IP was not the only possible network layer protocol: ATM, for many years considered a good alternative, was based on a resource reservation protocol. Before two devices started to communicate, they reserved all the resources required, such as a certain amount of bandwidth and a threshold on latency, and the communication took place only if the intermediate nodes provided guarantees about these requirements. ATM is no longer used and IP became the winning protocol, but QoS-oriented support is still needed. This chapter shows how some QoS mechanisms can be introduced. Unfortunately, most of them are of limited use in practice or not used at all, also because congestion in networks is not so frequent, but it is interesting to see the attempts to improve the service for specific kinds of applications.
 
 \section{Fundamentals of media coding}
 
@@ -3098,12 +3123,25 @@ Routers are required both for external Internet connectivity and for executing i
 
 Multimedia applications typically involve the transport of audio, images and video over packet networks. These media originate as \textbf{continuous--time analog signals}. Packet networks, however, operate on \textbf{discrete--time, discrete--amplitude} sequences that can be represented and processed digitally.
 
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image119.png}
+\end{center}
+
+
+Reality is analog: its signals evolve over domains whose values are typically infinite, whereas the values of the digital world are discrete, so a conversion is needed before transmission. An analog signal is \emph{continuous in time}: it evolves without any interruption, so that, millisecond after millisecond, the signal keeps existing. It is also \emph{continuous in amplitude}: for example, the frequency of a voice, measured in Hertz, can take the whole spectrum of values, not only 100, 101 or 102 Hz but also all the intermediate values, with infinite decimals, which cannot be represented in a digital domain. The conversion to a signal that is discrete in time and in amplitude is performed by two operations: \textbf{sampling}, which works on the time aspect, and \textbf{quantization}, which works on the amplitude. The resulting digital signal is then encoded and compressed into a sequence of bits, which are what is actually sent over the network, for instance as light values on fiber optic cables or as electrical values.
+
 \textbf{Media coding} encompasses the techniques used to convert analog signals into efficient digital form suitable for storage, processing and transmission. The process consists of two principal stages:
 
 \begin{enumerate}
 \item \textbf{Sampling and quantization}, which convert the analog signal into a discrete sequence of numerical samples.
 \item \textbf{Coding and compression}, which transform the numerical sequence into a compact bit stream.
 \end{enumerate}
+
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image120.png}
+\end{center}
 
 The goal is to obtain a digital representation that is compact yet sufficiently faithful to the original signal for the intended application.
 
@@ -3138,6 +3176,7 @@ This lower bound is known as the \textbf{Nyquist rate}. In practice, sampling fr
 
 For a signal whose significant content lies within a range of frequencies such as 90 Hz to 120 Hz, any valid sampling frequency must exceed twice the largest relevant frequency component. Higher sampling frequencies produce more samples and therefore increase the data rate.
 
+Sampling does not preserve all the intermediate points of the signal: a sampling time is established and, at each sampling time, a sample is extracted, so only a sequence of points remains and the intermediate points are lost. This is a loss of information, which is natural, because not everything can be represented in the digital domain: some information must be discarded, balancing the quality of what is preserved against the storage needed to preserve it. The choice of the sampling time is not trivial and depends on multiple factors.
 \subsection{Quantization of samples}
 
 After sampling, the resulting real-valued samples must be mapped to discrete amplitude levels for digital representation. A \textbf{quantizer} replaces sample $x[n]$ with a reconstruction value:
@@ -3145,6 +3184,8 @@ After sampling, the resulting real-valued samples must be mapped to discrete amp
 \[ \hat{x}[n] = Q(x[n]). \]
 
 A common design is the \textbf{uniform scalar quantizer}, in which the amplitude range is divided into equal-width intervals. Each sample is assigned the reconstruction level associated with the interval containing it.
+
+After sampling, the time domain is discrete, but the amplitudes are still real numbers (for example 118.2027\ldots{} or 112.22\ldots{} Hz) that cannot be represented digitally either. In a quantizer, the full amplitude spectrum, from the minimum to the maximum value, is divided into ranges (for instance eight ranges), and a single representative value is associated with each range: in the example, the upper value of the range (120, 115, 110 Hz and so on), but a quantizer may also choose the lower value or the average between the minimum and the maximum of the range. Each sample then loses its original value and takes the representative value of the range in which it falls: for example, samples of 118 and 116 Hz both become 120 Hz. Information is lost again, because two different values are mapped to the same one, but this is necessary to limit the amount of data to be stored.
 
 With $L$ quantization levels, each output sample can be represented using $b = \log_2 L$ bits, assuming $L$ is a power of two. Typical values in audio applications include 8 bits per sample (sufficient for some voice systems) and 16 bits per sample (common for high-fidelity audio).
 
@@ -3160,6 +3201,7 @@ A widely used metric for evaluating quality is the \textbf{signal-to-quantizatio
 
 The perceptual impact of quantization depends on both the signal characteristics and human sensitivity. For many signals, especially audio, modest quantization noise may be imperceptible when the quantizer has sufficiently fine resolution.
 
+Sampling and quantization together introduce a loss of information, and the actual loss of quality depends on how much information is discarded. Since signals are perceived through human organs such as ears and eyes, which are not perfect, a signal reconstructed from a digital representation that has discarded several pieces of information may still be perceived as the original one: for instance, some ears cannot distinguish one frequency from another one, so mapping all the intermediate frequencies to the same value is acceptable. To obtain this property, not too much information must be discarded, and it must be evaluated case by case whether the loss is acceptable. In some scenarios it is more important to limit the number of bytes that represent the signal before sending it over the network, and a higher loss of quality is accepted in order to reduce the storage needed for the samples.
 \subsection{Resolution, bit rate and resource trade-offs}
 
 If the sampling frequency is $f_s$ and the number of bits per sample is $b$, the raw bit rate required to represent the signal is:
@@ -3180,6 +3222,9 @@ Higher sampling frequency or larger quantization depth improves quality but incr
 \subsection{From raw samples to encoded bit streams}
 
 A naive digital representation stores each quantized sample using a fixed number of bits. This approach ignores statistical and perceptual redundancies present in multimedia signals. \textbf{Compression} techniques exploit these redundancies to reduce the number of bits while maintaining acceptable quality.
+
+
+The step that follows quantization is the \textbf{encoding}, which maps each quantized numerical value to a sequence of bits. The simplest solution is to use $\log_2 N$ bits, where $N$ is the number of quantization ranges: with $N = 8$ ranges, $\log_2 8 = 3$ bits are enough to represent all the eight quantized values (from 000 to 111). The decoder needs a table for the inverse mapping from bits to analog values, because a code such as 111 does not mean 120 Hz or 105 Hz by itself: its meaning depends on how the encoding algorithm has been defined. No information is lost in this phase, but the resulting number of bits may still be too large for some applications; in that case compression algorithms reduce it further, at the price of a possible reduction of quality, saving storage and transmission time.
 
 In many forms of multimedia:
 
@@ -3220,6 +3265,9 @@ Characteristics include:
 
 Designs rely on psychoacoustic or psychovisual models to identify information that can be discarded with minimal perceptual impact.
 
+A lossless algorithm uses fewer bits than the $\log_2 N$ normally required for each quantized value without any impact on quality; to achieve this, only limited compression factors can be employed, because otherwise too many bits would be cut. With a lossy algorithm, instead, the removed information cannot be restored anymore: it is lost forever, with a clear impact on the quality of the signal, but fewer bits are stored or sent. There is no universally best solution: the choice depends on the application. For a perfect audio quality a lossless technique such as FLAC may be chosen, whereas to store many more tracks on a smartphone a lossy format such as MP3 is preferred.
+
+
 \subsection{Redundancy in multimedia signals}
 
 \textbf{Spatial redundancy} \textbf{Spatial redundancy} arises from correlations among neighboring spatial samples. In images, large regions often have uniform or slowly varying intensity. Instead of encoding each pixel individually, one may encode:
@@ -3230,6 +3278,12 @@ Designs rely on psychoacoustic or psychovisual models to identify information th
 \end{itemize}
 
 This principle underlies methods such as run-length coding. More advanced techniques apply transforms that concentrate signal energy into fewer coefficients, allowing many coefficients to be quantized coarsely or omitted.
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image121.png}
+\end{center}
+
+As an example, consider an image with 200 pixels of the same blue color. Encoding each of them with the sequence of bits representing that blue is a valid lossless technique, but it can be improved: one may encode only the first pixel and then the number of pixels having the same color. The receiver can restore the original image, because it decodes one pixel and replicates it for the indicated number of times, so the technique is still lossless, with fewer bits.
 
 \textbf{Temporal redundancy} \textbf{Temporal redundancy} arises when successive samples in time are similar. Video sequences often contain frames with only small temporal differences.
 
@@ -3243,9 +3297,18 @@ A predictive strategy involves:
 
 Since the prediction error typically has lower variance than the original frame, fewer bits are required to encode it. Similar predictive ideas apply in audio coding, where samples evolve smoothly in time.
 
+Between two consecutive frames of a video there are typically few differences: for instance, in two frames showing a runner, only the hand and the foot have slightly moved. With \emph{differential encoding}, the first frame is encoded completely, and for the following frames only the differences with respect to the previous one are encoded, for example that pixel 880 changed from blue to purple and pixel 220 became yellow, without encoding any information about the pixels that did not change. This is still a lossless technique, and it reduces the number of bits. In a video, a full frame is encoded when a new scene appears, because the frame is completely different from the previous one, or periodically after a certain number of frames, to refresh the encoding and to provide a new frame with respect to which the following ones can be encoded differentially. Many more advanced techniques exist beyond the spatial and temporal reasoning illustrated here.
+
 \subsection{Combined spatial and temporal reduction}
 
 Modern codecs jointly exploit spatial and temporal redundancy. In video, for example, spatial transforms may be applied to intra-frame prediction residuals, while temporal prediction reduces inter-frame redundancy. The combined approach yields substantial compression gains while maintaining acceptable perceptual quality.
+
+There is no single best coding choice, including the compression algorithm: it depends on the specific application and on:
+\begin{itemize}
+	\item the \textbf{processing capability of the terminals}, because some algorithms may not be supported by some terminals, as they may require operations too demanding in terms of computing capabilities;
+	\item the \textbf{resource availability}, both in the network and in the storage: a smartphone with a limited amount of storage requires lossy compression for audio and video, otherwise its memory would be filled immediately;
+	\item the \textbf{type of application}: live (real-time) applications may accept some loss of information, whereas in store-and-retrieve applications more data can be stored, since both space and time are available.
+\end{itemize}
 
 \section{Networked multimedia applications}
 
@@ -3255,7 +3318,10 @@ A wide range of modern networked services are based on the transmission of multi
 
 These applications impose requirements that differ substantially from those associated with conventional best-effort data transfer. Their operation relies on sustained information flows, real-time constraints, interactivity and often communication among groups of users. The combination of these characteristics necessitates careful consideration of the behaviour of packet networks under load.
 
+A \textbf{networked multimedia application} differs from a multimedia application because the multimedia data are transferred over a computer network, most often the Internet; Netflix is an example. Applications such as Photoshop or GIMP work with media such as images and video but not through the network, so they are multimedia applications that are not networked. The difference is not trivial: for a networked multimedia application one must consider how the network can accommodate its requests, because these applications have specific features that impact the network.
+
 \subsection{Distinctive characteristics of multimedia traffic}
+Networked multimedia applications may have one or more of four distinctive features: \textbf{streaming}, \textbf{interactivity}, \textbf{large transmission bandwidth} and \textbf{group communications}. Depending on the features that characterize an application, the network must satisfy different requirements in order to provide a good quality of service. When an application has two or more of these features, all the corresponding requirements must be satisfied: it is a more complex networked multimedia application, with stricter requirements.
 
 \subsubsection*{Streaming}
 \addcontentsline{toc}{subsubsection}{Streaming}
@@ -3264,6 +3330,8 @@ Multimedia applications frequently generate a \textbf{continuous flow of data}. 
 
 If samples are produced at specific temporal intervals, then the received stream must adhere to the same temporal structure. For instance, if a system generates one sample every 125 microseconds, the playback subsystem must receive and process samples at an equivalent rate to maintain uninterrupted output. Deviations from this profile disrupt playout and may cause buffer underflow, loss of continuity or temporal artifacts.
 
+Applications such as the web and email, instead, mainly work with a request and response paradigm, in which the response is sent only after a request from a client. A browser downloads the content of a website, and afterwards the user may spend minutes or hours on it without requesting any other information from the web server; an email client may check the mail server periodically, even every 10 seconds, but this is still not a continuous flow of data. In a streaming application, like the streaming of a sport match or of a concert, the flow of data is continuous, and the cadence of the samples at the destination must be the same as the generated one, so that the first sample is played back, the second after 125 microseconds, the third after another 125 microseconds, and so on, with a continuous playout. This is unlikely to happen by itself in a network, because the variability with which samples reach the destination cannot be controlled: the network has to do something more to provide this kind of quality of service.
+
 \subsubsection*{Interactivity}
 \addcontentsline{toc}{subsubsection}{Interactivity}
 
@@ -3271,12 +3339,18 @@ Traditional data applications provide limited interactivity, typically involving
 
 High interactivity demands short response times, as delays perceptible to users degrade the quality of experience. In conversational scenarios, excessive response time leads to repeated interruptions, misalignment of dialog and reduced usability. Consequently, underlying networks must support low-latency communication paths.
 
+Web and email applications are not highly interactive, because the interval between a request and the next one may be large: for example, a reply to an email may arrive after a day, a week, or never. Highly interactive networked multimedia applications require, instead, that humans with humans, humans with devices, or devices with devices interact rapidly, so they require short response times. Congestion in the network may be unacceptable for them, because the reply may arrive too late and may not be considered valid by the requester. This requirement is different from the one of streaming: streaming requires the same cadence of samples as the generated one, to provide a good playout, whereas interactivity requires short response times, with continuous requests and responses one after the other.
+
 \subsubsection*{Large bandwidth and group communication}
 \addcontentsline{toc}{subsubsection}{Large bandwidth and group communication}
 
 Many forms of multimedia require \textbf{substantial transmission bandwidth}. High-definition video, interactive gaming and immersive virtual environments are particularly demanding due to the large volume of data generated per unit time.
 
+A large transmission bandwidth is commonly required by networked applications that must send huge amounts of data, such as virtual reality applications or distributed interactive gaming, where a lot of information about the scene in which the game takes place, the decisions made by the players, and so on must be sent over the network.
+
 In addition, numerous multimedia applications rely on \textbf{group communications}. These may involve one-to-many or many-to-many exchanges, where the same content must be conveyed to multiple recipients. Efficient support for such communication patterns is crucial to avoid redundant transmissions and excessive load on the network.
+
+Applications involving many-to-many communications also require techniques to manage group communications, that is, the possibility that a sender reaches multiple destinations at the same time. This is not envisioned by the original unicast-based IP, in which a sender sends packets to a specific destination in the network.
 
 \section{Requirements imposed by multimedia applications}
 
