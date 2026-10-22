@@ -17,6 +17,8 @@
 \IfFileExists{microtype.sty}{\usepackage[expansion=false]{microtype}}{}
 \usepackage[hidelinks,pdfcreator={LaTeX}]{hyperref}
 
+
+
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt plus 2pt minus 1pt}
 \setlength{\emergencystretch}{3em}
@@ -35,6 +37,7 @@
 \newtcolorbox{notebox}[1][]{colback=gray!6,colframe=gray!50,boxrule=0.4pt,arc=1pt,left=8pt,right=8pt,top=6pt,bottom=6pt,#1}
 
 \begin{document}
+\hypersetup{pageanchor=false}
 \pagestyle{empty}
 \begin{center}
 \safeimg[width=0.95\linewidth]{media/image1.png}
@@ -93,11 +96,10 @@ These notes were prepared with the \textbf{maximum possible effort and attention
 Readers are encouraged to \textbf{actively contribute} to the improvement of this material. If you identify inaccuracies, missing content, unclear explanations, or possible enhancements, please consider supporting the project by \textbf{submitting pull requests}, proposing revisions, or committing improvements. Constructive collaboration will help increase the quality, completeness, and reliability of these notes for everyone.
 \end{notebox}
 \clearpage
-\pagestyle{headings}
-\pagenumbering{roman}
-\tableofcontents
-\clearpage
 \pagenumbering{arabic}
+\hypersetup{pageanchor=true}
+
+
 
 \part{Computer Network}
 
@@ -2752,7 +2754,7 @@ Broadcast storms consist of uncontrolled flooding of broadcast or multicast traf
 	% Immagine di sinistra: Broadcast frame
 	\begin{subfigure}[b]{0.48\textwidth}
 		\centering
-		\includegraphics[height=5cm, keepaspectratio]{media/image110.png} 
+		\includegraphics[height=3cm, keepaspectratio]{media/image110.png} 
 		\caption{Time 1: Broadcast frame}
 		\label{fig:broadcast_stage}
 	\end{subfigure}
@@ -2760,7 +2762,7 @@ Broadcast storms consist of uncontrolled flooding of broadcast or multicast traf
 	% Immagine di destra: Loop
 	\begin{subfigure}[b]{0.48\textwidth}
 		\centering
-		\includegraphics[height=5cm, keepaspectratio]{media/image111.png} 
+		\includegraphics[height=3cm, keepaspectratio]{media/image111.png} 
 		\caption{Time 2: Loop!}
 		\label{fig:loop_stage}
 	\end{subfigure}
@@ -2900,7 +2902,7 @@ Although these filtering databases are logically independent, they do not necess
 
 \section{Interconnecting VLANs}
 
-\subsubsection{Layer 2 separation}
+\subsection{Layer 2 separation}
 
 Layer 2 frames do not cross VLAN boundaries. A host cannot send a link layer frame directly to a station in another VLAN. As VLANs define separate broadcast domains, flooded and broadcast traffic remains confined. Therefore, VLANs require a layer 3 device for interconnection.
 
@@ -3356,7 +3358,20 @@ Applications involving many-to-many communications also require techniques to ma
 
 \subsection{Requirements associated with streaming}
 
-Proper support for streaming demands that the network exhibit \textbf{limited packet loss}. Although multimedia systems often tolerate a moderate degree of loss, excessive loss introduces perceptual degradation and may interrupt continuity. Additionally, streaming requires \textbf{low jitter}, defined as the variability in packet delay.
+Streaming means that a \textbf{continuous flow of data} must be transmitted over the network in order for the application to be effective. Its requirements concern loss and delay variability.
+
+\textbf{Loss.} Zero loss is \emph{not} required. If some packets (or part of a frame) of a live concert are lost, the effect is negligible, because a moment later the user looks at a completely different frame and forgets what happened before. This is also why UDP, which does not require all the data to reach the destination (unlike TCP), is often a good transport protocol for streaming. Nevertheless, the loss should remain \textbf{limited}: if most of the data is lost, nothing can be seen or heard and the quality of service is compromised.
+
+\textbf{Jitter.} The stronger requirement is \textbf{low jitter}, i.e.\ low variability of the delay. Packets of the same flow are subject to different delays: some are ``lucky'' and reach the destination immediately, others are stuck in the buffers of intermediate routers or follow different paths. In the ideal case all delays are constant and the jitter is zero; this never happens in practice, so the goal is at least to keep the delay \emph{constant}. Low jitter matters because the traffic profile generated at the source should be the same as the one received at the destination, in order to provide a continuous play-out: if the source emits packets with a regular cadence while the destination receives bursts followed by long gaps (e.g.\ seven packets immediately, then a long delay, then one packet, then two\ldots), the delay of each packet becomes unpredictable and the play-out is disrupted. Quality of service techniques, either at the end points or in the backbone, must restore or preserve the original traffic profile.
+
+\begin{notebox}
+	\textbf{Low jitter does not mean low delay.} For a streaming application it is acceptable that all packets arrive after a huge delay, as long as such delay is \emph{constant}.
+\end{notebox}
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image122.png}
+\end{center}
+
 
 If delay variability is significant, the temporal structure of the arriving data is distorted relative to the original. Compensation techniques can be applied, such as delaying early packets until late packets arrive, but these increase the end-to-end delay and may be unacceptable for interactive scenarios.
 
@@ -3364,15 +3379,34 @@ If delay variability is significant, the temporal structure of the arriving data
 
 Interactive multimedia applications require \textbf{low one-way delay}. Human verbal interaction typically becomes impaired when one-way delays exceed approximately 100--150 ms, leading to conversational overlap and repeated interruptions.
 
+Here the requirement is again about delay, but the delay must be \textbf{low}, not merely constant: in order to have interactivity, too much time cannot elapse between a request and its response. For a verbal conversation over an IP network the acceptable delay is at most 100~ms (150~ms in the worst case); beyond this, questions and answers overlap and the conversation becomes practically unfeasible.
+
 In packet networks, excessive delay often originates in congestion within router buffers. When multiple packets contend for the same output interface, queuing occurs, and routers must temporarily store packets. Since buffering increases delay, and since delays fluctuate with instantaneous queue occupancy, networks must regulate queuing to meet interactive requirements.
+
+To keep the delay low, each router should take the forwarding decision for a received packet as fast as possible and keep it in its buffer for the least possible time. This is feasible in normal conditions, but impractical under \textbf{congestion}: many packets are present in the buffers, and the router must decide which packets leave earlier than the others, a decision that, as will be seen, is not straightforward.
+
+\begin{notebox}
+	\textbf{Summary.} Streaming applications require \textbf{low jitter} (constant delay); highly interactive applications require \textbf{low delay}.
+\end{notebox}
 
 \subsection{Requirements associated with high bandwidth}
 
 High-bandwidth multimedia applications require substantial \textbf{transmission capacity}, \textbf{buffer space} in intermediate nodes and \textbf{processing power} for operations such as routing and scheduling. The feasibility of supporting such applications depends heavily on network architecture and technology. Improvements in physical-layer capabilities and router hardware directly enhance the ability of networks to support bandwidth-intensive multimedia workloads.
 
+These requirements do not concern delay: they concern the \textbf{availability of resources}. Links must have an adequate bandwidth; routers need enough \emph{memory} in their buffers (otherwise most data is lost because of congestion in a too small buffer) and enough \emph{processing power} (otherwise packets get stuck in possibly large buffers, again causing loss). All these factors depend on the \textbf{a priori design} of the network, i.e.\ on which links and routers are purchased and installed to allow a certain quality of service. The issue is becoming less important as technology advances: routers with more memory and links with higher bandwidth are cheaper, and networks can be planned with redundancy.
+
 \subsection{Requirements associated with group communication}
 
 Multimedia systems involving multiple participants benefit from \textbf{multicast transmission services}. Efficient mechanisms, such as network-layer multicasting, enable data to be replicated within the network rather than at the source, thereby reducing redundant transmissions. Additional architectural elements, such as reflectors or multipoint control units, may be employed to manage and distribute group communication traffic effectively.
+
+\begin{itemize}
+	\item \textbf{Server with reflector functionality} (e.g.\ a multipoint conference unit). It simulates multicast through unicast communications: the source sends unicast packets to the server (whose IP address is known in advance) and the server forwards a copy to each final destination. The drawbacks are the redundancy of the communications (packets are duplicated) and the need for an extra device with a great processing power.
+	\item \textbf{IP multicast}. With IPv4 multicast was poorly supported, so an experimental backbone parallel to the Internet, the \textbf{MBone}, was created to allow IPv4 multicast communications. With IPv6 the problem no longer exists, and multicast is the ideal solution, avoiding when possible the use of reflector servers.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Recap.} Large bandwidth and group communication already have solutions. The open issues concern streaming and interactive applications, which share a common factor: the \textbf{delay} (timing issues in the way packets reach their destination). This is why they are called \textbf{real-time} applications.
+\end{notebox}
 
 \section{Delay and its implications for multimedia systems}
 
@@ -3380,9 +3414,19 @@ Multimedia systems involving multiple participants benefit from \textbf{multicas
 
 Multimedia applications are inherently \textbf{real-time} in the sense that the timing of results is as important as the correctness of the data conveyed. Delays must be bounded and controlled, although they need not necessarily be minimal in all cases. The defining requirement is that delay remain predictably within the limits acceptable for the specific application.
 
+\begin{center}
+	\safeimg[width=2.5in,height=1.24in]{media/image130.png}
+\end{center}
+
 \subsection{Variability of delay}
 
 Packet delay varies with the \textbf{instantaneous load} at network nodes. When multiple packets arrive at a router interface and compete for transmission, some must be buffered, introducing additional queuing delay. As queue lengths fluctuate with traffic intensity, the resulting delay varies over time. This variability complicates the maintenance of consistent playout timing at the receiving end.
+
+\begin{center}
+	\safeimg[width=2.6in,height=1.24in]{media/image131.png}
+\end{center}
+
+Controlling the delay is one of the most critical problems in a network, because the way an intermediate router manages the packets in its buffer is not directly accessible. At most, algorithms can be installed in the routers \emph{a priori}, hoping that they work as expected and do not cause other issues. The ideal solution would be to observe the instantaneous state of the buffers and privilege some packets accordingly (for instance delaying all packets of a group to make their delay constant), but controlling the delay for the \textbf{instantaneous load} is not feasible.
 
 \section{Countermeasures for supporting multimedia traffic}
 
@@ -3391,8 +3435,8 @@ Packet delay varies with the \textbf{instantaneous load} at network nodes. When 
 End systems may employ several techniques to mitigate network-induced impairments:
 
 \begin{itemize}
-\item \textbf{Compensation for delay variation}. Incoming data units can be buffered so that all units are subjected to a controlled maximum delay. While this stabilizes playout timing, it increases end-to-end delay and may become problematic for interactive applications.
-\item \textbf{Adaptation to network conditions}. Applications may adjust their sending rate or encoding parameters in response to observed quality degradation. Such adaptability is constrained by content characteristics and user requirements.
+\item \textbf{Adaptation to network conditions} (source side). Before sending, the source analyzes the congestion state of the network (e.g.\ from the round-trip time) and adapts the rate of the next packets: if congestion is detected it is better that packets stay in the end system rather than get stuck in router buffers. Although effective, this relies on the application itself, which must be programmed to give commands to layers~4 and~3 of the protocol stack; this is demanded to developers and therefore seldom done.
+\item \textbf{Compensation for delay variation} (destination side). When the jitter is high, all delays can be made constant by conforming each data unit to the \emph{maximum} delay among those that occurred. The end-to-end delay increases, so this is not feasible for interactive applications, but it is fine for streaming ones, which only need a constant delay. This is what happens in the browser with Netflix or YouTube: data are put in an intermediate buffer and playout starts only when enough data units are available to guarantee continuous reproduction; the delay is higher but constant.
 \end{itemize}
 
 \subsection{Countermeasures implemented within the network}
@@ -3404,6 +3448,8 @@ Networks themselves may deploy techniques to provide improved support for multim
 \item \textbf{Advanced scheduling algorithms}, which determine the order in which packets are transmitted. Traditional FIFO queuing is insufficient for applications requiring quality of service, and more sophisticated policies must be used to ensure predictable behaviour.
 \item \textbf{Control of traffic entering the network}, achieved through admission control and policing mechanisms, which prevent excessive queue occupancy and mitigate congestion.
 \end{itemize}
+
+These countermeasures are harder to control than those at the end systems, since they must be enforced by routers. The first two are two steps of the same technique: classification is a preliminary operation (a mapping, not a QoS technique by itself) and scheduling treats the resulting classes differently, assigning them different priorities depending on whether they belong to multimedia applications and on how strict their delay requirements are. The third technique is complementary: the first hop of a flow checks whether the source sends too much data and, if so, makes it send fewer packets, to avoid impacting the following routers on the path.
 
 \section{Quality of service support}
 
@@ -3421,6 +3467,8 @@ Quality of service mechanisms rely on the ability of the network to distinguish 
 
 Packets belonging to applications with stringent delay or jitter constraints may be assigned to queues with higher priority, while elastic or background traffic may be placed in lower-priority queues. The classification step therefore plays a foundational role in enabling differentiated handling of heterogeneous traffic.
 
+A generic router normally does not distinguish packets by source: it only looks up the destination IP address to find the next hop. With classification, instead, the router identifies the class of each packet. Classes can be defined per specific application or for a group of applications. For each class a different queue is reserved: with three classes (high, medium, low priority) the \textbf{classifier} places each incoming packet in the queue of its class. A packet cannot be placed in two queues, because a clear distinction is needed for the scheduling algorithm to treat them differently.
+
 \subsection{Basis for classification}
 
 Classification typically relies on information carried in protocol headers. A widely used approach is based on the \textbf{IP five-tuple}, which consists of:
@@ -3435,17 +3483,21 @@ Classification typically relies on information carried in protocol headers. A wi
 
 This combination uniquely identifies most unicast flows in modern networks.
 
+In most cases the classifier looks only at these five fields; reading them is easy for a node, since they are found in the IP header and in the transport-layer header. Looking at reserved QoS fields such as Type of Service is a peculiar case.
+
 Traditional routers examine only a limited subset of header fields, primarily the destination IP address and ancillary fields such as the time-to-live. However, routers designed to support quality of service may also inspect dedicated fields intended for differentiated treatment. An example is the \textbf{Type of Service} field in the IP header, which can encode priority or service class information.
 
 \subsection{Complexity and hardware support}
 
 Classification is computationally intensive because it requires examination of transport-layer fields in addition to network-layer information. The lookup string, often including five distinct header components, can be long, and matching each packet against potentially numerous flow specifications constitutes a nontrivial operation.
 
+Indeed, a router commonly looks up only the destination IP address, whereas here it must also inspect the transport-level header; moreover the string containing the five values is long, so storing many of them in memory and looking them up efficiently is complex.
+
 Owing to these demands, classification is commonly implemented in specialized hardware. Two prominent technologies are:
 
 \begin{itemize}
 \item \textbf{Application specific integrated circuits (ASICs)}, which provide high-speed packet processing tailored to classification and forwarding tasks.
-\item \textbf{Content addressable memory (CAM)}, in which memory locations are identified by their content rather than by an address. CAM structures permit rapid matching of header fields against stored patterns, enabling packet classification at line rate.
+\item \textbf{Content addressable memory (CAM)}, in which memory locations are identified by their content rather than by an address. CAM structures permit rapid matching of header fields against stored patterns, enabling packet classification at line rate. The index of the memory is the content itself, i.e.\ the value of the IP five-tuple.
 \end{itemize}
 
 These hardware mechanisms ensure that classification does not become a bottleneck, even in high-speed routers supporting large numbers of simultaneous flows.
@@ -3462,24 +3514,40 @@ Packet scheduling governs the order in which queued packets are transmitted over
 
 In FIFO systems, the output link is shared dynamically among multiple flows through statistical multiplexing. As packets from different flows interleave, their output timing may deviate significantly from the timing at which they were originally generated. This variability can degrade the performance of applications that rely on consistent timing, particularly multimedia streams that require steady play-out.
 
+
+Classification is only the preliminary operation; what really matters for QoS is how the packets of the different queues are \textbf{interleaved in the single output queue}. Scheduling was already an issue for the first routers, but it was solved naively with FIFO, which is fine when the router has a single input queue: packets A, B, C, D, E leave in the same order in which they arrived.
+
 \subsection{Multiple queues and scheduling}
 
 To accommodate heterogeneous traffic requirements, routers often maintain \textbf{multiple queues}, grouping packets according to classification results. Each queue can then be serviced according to a scheduling policy that reflects its priority or bandwidth requirements.
 
+\begin{center}
+	\safeimg[width=3.5in,height=1.26in]{media/image132.png}
+\end{center}
+
 Different classes of traffic can thus be separated, preventing high-volume or delay-tolerant flows from disrupting delay-sensitive or priority traffic. Scheduling algorithms define how the router alternates among these queues when selecting the next packet to transmit.
+
+With a plain FIFO and multiple input queues, packets are taken according to their order of arrival, so they are interleaved and subject to different delays and the distinction among classes \emph{disappears}. For example, if a packet of the high-importance (orange) class arrives after all the others, it is the last one sent, even though that flow should have lower delay. Different priorities require more sophisticated algorithms.
 
 \subsection{Scheduling algorithms}
 
 Various scheduling mechanisms have been developed to provide differentiated performance guarantees while controlling delay, jitter and fairness. Common algorithms include priority queuing, round robin, weighted round robin, fair queuing and weighted fair queuing.
+
+They are listed from the simplest to the most complex. The most complex ones may be theoretically the best, but they are rarely implemented because they are computationally demanding: for instance, weighted fair queuing is not found in modern routers and is applicable only in specific scenarios.
 
 \subsubsection*{Priority queuing}
 \addcontentsline{toc}{subsubsection}{Priority queuing}
 
 In \textbf{priority queuing}, each queue is assigned a fixed priority level. The scheduler always serves the highest-priority nonempty queue before considering lower-priority queues. This approach ensures rapid service for critical traffic but can lead to \textbf{starvation} of lower-priority queues if high-priority traffic persists.
 
+
 \begin{center}
 \safeimg[width=4.42917in,height=1.64861in]{media/image20.png}
 \end{center}
+
+\textbf{Example.} Assume three classes and the following situation: two high-priority (green), three medium-priority (orange) and three low-priority (blue) packets. The output is: first the two green packets, then the three orange ones, then the three blue ones. If, while the medium-priority queue is being served, a new high-priority packet arrives, the service of the medium queue is immediately stopped and the new high-priority packet is sent; then the medium queue resumes, and if a high-priority and a medium-priority packet arrive later, the high one is served first, then the medium one, and only afterwards the remaining low-priority packets.
+
+\textbf{Main issue: indefinite postponement (starvation).} If the highest-priority queue continuously receives packets, medium- and low-priority packets remain stuck forever in the buffer. This is acceptable only when absolute importance must be guaranteed to one application (or class) and nothing is cared about the others: for them it is not even best effort, but a ``worse best effort'', since their packets have no guarantee and other classes have more.
 
 \subsubsection*{Round robin scheduling}
 \addcontentsline{toc}{subsubsection}{Round robin scheduling}
@@ -3490,6 +3558,8 @@ In \textbf{priority queuing}, each queue is assigned a fixed priority level. The
 \safeimg[width=4.42917in,height=1.64861in]{media/image21.png}
 \end{center}
 
+In each scheduling cycle the router processes \textbf{one packet for each queue}; in the example each cycle is composed of a green, an orange and a blue packet. When a queue has no more packets (e.g.\ the blue queue in the third cycle, which only had two) it is simply skipped. Round robin completely avoids starvation, since one packet per queue is guaranteed in every cycle, but it \textbf{ignores the concept of priority}: the labels highest/medium/lowest priority become irrelevant. It is therefore a good choice when applications are divided into classes that all have the \emph{same importance}.
+
 However, since packet sizes vary in practical networks, round robin may allocate unequal amounts of bandwidth to different queues. A queue containing larger packets consumes more transmission time per scheduling round, producing unfair service distribution.
 
 \subsubsection*{Weighted round robin}
@@ -3497,24 +3567,36 @@ However, since packet sizes vary in practical networks, round robin may allocate
 
 \textbf{Weighted round robin} addresses this limitation by assigning a weight to each queue. During each scheduling cycle, the scheduler transmits a number of packets proportional to the weight of each queue. A queue with weight $w$ may transmit $w$ packets per cycle, allowing differentiated service levels among classes while retaining the simplicity of round-based scheduling.
 
-Although weighted round robin improves fairness relative to round robin, the algorithm still operates on packet counts rather than transmission time. When packet sizes vary, queues with larger packets may receive disproportionately more bandwidth than intended.
+For instance, with a high-, a medium- and a low-priority queue, each cycle may schedule three high-priority, two medium-priority and one low-priority packet. It is a trade-off between starvation and equal priority: important applications get more packets in less time, while the least important ones are never completely neglected (some of their packets are guaranteed in every cycle, although fewer).
 
 \begin{center}
-\safeimg[width=4.42917in,height=1.64861in]{media/image22.png}
+	\safeimg[width=4.22917in,height=1.44861in]{media/image22.png}
 \end{center}
 
+
+Although weighted round robin improves fairness relative to round robin, the algorithm still operates on packet counts rather than transmission time. When packet sizes vary, queues with larger packets may receive disproportionately more bandwidth than intended.
+
+The pictures used to explain these algorithms show packets of the \emph{same size}, an approximation of reality, where packet sizes vary. With varying sizes, round robin is no longer fair: if one of three equal-priority classes has bigger packets, they consume more bandwidth and the class de facto gets a higher priority, against the original intention. Both round robin and weighted round robin work well only under the hypothesis of equally sized packets.
+
+
 \begin{center}
-\safeimg[width=4.42917in,height=1.44444in]{media/image23.png}
+\safeimg[width=4.42917in,height=1.64444in]{media/image23.png}
 \end{center}
 
 \subsubsection*{Fair queuing}
 \addcontentsline{toc}{subsubsection}{Fair queuing}
 
-\textbf{Fair queuing} aims to give each traffic class an equal share of the output link bandwidth by scheduling packets based on the amount of service received rather than on packet counts. The scheduler conceptually emulates bit-by-bit round robin service among queues, approximating perfect fairness even in the presence of variable packet sizes.
+\textbf{Fair queuing} aims to give each traffic class an equal share of the output link bandwidth by scheduling packets based on the amount of service received rather than on packet counts. 
 
 \begin{center}
-%\safeimg[width=4.42917in,height=1.44444in]{media/image24.png}
+	\safeimg[width=4.42917in,height=1.64861in]{media/image123.png}
 \end{center}
+
+
+The scheduler conceptually emulates bit-by-bit round robin service among queues, approximating perfect fairness even in the presence of variable packet sizes.
+
+In round robin each cycle processes one \emph{packet} per queue; in fair queuing each cycle processes the same \textbf{amount of data} (bits) for each queue, which may correspond to one or several packets. If a packet is bigger than this amount, it must wait for the corresponding number of scheduling cycles. Example: if the low-priority class contains a single big blue packet, it is sent only in the second cycle, after the green and orange packets of the first cycle; the second cycle then contains the remaining green and orange packets and, finally, the big blue one. The reasoning is no longer on the number of packets but on \textbf{bandwidth}: in each cycle the same share of bandwidth is reserved for each queue. All queues, however, are still assumed to have the same importance.
+
 
 In practice, fair queuing computes a virtual finish time for each packet based on its length and the service history of its queue. Packets are then transmitted in order of increasing finish time, ensuring that each class receives an equitable fraction of the available bandwidth.
 
@@ -3523,13 +3605,16 @@ In practice, fair queuing computes a virtual finish time for each packet based o
 
 \textbf{Weighted fair queuing} generalizes fair queuing by allocating bandwidth shares proportional to assigned weights. A class with weight $w$ receives a fraction of service proportional to $w$, enabling sophisticated quality of service differentiation while preserving fairness among queues of equal weight.
 
+For example, in each scheduling cycle 50\% of the bandwidth may be reserved to the highest-priority class, 30\% to the medium one and 20\% to the lowest one. The number of packets sent in a cycle therefore depends on whether they are small enough to fit in the bandwidth share of that cycle. WFQ overcomes the limitations of both round robin (equal packet sizes) and plain fair queuing (equal importance), but it is a very complex algorithm: the router must keep track of the size of all packets and compare them to the shares. For this reason it is usually \textbf{not implemented}; a simpler weighted round robin is preferred, accepting some unfairness.
+
 \begin{center}
-%\safeimg[width=4.42917in,height=1.44583in]{media/image25.png}
+\safeimg[width=4.42917in,height=1.44583in]{media/image25.png}
 \end{center}
 
 Weighted fair queuing is considered an idealized scheduling discipline because it offers strong fairness, predictable delay bounds and precise bandwidth allocation. However, its practical implementation is complex due to the need for continuous estimation of virtual service times and dynamic queue state management.
 
 \section{Quality of service support: traffic control}
+Classification together with packet scheduling improves the quality of service of some classes, because different priorities give some of them benefits in terms of timing (low or constant delay). Other countermeasures act directly on the \textbf{traffic}, trying to control it before it enters the network. Two classes can be considered: \textbf{a priori} traffic control, which dimensions and designs the network so that it already provides good quality of service, and \textbf{a posteriori} traffic control, which improves the QoS of a network that is already operative, through algorithms controlling the traffic entering the network or the way resources are reserved.
 
 \subsection{Traffic control performed a priori}
 
@@ -3540,14 +3625,22 @@ Traffic control mechanisms may operate before packets enter the network or after
 
 Network engineering defines the physical and logical capacity of a network according to expected traffic demand. The service provider must ensure that the network has sufficient transmission capacity, buffer resources and switching capabilities to sustain the aggregate load. Furthermore, the provider must sell services to customers in a manner consistent with the actual network size, so that demand does not exceed available resources.
 
+This can be done only partially: at the beginning the provider has expectations on the number and requirements of its future customers, but reality may differ, and the network may turn out to be under- or over-dimensioned depending on the applications actually used. Network engineering must always be done, but it is \textbf{not a panacea}: other mechanisms, such as the scheduling algorithms above, are still needed.
+
 \subsubsection*{Traffic engineering}
 \addcontentsline{toc}{subsubsection}{Traffic engineering}
 
 Traffic engineering determines how traffic should be distributed across network nodes, given the existing network size and anticipated load. This may involve routing flows along paths that are not the shortest, in order to balance load and avoid congestion. The objective is a controlled allocation of traffic across the network to ensure that no single portion becomes overloaded.
 
+This goes against the way ordinary routers work: they use the shortest path for every flow, and packets towards the same destination follow the same path, built by the routing protocols running on all routers. The philosophy of traffic engineering is twofold. First, the traffic of some applications can be made to follow \emph{longer} paths, so that the shortest paths are reserved for other kinds of applications. Second, in the extreme case the packets of the \emph{same flow} towards the same destination can be spread over different paths, exploiting the redundancy of the network, so that they do not congest a single path. Normal routing protocols do not support such metrics, so different protocols are needed.
+
+\textbf{Example: MPLS (Multi-Protocol Label Switching).} MPLS creates a sort of layer over IP: in the backbone (e.g.\ of a service provider) packets are forwarded by MPLS switches not on the basis of the destination IP address but of a \textbf{tag} (label) added before the packet enters the MPLS backbone. Tags can be assigned freely: packets of the same flow can receive different tags and follow different paths, or flows of different applications can be tagged in the same way to follow the same path and get the same priority. MPLS works with IP and with other protocols (hence ``multi-protocol''). It is a perfect solution for traffic engineering, since it improves the way traffic crosses the network without modifying the network itself, apart from introducing the MPLS switches. (MPLS was a topic of previous editions of the course, later cut to leave space for cloud computing.)
+
 \subsection{Traffic control performed a posteriori}
 
 Traffic control may also be applied after traffic reaches network access points or routers, operating either at the granularity of individual packets or at the granularity of flows.
+
+Here the network is already built (and MPLS may not be usable), so the only option is to mitigate possible issues. The two levels are the \textbf{call (flow) level}, which reserves resources before the communication takes place, and the \textbf{packet level}.
 
 \subsubsection*{Packet-level control}
 \addcontentsline{toc}{subsubsection}{Packet-level control}
@@ -3559,19 +3652,31 @@ Packet-level control mechanisms regulate how many packets from a source are perm
 \item \textbf{Policing}, which enforces conformance by discarding or marking packets that exceed the permitted rate.
 \end{itemize}
 
+The techniques are the same whether applied by a host or by a router: they are called \emph{shaping} when applied by the host and \emph{policing} when applied by the access node (the first-hop router). Their aim is that the traffic entering the network has a good profile with respect to what the network can sustain and to the requirements of the application.
+
 \subsubsection*{Flow-level control}
 \addcontentsline{toc}{subsubsection}{Flow-level control}
 
 At the flow level, resource reservation protocols aim to secure network resources for individual sessions. An example is the \textbf{Resource Reservation Protocol (RSVP)}, which attempts to reserve bandwidth and related resources along the path between a sender and a receiver. Reservations are maintained as \emph{soft state}, requiring periodic refresh messages to remain active. If any router cannot meet the reservation request, it may reject the request entirely or accept it partially.
 
+The idea comes from ATM, an alternative network-layer protocol that was planned as a competitor of IP: while IP follows a best-effort paradigm, ATM was \textbf{connection-oriented}. Before sending, a source had to interact with all the routers along the path, and the communication took place only if they allowed the source to reserve the requested resources (e.g.\ buffer memory and a guaranteed minimum bandwidth); those resources could then not be used by others. If the reservation failed, the communication did not occur at all. This is one of the reasons why IP won: in the IP philosophy everyone can try to send packets and hopes they arrive, whereas in ATM a source might never be able to send. The idea was nevertheless considered acceptable for multimedia applications, so it was ported to a protocol working over IP: RSVP.
+
+\textbf{RSVP operation.} Before the communication starts, the sender sends a packet to the destination; each router on the path marks it with its availability to satisfy the request. The destination sends a reply back to the sender, which crosses the routers again (so they also learn the requirements of the destination), and the source finally receives the reply with all the marks. If all routers are available to reserve the resources the communication starts; otherwise it is immediately stopped. After a successful start, the source must periodically maintain the state active on all routers, otherwise after some time they release the resources so that they can be used for other flows.
+
 \subsection{Shaping and policing mechanisms}
 
 Traffic entering the network must conform to a \textbf{traffic profile} consisting of an average bit rate and a maximum burst size. The profile may be requested by the application or determined by the service provider based on network capacity.
+
+The average bit rate is the amount of bits that can be sent in a given period (e.g.\ a second), but it is not enough to characterize a flow: the \textbf{maximum burst size} is the maximum amount of data that the source can send at a single instant. The burst size represents the instantaneous load, which is what impacts delays, since routers may be congested by it.
 
 \subsubsection*{Token bucket mechanism}
 \addcontentsline{toc}{subsubsection}{Token bucket mechanism}
 
 A widely used mechanism for enforcing traffic profiles is the \textbf{token bucket} algorithm. Consider an application that generates traffic at an average rate of 1 MBps with a maximum burst size of 10 MB. Tokens are placed into a bucket at the average rate; for instance, if one token represents one bit, then one token arrives every microsecond. A packet is forwarded only if sufficient tokens exist in the bucket, and the corresponding number of tokens is removed. The bucket size equals the maximum allowed burst.
+
+\begin{center}
+	\safeimg[width=3.2in,height=2.17in]{media/image133.png}
+\end{center}
 
 This algorithm can be employed by:
 
@@ -3580,7 +3685,18 @@ This algorithm can be employed by:
 \item \textbf{end hosts}, where it operates as a shaping mechanism.
 \end{itemize}
 
+\textbf{Worked example.} Take the profile above (1~MBps, maximum burst 10~MB), with the algorithm applied by the access node (policing). The node keeps a bucket of tokens, each token being the possibility to send some data (here one bit). The bucket has the size of the maximum acceptable burst (10 megatokens) and is filled at the average rate (one token per microsecond). A bit can be sent only if there is a token in the bucket, which is removed when the bit is sent.
+
+\begin{itemize}
+	\item Sending 10~MB at once is possible only if 10 megatokens have been saved: the source must wait long enough for the bucket to fill.
+	\item Sending 1~GB in a single burst is \emph{never} possible, because the bucket holds at most 10 megatokens.
+\end{itemize}
+
+The mechanism is a \textbf{guardrail} on what a source may send, and conforming to it requires only (i) waiting for the time needed to accumulate the tokens corresponding to the data to be sent and (ii) never exceeding the maximum burst size. When applied by the source it is a self-imposed guardrail; when applied by the access router, the router must also inform the source that a packet cannot be sent because it is too big or must wait before entering the backbone. The algorithm is not revolutionary: it only adds checks on how packets may cause congestion. It can be applied differently to each flow (a flow may have a larger bucket, another a bucket filled faster), which again allows giving different priorities to different applications.
+
 \section{Quality of service frameworks}
+
+The techniques seen so far are almost independent, but effective QoS requires combining several of them in a \textbf{framework}. Two frameworks were developed over time to provide QoS over IP networks: IntServ and DiffServ.
 
 \subsection{Integrated services}
 
@@ -3588,12 +3704,16 @@ The \textbf{Integrated Services (IntServ)} architecture sought to provide guaran
 
 The Resource Reservation Protocol is used to transmit reservation requests through the network. Each router along the path must determine whether it can satisfy the request. If resources are available, the router admits the flow and guarantees its QoS for the duration of the reservation.
 
+IntServ gives \textbf{strong guarantees} to multimedia applications. It requires the use of RSVP (following the philosophy of ATM) and guaranteed QoS obtained, for example, with MPLS for traffic engineering: all the most restrictive mechanisms seen so far (traffic engineering and per-flow resource reservation) are used.
+
 Although the framework is standardized and implemented in routing equipment, it is not practical for large public networks, primarily due to:
 
 \begin{itemize}
 \item \textbf{high complexity}, since each router must maintain state for numerous flows and employ sophisticated scheduling algorithms;
-\item \textbf{low scalability}, as QoS guarantees can be maintained only for a limited number of flows.
+\item \textbf{low scalability}, as QoS guarantees can be maintained only for a limited number of flows. Moreover, alternative protocols beyond IP itself are needed and a lot of intermediate devices must be controlled.
 \end{itemize}
+
+Although the framework is standardized and many routers claim IntServ compliance, nobody uses it today because it is too complex.
 
 \subsection{Differentiated services}
 
@@ -3620,11 +3740,23 @@ However, efficiency is limited because the absence of explicit reservations prev
 
 Network operators can only estimate load and provision resources accordingly.
 
+DiffServ is a simplified version of IntServ: it tries to give different priorities to different services (groups of applications) without strong guarantees. More sophisticated scheduling algorithms than FIFO may be used, but on a limited number of classes, typically distinguished through the type-of-service field of the IP header. Traffic engineering is not always performed, and the use of a resource reservation protocol is not mandatory (in fact not recommended, as it would make DiffServ too complex again). Shaping and policing algorithms such as the token bucket are instead welcome, since they impose no strict requirements and act as simple guardrails that mitigate some issues without being the final solution.
+
+The drawback is that DiffServ is less efficient than IntServ in providing QoS, but this is not a real issue nowadays, because networks are not so congested: some additional help, not too invasive, is enough. In practice even DiffServ is not widely employed, and mostly in a very simplified form (for instance, a service provider gives higher priority to one application or group of applications and treats all the others equally). As networks behave well, QoS techniques are still used, but not widely.
+
+\begin{notebox}
+	\textbf{Course remark.} This is the last topic on advanced computer networking; the rest of the course deals with cloud computing, and the last lecture will go back to (virtualized) networks.
+\end{notebox}
+
 \textbf{Part II} \textbf{Cloud Technologies}
 
 \chapter{Cloud Computing}
 
 \section{Understanding cloud computing}
+
+The second part of the course (about one third of it) is devoted to cloud computing. The first lectures introduce basic terms (cloud delivery models, cloud providers, cloud consumers) so as to understand what ``cloud'' means; then \textbf{virtualization technologies} are studied (virtual machines, containers, and orchestrators such as Docker Compose and Kubernetes), because cloud computing needs virtualization to be effective. Finally, the course returns to computer networks: not only computers but also \textbf{networks} can be fully virtualized, with virtual routers running on commodity, general-purpose servers, closing the loop between the two parts of the course.
+
+The main idea behind the cloud is that something (data, an application, or even a full computer) is \textbf{not running locally, on our premises, but remotely}, and we interact with it to obtain results.
 
 Cloud computing represents a model for delivering computing capabilities as network-accessible services that can be provisioned dynamically, managed efficiently, and consumed on demand. It has emerged from a long technological evolution that spans networked information systems, distributed computing, and large-scale data center architectures.
 
@@ -3634,7 +3766,11 @@ The contemporary notion of cloud computing consolidates earlier trends in Intern
 
 The conceptualization of cloud-delivered computing services originated in the mid-1990s. Early discussions within the computing industry began to describe the Internet as an abstract computational infrastructure capable of hosting data and applications. This perspective anticipated a shift away from dependence on local personal computers and toward remote service delivery through networked environments.
 
+The principle is not new: on the Internet of the 1990s, with the first social networks and search engines, the data posted by a user were already stored remotely and accessed remotely. The term ``cloud'' was coined in \textbf{November 1996} by George Favaloro during a meeting at Compaq, after the company bought the startup NetCentric and merged it into itself: that startup was creating services running remotely on the Internet, with which clients interacted to produce and retrieve data.
+
 During this period, widely used Internet platforms provided practical demonstrations of scalable, remotely hosted services. Search engines, web-based e-mail systems, and early social media platforms offered continuous, ubiquitous access to information and applications. Although primarily consumer-oriented, these systems validated the architectural principles that underlie modern cloud infrastructures, including centralized resource management, elastic service availability, and distributed data accessibility.
+
+Services such as social networks, publishing platforms and webmail were planned for \textbf{consumers}, not explicitly for enterprises: the idea of cloud was strongly consumer-centric, with a single person interacting with a remote application to save, generate and retrieve data over the Internet.
 
 \subsection{Industrial and commercial developments}
 
@@ -3648,25 +3784,89 @@ Subsequent years saw rapid expansion of cloud-based enterprise platforms. Browse
 
 Major global cloud platforms emerged during the late 2000s and early 2010s, offering integrated service ecosystems that encompassed infrastructure, platform, and application delivery. More recently, cloud initiatives within regional and governmental contexts have aimed to establish federated infrastructures designed to meet regulatory, economic, and sovereignty requirements.
 
+The next step was to turn the consumer-centric view into an \textbf{enterprise-centric} one, and this is when the term \emph{cloud computing} acquired its present meaning. \textbf{Salesforce} and \textbf{Amazon (Amazon Web Services)} were among the pioneers of technologies meant for enterprises, which pay a provider to use its physical resources to store data or run applications and generate new data. This started a new business: in most cases providers do not supply the data or applications themselves (they can, but it is not their core business); their core business is preparing \textbf{data centers} with many servers and making those resources available to many enterprises, which lease them and pay a daily, monthly or yearly fee according to the contract.
+
+Other big companies followed: Google created the \textbf{Google Cloud Platform} in 2008, and Microsoft released the first version of \textbf{Azure} in 2010. Today even countries and the European Union are trying to create nationwide or continent-wide cloud platforms, which companies, and still consumers, can access remotely to create data and perform operations instead of doing it locally.
+
+\begin{notebox}
+	\textbf{Analogy with the history of networking.} It is almost like going back in time: first there was a distant \emph{mainframe} used by multiple enterprises; then local area networks interconnected several minicomputers on the premises of a single company; now we are back to a remote situation, with the difference that instead of a single physical mainframe, used by everyone in the same way, there are many \emph{servers with virtualized resources} of different types according to the requests of the different consumers.
+\end{notebox} 
+
 \section{Definition of cloud computing}
 
-A widely accepted definition characterizes cloud computing as the provision of shared and configurable computing resources accessible through the network with minimal administrative overhead. This definition emphasizes ubiquity, convenience, on-demand provision, and the ability to elastically adjust resource allocation.
+The idea of cloud (data, services, applications or even physical resources placed remotely, with which a consumer, first an individual and later an enterprise, interacts to perform operations) is simple, but it was not easy to define. Several standardization bodies tried to give a comprehensive definition; the one that received industry-wide acceptance is the definition by the \textbf{NIST} (National Institute of Standards and Technology), published in 2009 and revised in September 2011:
 
-Cloud computing encompasses a broad range of resources, such as networks, servers, storage systems, application components, and complete services. These resources are abstracted and exposed through standardized interfaces that allow rapid provisioning and deprovisioning. The consumer interacts with these resources without managing the underlying hardware or physical infrastructure.
+\begin{notebox}
+	``Cloud computing is a model for enabling \textbf{ubiquitous}, \textbf{convenient}, \textbf{on-demand} network access to a shared pool of \textbf{configurable} computing resources (e.g., networks, servers, storage, applications, and services) that can be \textbf{rapidly provisioned and released} with \textbf{minimal management effort or service provider interaction}.''
+\end{notebox}
+
+The definition can be analyzed element by element.
+
+\begin{itemize}
+	\item \textbf{Network access.} The main goal is to provide remote access: some resources are remote and the consumer interacts with them through the network, which is in general the Internet itself, so the resources can be reached from any part of the Internet.
+	\item \textbf{Ubiquitous.} Wherever the consumer is (in the office, at home, in another country) and with any device, the resources can be accessed, because access happens over the Internet by knowing the IP address of the resources. On-premise infrastructures, such as a company data center, are often restricted to some devices under specific conditions.
+	\item \textbf{Convenient.} Convenience means \emph{economic benefit}: the model should be less expensive than buying and managing servers on the premises of a company. If the cloud were expensive, everybody would keep data, applications and services locally rather than delegating them to a remote company (with additional privacy risks). Because it is convenient, companies tend to adopt it, and the figure of the \textbf{cloud provider} (a company that creates and manages the resources and offers them to consumers, typically at a lower cost than on-premise servers) can exist.
+	\item \textbf{On demand.} Access does not require a continuous interaction between service and consumer: it takes place only when strictly needed, following a request/response pattern (the remote resource answers positively or negatively depending on whether the operation was feasible).
+	\item \textbf{Resources.} The simplest resources are data, applications and services, but they can also be \emph{servers} or even \emph{networks}. For instance, a provider may build a computer network on its premises and let a company use it remotely to run experiments (a new medium access algorithm, a new congestion control algorithm, new security protocols) instead of buying routers, firewalls, VPN equipment and endpoints: the consumer only pays a fee and does not care about buying, installing and managing the physical middleboxes. Everything, including hardware and combinations of it, can be offered through the cloud model.
+	\item \textbf{Configurable.} The provider does not decide the amount of resources: the consumer asks for the amount it needs and can change it dynamically. With one instance of a web service one reserves resources for one instance; if too many requests arrive, one can ask for ten more instances, as long as the consumer pays a higher fee and the provider has adequate resources. The variation can also follow the day: more resources during daytime and fewer at night, with a correspondingly higher or lower fee.
+	\item \textbf{Rapidly provisioned and released.} Provisioning and release must be fast (not days, otherwise one could simply buy a router or a server and install it locally), otherwise the dynamicity is lost. Such speed requires that the mechanisms be, at least partially, \textbf{automated}: orchestrators, software-based platforms that receive a request, understand whether it can be satisfied and accept it.
+	\item \textbf{Minimal management effort or service provider interaction.} The provider takes part at most in defining the contract (how much the consumer is willing to pay); the allocation and release of resources should be automated as much as possible.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Convenient} means that the services should be cheaper than buying a server locally; but of course the problem of \textbf{privacy} must be considered.
+\end{notebox}
 
 \section{Business drivers for cloud adoption}
 
 Organizations adopt cloud computing in response to technical, economic, and operational factors. Several structural challenges within traditional on-premise computing environments motivate the transition toward cloud-based architectures. Key drivers include capacity planning, cost reduction, control of operational overhead, and the need for organizational agility.
 
+Convenience is one of the main reasons why cloud computing became a business at the beginning of the century (first Amazon and Salesforce, then Google and others, each creating its own model): these providers noticed that such features were appreciated by enterprises worldwide, because there are several business factors for which an on-premise service is less convenient than a cloud one.
+
 \subsection{Capacity planning}
 
 Capacity planning involves determining how to meet projected demand for an organization's computing resources. Capacity refers to the maximum workload that an information technology resource can support within a specified time interval. Maintaining an appropriate balance between available capacity and workload demand is central to sustaining efficient and reliable system performance.
 
+For example, if the IT resource is a web service, its capacity is the number of requests it can process in a given period (one second, ten minutes, one hour\ldots). To obtain 100 requests per second, the company must plan how much memory, computing power and so on to reserve for that service. The main goal is the best trade-off between resources and demand: the best solution is the one in which the resources employed are exactly the ones requested, no more and no less.
+
+Predicting the future is difficult: one may plan for an average of 100 requests per second, but if the service becomes popular it may receive thousands per second (an order of magnitude more), which means that the plan was based on a wrong hypothesis. As observed for delay in computer networks, the work requested to an IT resource depends on an \textbf{instantaneous load} (e.g.\ the number of requests in a period), which is hard to predict continuously and is not constant over time. Capacity planning is therefore a big issue for enterprises, with a direct impact on both the operability of their IT resources and their finances; a perfect trade-off almost never happens, and capacity is either higher or lower than demand.
+
 A mismatch between capacity and demand produces two principal conditions: inefficiency resulting from excess capacity and performance degradation resulting from insufficient capacity. Over-provisioning requires investment in hardware and infrastructure that may remain underutilized. Under-provisioning restricts the system's ability to satisfy workload requirements, which can lead to reduced quality of service, application slowdowns, and business losses.
+
+\begin{center}
+	\safeimg[width=4.5in,height=2.53in]{media/image125.png}
+\end{center}
+
+In the plots, capacity and demand are represented as functions of time.
+
+\begin{itemize}
+	\item \textbf{Over-provisioning}: the planned capacity (purchased and installed on the premises) is always higher than the demand, even at the peaks of its fluctuations. The grey area between the two curves represents IT resources that were paid for but are never used, so the main drawback is the \emph{cost}. There is, however, a positive aspect: all requests, even at the peak, are always satisfied, so there is no dissatisfaction and no business loss caused by unsatisfied consumers. A company may therefore consider over-provisioning the best solution when it values customer satisfaction more than the cost of an unused infrastructure.
+	\item \textbf{Under-provisioning}: the capacity is not always above the demand; there are periods with spare capacity (grey areas) but also peaks where the capacity is lower than the demand, and in those short periods some requests cannot be satisfied. The company saves money by buying fewer resources, which is acceptable most of the time, but if the unsatisfied customers are the most important ones (the biggest consumers), they may move to another provider, causing an \emph{indirect business loss} due to poor quality of service.
+\end{itemize}
+
+Which of the two scenarios is better depends on needs and context. What can be said for sure is that the ideal case is the one in which the capacity and demand curves \textbf{coincide}. This is almost impossible on-premise, since resources are typically not removed over time and it is difficult to continuously buy new ones when demand grows. The impossibility is related to the difficulty of estimating usage-load fluctuations: since it is hard to predict and measure the demand at each instant, capacity planning usually considers the \textbf{maximum usage load}, and then the company decides to stay slightly over-provisioned or slightly under-provisioned.
 
 Estimating future demand is inherently difficult because usage patterns fluctuate over time. Organizations must plan for peak loads without incurring unnecessary costs. When infrastructure is dimensioned solely according to maximum expected demand, financial investments can become disproportionate to average usage levels. Conversely, minimizing investment risks insufficient performance during periods of high demand.
 
 Different strategies exist for adjusting resource capacity in response to foreseeable or actual workload changes. A lead strategy introduces additional capacity in anticipation of increased demand. A lag strategy adds capacity only after existing resources reach saturation. A match strategy incrementally expands capacity as demand grows, aiming to keep resource allocation closely aligned with real-time consumption.
+
+\begin{center}
+	\safeimg[width=4.5in,height=2.32in]{media/image126.png}
+\end{center}
+
+All these strategies are approximations of the ideal case in which capacity equals demand.
+
+\begin{itemize}
+	\item \textbf{Lead strategy.} Capacity is added \emph{in anticipation of the demand}: when the demand reaches a threshold that is still lower than the capacity, the capacity is increased. The system is therefore \emph{always over-provisioned}, but the goal is to reduce the over-provisioned areas: the capacity stays constant and is increased in steps only when the demand gets close to it, i.e.\ when a situation of under-provisioning is approaching, which is what the strategy wants to avoid.
+	\item \textbf{Lag strategy.} The opposite criterion: the capacity is \emph{always lower than the demand} (always under-provisioned). The capacity stays constant while the demand grows, so the distance between the curves increases; when this distance exceeds a threshold, the capacity is increased in order to nullify the distance. The increase does not lead to over-provisioning, since at most the capacity is made equal to the current demand; then the capacity stays constant again until the threshold is reached again.
+	\item \textbf{Match strategy.} A hybrid of the two: capacity is added in \emph{small increments}, so sometimes the system is under-provisioned and sometimes over-provisioned. An increment occurs when a threshold of under-provisioning, smaller than the one of the lag strategy, is exceeded; the increment does not merely nullify the distance but goes slightly above the demand, restoring a \emph{controlled over-provisioning}, so that a longer time passes before the next under-provisioning. Both conditions occur, but they are kept small, preferably smaller than in the lead and lag strategies.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Notes from the slide.} Lead: we want to avoid an under-provisioning situation that is approaching. Lag: a threshold is set to be respected every time the demand changes, but the capacity is always kept lower than the demand. Match: hybrid of the previous ones; also in this case a positive and a negative threshold are used.
+\end{notebox}
+
+These strategies are not easy to implement on enterprise infrastructures, and they are always expensive. In the cloud, instead, increments (and decrements, not shown in the plots) simply mean giving a consumer more resources, or removing them from that consumer and possibly giving them to another one, since all resources already exist on the provider's premises. Capacity planning is therefore more intuitive, easier and cheaper in the cloud, which is why it is one of the main business drivers behind the cloud; perfection cannot be reached, but results are much better than on-premise.
 
 \subsection{Cost reduction}
 
@@ -3674,11 +3874,15 @@ Cost considerations are central to cloud adoption. Traditional computing environ
 
 Cloud computing reduces or eliminates many of these capital expenditures by shifting costs to a consumption-based model in which resources are acquired on demand. This model allows organizations to begin with minimal investment and expand their resource usage proportionally as their computing needs grow. Large cloud providers operate data centers at scales that enable lower real estate, personnel, and bandwidth costs, further reducing the financial burden on individual enterprises.
 
+Two factors must be accounted for in the total cost of an on-premise infrastructure (e.g.\ a small data center inside the enterprise): the \textbf{acquisition} of new equipment (routers, servers\ldots) and its \textbf{ownership and maintenance}. The second must not be overlooked: the people managing the resources must be paid, and so must the facilities where the equipment is installed (power, cooling, etc.). Much of the investment is also used for expansion, to satisfy new requests as the enterprise's services become popular. Sustaining these costs over a long time is difficult, while the same money could be invested in improving the services sold. With the cloud there is no infrastructure acquisition or maintenance cost: the consumer pays only a fee (hourly, daily, weekly, monthly\ldots, depending on the contract), and the provider is in charge of expanding and maintaining the infrastructure as part of that fee, typically at a cost lower than buying and maintaining the same resources on-premise.
+
 \subsection{Operational overhead}
 
 Operational overhead encompasses the recurring costs required to maintain and support on-premise information systems. These costs can exceed initial hardware investments, making them a significant component of IT budgets.
 
 Operational overhead includes staffing for equipment maintenance, installation of updates, and application of security patches. It also involves expenditures related to electricity, cooling, facility maintenance, and security controls for physical infrastructure. Administrative resources are required to manage licenses, support contracts, and procurement activities. Cloud computing reduces these overheads by centralizing infrastructure management within the provider's environment.
+
+These costs are not strictly related to what the enterprise wants to offer. Typical examples are: technical personnel able to install new servers and operating systems and to set up security and access control measures; continuous upgrading of all installed systems with patches; utility bills (power, cooling); support agreements for software licenses. In the cloud this overhead is largely absent for the consumer, because the provider is in charge of it.
 
 \subsection{Organizational agility}
 
@@ -3686,17 +3890,25 @@ Organizational agility denotes the capacity of an enterprise to respond efficien
 
 Cloud computing provides flexible resource allocation that enables organizations to adapt quickly to varying workloads, new business requirements, or market conditions. Since cloud-based resources can be provisioned remotely and expanded dynamically, they support rapid scaling with lower financial and operational barriers. This capability aids organizations in maintaining competitiveness and resilience.
 
+Nowadays services and infrastructures must evolve continuously depending on what happens: for example, when new attacks occur, the internal organization of an IT infrastructure may have to change to make it robust and resilient against them. Doing so on-premise requires people and time, to plan and then implement the right answer to the modified conditions; it can be done partially locally, but it is better performed at cloud level, because it is demanded to the provider.
+
 \section{Benefits of cloud computing}
 
 Cloud computing introduces structural advantages that affect the economic, operational, and technical dimensions of information systems. These advantages arise from the consolidation of resources within large-scale data centers, from the adoption of on-demand provisioning models, and from the abstraction of infrastructure through standardized service interfaces. Three categories of benefits are commonly identified: reduced investments and proportional costs, increased scalability, and improved availability and reliability.
+
+These benefits are strictly related to the four business drivers: on the financial side, consumers have reduced investments and costs proportional to what they really use; in addition, the cloud provides higher scalability, availability and reliability of IT resources over time.
 
 \subsection{Reduced investments and proportional costs}
 
 A foundational benefit of cloud computing is the reduction or elimination of significant initial expenditures on hardware and software. Traditional environments require organizations to purchase servers, storage devices, networking equipment, licenses, and support contracts before deploying applications. These capital-intensive acquisitions often occur prior to realizing any operational value, and they can impose long-term financial commitments.
 
+Consider a startup that wants to create a new service to sell worldwide. With a limited budget, it would like to dedicate most of it to its core business (people improving the service with new features), but to run the service it also needs hardware, which must be paid upfront. This expense can be a killer: so much is spent on infrastructure that no budget is left to improve the service, the service stays weak, nobody buys it and the startup dies. If the startup avoids these upfront investments and tests its applications remotely on general-purpose hardware leased from a provider, paying only for what it needs and when it is needed, it can dedicate most of its budget to its core business.
+
 Cloud environments transform these capital expenses into operational expenses. Organizations are able to access computing resources without purchasing or owning the underlying infrastructure. This arrangement permits gradual growth, enabling enterprises to allocate minimal resources during initial stages and expand consumption as operational demands increase. The ability to scale financial expenditure in proportion to actual utilization aligns resource costs more closely with business activity.
 
 Large cloud providers achieve economies of scale by operating massive data centers in locations optimized for cost efficiency. Such locations can offer reduced real estate prices, lower utility costs, and access to an abundant pool of skilled IT professionals. As a result, cloud providers can operate infrastructure at a lower cost per computing unit compared to smaller on-premise facilities. These savings transfer to consumers through competitive pricing models.
+
+Providers also cut costs by reasoning about the geographical regions in which data centers are created. Cooling, for instance, is one of the most important factors: when servers work a lot they become hot and may break without adequate cooling. A provider may therefore build a data center in a colder continent rather than in a hot one, since the average ambient temperature is already low and a strong cooling is not needed. This is just an example of how costs can be reduced by properly planning where data centers are built.
 
 \subsection{Increased scalability}
 
@@ -3706,17 +3918,29 @@ Cloud platforms provide the perception of limitless computational resources. Con
 
 Fine-grained scaling is another important characteristic. For example, storage capacity can be increased or decreased in small increments, allowing organizations to align resource consumption precisely with real-time demand. This eliminates the inefficiencies caused by coarse-grained capacity adjustments and supports detailed cost control.
 
+Since resources are leased on demand and paid according to usage, consumers perceive a condition in which resources seem \emph{infinite}: in theory they can always ask for more, as long as they can pay to renew the contract with the provider. Increments and decrements can be \emph{fine-grained}, in the order of gigabytes: they need not concern a full disk, computer or server, since it is possible to reserve only a part of it while keeping the resources of different consumers isolated from each other. This is often possible thanks to \textbf{virtualization}, which hides the full computer or server and exposes only the part the consumer really needs.
+
 \subsection{Increased availability and reliability}
 
 Cloud environments are designed to provide high levels of availability by distributing workloads across redundant components. These architectures reduce the likelihood of service outages and allow systems to maintain operation even when individual components fail. Centralized management enables cloud providers to implement failover mechanisms, data replication strategies, and continuous monitoring to ensure consistent service delivery.
 
 Cloud-based services can be accessed from any device capable of connecting to the network. This accessibility enhances organizational mobility by enabling employees to retrieve, store, process, and manage information from geographically dispersed locations. The ability to access applications and data at any time increases operational flexibility and reduces delays associated with localized system failures.
 
+\begin{center}
+	\safeimg[width=2.0in,height=0.58in]{media/image134.png}
+\end{center}
+
 Reliability is improved through automated fault detection, resource reallocation, and recovery mechanisms. Cloud platforms can mitigate runtime failures by redirecting requests, restarting affected components, or replicating data across multiple sites. These capabilities reduce the impact of individual failures and support uninterrupted business operations.
+
+Thanks to ubiquity, a consumer must be able to interact with a cloud service remotely, anytime, anywhere and possibly with any device: no powerful computer is needed, a smartphone connected to the Internet from any access point is enough. The availability should be continuous (possibly 24 hours a day, 7 days a week) and is one of the parameters to be \textbf{negotiated} with the provider, who is responsible for it: if a consumer's service is unavailable, it is the consumer's enterprise, not the cloud provider, that the final users become angry with.
+
+\textbf{Example.} A few days before the lecture, the bank Revolut was unavailable for a full working day (8--10 hours): it was not possible to pay with cards and the app was unusable, because all of Revolut's services relied on data centers managed by Google Cloud in London, which were unavailable. Both sides were at risk: Revolut should perhaps have considered alternative backups on other clouds, while the provider presumably pays penalties, unless such a downtime was among the clauses of the contract considered acceptable. It depends on the contract, but availability is typically one of the most important factors, and an eight-hour outage causes problems for the provider as well.
 
 \section{Fundamental concepts in cloud computing}
 
 Cloud computing introduces a specialized vocabulary used to classify resources, actors, and interactions in distributed environments. A precise terminology is essential for understanding how cloud-based infrastructures differ from traditional deployments and how organizations engage with providers and services. This chapter presents the foundational concepts that govern the categorization of cloud resources and the roles associated with cloud ecosystems.
+
+The terms introduced here (some already seen, others new) form a long series of interconnected or independent concepts that will be used to discuss cloud delivery models, cloud deployment models and, in the next lectures, virtualization techniques.
 
 \section{On-premise infrastructure and cloud-based resources}
 
@@ -3724,25 +3948,76 @@ An information technology resource resides \textbf{on-premise} when it is hosted
 
 Despite this distinction, interactions between environments remain possible. On-premise systems can communicate with cloud-based resources across networks and can rely on cloud-hosted functionality as part of composite applications. Furthermore, organizations may migrate on-premise resources to cloud platforms, thereby transforming them into cloud-based resources. Redundant deployments can also exist simultaneously in both locations, enabling availability, distribution, or backup strategies.
 
+On-premise means that a resource can be reached locally, without crossing the Internet; a cloud-based resource is remote and is reached through a wider network, typically the Internet. The typical interaction is a company workstation (on-premise) connecting to a cloud-based service to have some requests satisfied, but cloud-based services can also interact with other cloud-based services when they need each other's resources.
+
+How an on-premise resource is moved to the cloud depends on its type:
+
+\begin{itemize}
+	\item \textbf{data}: easy to move from on-premise hardware to cloud-based storage;
+	\item \textbf{applications}: the source code is moved, compiled in the cloud and run;
+	\item \textbf{hardware}: more difficult; typically a \emph{virtual profile} (a logical description of the physical on-premise hardware) is created and the provider replicates it in virtual form through virtualization techniques such as virtual machines or containers.
+\end{itemize}
+
+Many companies adopt \textbf{hybrid} solutions in which the same resources are kept both on-premise and in the cloud: with this redundancy, if one of them fails (on-premise or on the cloud) the final consumers can still interact with the other.
+
 \section{Scaling of IT resources}
 
 Scaling refers to the ability of an IT resource to accommodate variations in demand by modifying its capacity. Cloud environments rely on scalable resource provisioning to deliver elasticity and performance consistency. Two primary scaling models are used: \textbf{vertical scaling} and \textbf{horizontal scaling}.
+
+Scaling is strictly connected to the dynamic management of capacity planning: it is the way in which, on-premise or in the cloud, the resources used are increased or decreased to handle the demand. The terms vertical and horizontal scaling are also used in contexts other than resource upgrades.
+
+\begin{notebox}
+	Scaling = deciding to \textbf{lower or increase} the resources used for cloud computing; it is connected with capacity planning.
+\end{notebox}
 
 \subsection{Vertical scaling}
 
 Vertical scaling occurs when an existing resource is replaced with another that possesses greater or lesser capacity. Scaling up replaces the resource with a more powerful instance, while scaling down substitutes a less capable instance. Examples include installing a faster processor, increasing memory, or upgrading to a higher-capacity server.
 
+\begin{center}
+	\safeimg[width=3.5in,height=1.53in]{media/image128.png}
+\end{center}
+
 Vertical scaling typically requires downtime during replacement operations because the existing resource must be removed from service before the new component is introduced. For this reason, vertical scaling is less prevalent in cloud environments, which emphasize uninterrupted availability. The limitations of hardware capacity further restrict the extent to which vertical scaling can increase performance.
+
+For instance, a computer with two CPUs that is no longer enough is replaced by a new one with four CPUs, and the previous one is completely replaced; scaling up/down are the other names of this technique. It is typical of on-premise infrastructures, where removing an element and replacing it with another is easy. In the cloud it is less common because the replacement causes downtime (the previous element is physically disabled and the new one installed and made operative), which clashes with the idea that a cloud-based service should always be available; even if the new element is pre-configured, the downtime is needed to detach the former and activate the latter.
 
 \subsection{Horizontal scaling}
 
 Horizontal scaling adds or removes multiple resources of the same type. Scaling out increases capacity by provisioning additional instances, while scaling in reduces capacity by deprovisioning instances.
 
+Horizontal scaling is the opposite idea: the original resource is not replaced. For example, if a personal computer with two CPUs is no longer enough and six CPUs are needed, two exact replicas of the former are added, each with two CPUs, and the original one is kept: only what is needed more is added, by multiplying resources of the same type. The same applies in the opposite direction when downgrading (scaling in).
+
+\begin{center}
+	\safeimg[width=3.5in,height=1.53in]{media/image129.png}
+\end{center}
+
 This model is common in cloud computing due to its compatibility with distributed architectures. Because newly allocated resources are independent units, they can be instantiated without interrupting service availability. Horizontal scaling enables automated distribution of workload across replicated resources, supporting elasticity and fault tolerance.
 
 \subsection{Comparison of scaling models}
 
-Horizontal scaling is generally less expensive because it relies on commodity components, while vertical scaling often requires specialized hardware. Horizontal models provide immediate availability of new resources, whereas vertical adjustments commonly require additional configuration. The upper bounds of vertical scaling are limited by physical hardware constraints, while horizontal scaling can expand as long as additional resources can be provisioned.
+Horizontal scaling is generally less expensive because it relies on commodity components, while vertical scaling often requires specialized hardware.
+
+\begin{center}
+	\safeimg[width=4.5in,height=2.53in]{media/image127.png}
+\end{center}
+
+ Horizontal models provide immediate availability of new resources, whereas vertical adjustments commonly require additional configuration. The upper bounds of vertical scaling are limited by physical hardware constraints, while horizontal scaling can expand as long as additional resources can be provisioned.
+ 
+ In more detail:
+ 
+ \begin{itemize}
+ 	\item \textbf{Cost.} Vertical scaling is a significant upgrade, so it typically means buying much more expensive equipment, often specialized servers. This is one reason why it is not adopted in the cloud, where one goal is to cut costs: a provider buying very expensive specialized servers would have to raise the fees for consumers, which may not be acceptable. Horizontal scaling buys a lot of \emph{commodity} (general-purpose) hardware and adds it whenever needed: the single elements are cheaper but, together, they provide the same features.
+ 	\item \textbf{Availability.} In both cases IT resources are almost always immediately available; for vertical scaling they are not strictly instantaneous because of the downtime needed to disable the previous resource and attach the new one (a pre-configured resource reduces the downtime to the detach/activate operation).
+ 	\item \textbf{Additional setup.} Horizontal scaling needs software, an orchestrator or mechanism that manages resource replication and automated scaling (deciding how many commodity machines should be used and which ones are currently unused), and therefore additional IT resources on which the orchestrator is installed. Vertical scaling needs no additional resources.
+ 	\item \textbf{Limits.} Horizontal scaling is not limited by hardware capacity: if a single CPU supports a maximum number of cores (a current technological limit that may be overcome in the future), one can use multiple CPUs and obtain the desired number of cores by adding small hardware of the same type, as long as replication and automated scaling are managed. Vertical scaling is limited by technology: a replacement server has a CPU with a maximum possible number of cores, and that limit cannot be exceeded.
+ \end{itemize}
+ 
+ Horizontal scaling also allows resources to be dynamically given, or not given, to different consumers on demand, so it is really suitable for cloud computing.
+ 
+ \begin{notebox}
+ 	\textbf{In short.} Vertical = replace something with better (or worse) hardware. Horizontal = replicate what you already have with elements of the same type to get more resources (and the same applies to downgrades).
+ \end{notebox}
 
 \section{Cloud services}
 
