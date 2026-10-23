@@ -1,0 +1,641 @@
+\chapter{Containers}
+
+\section{Motivation for lightweight virtualization}
+
+Computer virtualization provides a set of desirable system properties, including \emph{scalability} (the ability to increase or decrease capacity by adding or removing execution units), \emph{elasticity} (the ability to adapt resource allocation to varying demand), and \emph{isolation} (the containment of faults, interference, and security-relevant effects within a defined boundary). Traditional virtualization techniques achieve these goals by virtualizing hardware and running guest operating systems on top of a hypervisor. While effective, full machine virtualization introduces overheads associated with device emulation, additional kernel instances, and the management of virtual hardware.
+
+Lightweight virtualization aims to preserve the operational benefits of virtualization while reducing resource consumption and deployment latency. It is particularly appropriate when the overhead of classical virtual machines is unacceptable, or when the primary requirement is a rapidly deployable, migratable, and disposable isolated environment with minimal performance impact. Lightweight approaches emphasize fast creation and teardown, high density (many isolated environments per host), and integration with native process scheduling and resource management.
+
+\subsection{Operating system-level and application-level virtualization}
+
+Lightweight virtualization is typically implemented as \emph{operating system-level virtualization} or \emph{application-level virtualization}. In operating system-level virtualization, isolation boundaries are constructed by the host kernel itself. The host kernel provides a set of mechanisms that make a group of processes perceive a restricted and customized view of system resources, while still executing as ordinary processes from the host perspective. In this setting, the role played by a hypervisor in full virtualization is largely replaced by kernel subsystems and user-space tooling.
+
+Application-level virtualization focuses on packaging and isolating an application and its dependencies in a way that can be executed reliably across environments, often relying on the same kernel mechanisms as operating system-level virtualization. In both cases, the central idea is to avoid running multiple kernels and to avoid hardware emulation.
+
+\subsection{Controllable properties}
+
+A lightweight virtual environment can be configured to control, isolate, and account for multiple classes of resources:
+
+\begin{itemize}
+\item \textbf{CPU and disk quotas}: upper bounds on CPU time allocation and constraints on disk throughput or usage.
+\item \textbf{I/O rate and memory limits}: caps on memory usage and limits on I/O bandwidth or operations.
+\item \textbf{Network isolation}: separation of network stacks, addresses, routing tables, and filtering rules.
+\item \textbf{File system isolation}: separation of mount points and directory trees, yielding distinct file system views.
+\item \textbf{Root privilege isolation}: restriction of privileged operations even when a process appears to be a superuser within an isolated environment.
+\end{itemize}
+
+These properties are realized primarily through Linux \emph{control groups} (cgroups) and \emph{namespaces}. Together they provide the building blocks for container technologies.
+
+\section{Linux control groups}
+
+A \emph{control group} (cgroup) is a collection of processes bound by a criterion and associated with a set of parameters or limits. The kernel enforces these parameters by attaching resource controllers to a cgroup and applying controller-specific policies to all member processes.
+
+\subsection{Resource accounting and limiting model}
+
+Let $G$ denote a cgroup and let $P(G)$ denote the set of processes that belong to $G$. For a resource class $R$ (for example CPU time, memory, or block I/O), define a usage function $u_R(p, t)$ for process $p$ over an interval ending at time $t$. A controller provides:
+
+\begin{itemize}
+\item an \emph{accounting function} that aggregates usage for the group, such as
+\end{itemize}
+
+\[ U_R(G, t) = \sum_{p \in P(G)} u_R(p, t), \]
+
+\begin{itemize}
+\item and a \emph{policy} that constrains usage, such as an upper bound $U_R(G, t) \le L_R(G)$ or a proportional share policy.
+\end{itemize}
+
+Controllers vary by resource class. For memory, a limit typically constrains total resident memory and may include file system cache. For CPU, allocation is often expressed as a share or quota within a period. For block I/O and network bandwidth, policies may implement weights, ceilings, or rate limits.
+
+\subsection{Core capabilities}
+
+Linux cgroups provide four families of capabilities.
+
+\subsubsection*{Resource limiting}
+\addcontentsline{toc}{subsubsection}{Resource limiting}
+
+Resource limiting constrains a group so that its total consumption does not exceed configured limits. Typical examples include a memory limit that caps the total amount of memory that processes in the group can use, and I/O constraints that restrict throughput.
+
+For memory, the kernel may trigger reclaim or invoke the out-of-memory mechanism for the group when the limit is exceeded. The exact behavior depends on the controller version and configuration, but the core principle is that the limit is enforced at the group boundary rather than per process.
+
+\subsubsection*{Prioritization}
+\addcontentsline{toc}{subsubsection}{Prioritization}
+
+Prioritization assigns a relative share of a resource to a cgroup. If multiple groups contend for CPU time, CPU scheduling can be influenced by weights or shares associated with each group. Analogously, disk I/O and network bandwidth can be distributed using weights that determine proportional access during contention.
+
+Prioritization is distinct from limiting. A group with higher weight does not necessarily receive a fixed amount; it receives a larger fraction under contention. When contention is absent, groups may use more resources than their shares would suggest, depending on the policy.
+
+\subsubsection*{Accounting}
+\addcontentsline{toc}{subsubsection}{Accounting}
+
+Accounting measures resource usage of the group. These measurements support administrative goals such as chargeback and billing, as well as operational monitoring. Accounting data is typically made visible via pseudo-files in a cgroup file system hierarchy.
+
+\subsubsection*{Control and lifecycle management}
+\addcontentsline{toc}{subsubsection}{Control and lifecycle management}
+
+Control capabilities include freezing and thawing groups of processes. Freezing suspends execution without terminating processes, enabling use cases such as check-pointing and controlled migration. Restarting and resuming can then be orchestrated by user-space tools that coordinate process state, resource configuration, and file system context.
+
+\subsection{Cgroups as an enabling mechanism for containers}
+
+Cgroups provide the resource management foundation for operating system-level virtualization by allowing container runtimes to enforce resource constraints at container boundaries. When a container is modeled as a set of processes, placing those processes into dedicated cgroups enables per-container limits, proportional shares, and observability.
+
+\section{Linux namespaces}
+
+Namespaces virtualize global system resources by wrapping each resource class in an abstraction that provides processes within a namespace an isolated instance of that resource. Processes in different namespaces can therefore observe distinct system identifiers, network configurations, file system mount points, and other kernel-managed objects.
+
+\subsection{General isolation principle}
+
+Consider a global kernel resource type $X$ (for example the network stack). A namespace mechanism creates disjoint instances $X_1, X_2, \dots$, and associates each process with exactly one instance. Kernel operations performed by a process are resolved with respect to the instance associated with that process. Isolation means that operations on $X_i$ are not visible through $X_j$ for $i \neq j$, subject to explicit inter-namespace communication mechanisms.
+
+Namespaces can be combined. A process may simultaneously belong to a mount namespace, a network namespace, a PID namespace, and so on. This composability enables custom isolation boundaries, but it also increases management complexity.
+
+\subsection{Namespace types in Linux}
+
+Linux implements several namespace types that collectively cover the most relevant aspects of operating system-level isolation.
+
+\subsubsection*{Mount namespaces}
+\addcontentsline{toc}{subsubsection}{Mount namespaces}
+
+Mount namespaces isolate the set of file system mount points visible to a process. Two mount namespaces can have different mount trees and therefore different views of the directory hierarchy. This is essential for containers because it enables each container to have its own root file system and its own view of system directories such as /etc. Mount namespaces are created with the CLONE\_NEWNS flag.
+
+\subsubsection*{UTS namespaces}
+\addcontentsline{toc}{subsubsection}{UTS namespaces}
+
+UTS namespaces isolate system identifiers, in particular the hostname and NIS domain name. This allows processes in different UTS namespaces to observe different hostnames, supporting the illusion that each container is a distinct host. UTS namespaces are created with the CLONE\_NEWUTS flag.
+
+\subsubsection*{IPC namespaces}
+\addcontentsline{toc}{subsubsection}{IPC namespaces}
+
+IPC namespaces isolate interprocess communication resources such as System V IPC objects and POSIX message queues. This prevents processes in distinct namespaces from accessing shared memory segments, semaphores, and other IPC objects unless explicitly shared. IPC namespaces are created with the CLONE\_NEWIPC flag.
+
+\subsubsection*{PID namespaces}
+\addcontentsline{toc}{subsubsection}{PID namespaces}
+
+PID namespaces isolate the process identifier space and the process tree. A process can have different PIDs in different PID namespaces, and processes in a child PID namespace can observe a process tree rooted at an init-like process for that namespace. This supports the abstraction that a container has its own process tree, independent of the host. PID namespaces are created with the CLONE\_NEWPID flag.
+
+\subsubsection*{Network namespaces}
+\addcontentsline{toc}{subsubsection}{Network namespaces}
+
+Network namespaces isolate the network stack. Each network namespace has its own set of network interfaces (including virtual interfaces), IP addresses, routing tables, and firewall rules. This enables two namespaces to have independent networking configurations, even though they run on the same host.
+
+A common configuration uses a host (or global) network namespace and one or more container network namespaces. Virtual Ethernet pairs (veth) are often used to connect a container namespace to a bridge in the host namespace. Conceptually, one endpoint of the veth pair appears as a network interface inside the container namespace, while the other endpoint appears in the host namespace. The host can then connect multiple container endpoints via a software bridge and can apply routing and filtering rules.
+
+Network namespaces are created with the CLONE\_NEWNET flag.
+
+\subsubsection*{User namespaces}
+\addcontentsline{toc}{subsubsection}{User namespaces}
+
+User namespaces isolate user and group identifiers. They enable a mapping between user IDs inside a namespace and user IDs on the host. A typical use case is to allow a process to have user ID 0 (the superuser) inside the namespace while being mapped to an unprivileged user ID outside the namespace. This supports root privilege isolation by reducing the impact of privileged operations to the namespace boundary. User namespaces are created with the CLONE\_NEWUSER flag.
+
+\subsubsection*{Cgroup namespaces}
+\addcontentsline{toc}{subsubsection}{Cgroup namespaces}
+
+Cgroup namespaces isolate the view of the cgroup virtual file system hierarchy presented to a process. A process can therefore see a virtualized cgroup path that is meaningful within the container context rather than the host-wide cgroup structure. Cgroup namespaces are created with the CLONE\_NEWCGROUP flag.
+
+\section{From kernel building blocks to containers}
+
+Cgroups and namespaces are general-purpose kernel mechanisms, originally developed for process isolation and resource management rather than full virtualization. When combined, they can implement a lightweight virtual environment in which a set of processes is constrained in resources and observes a restricted system view.
+
+\subsection{Limitations of raw cgroups and namespaces}
+
+When used directly, cgroups and namespaces exhibit important limitations for large-scale and practical deployments.
+
+\subsubsection*{Management complexity}
+\addcontentsline{toc}{subsubsection}{Management complexity}
+
+The mechanisms are highly flexible. Each namespace type and each cgroup controller can be configured independently. However, this flexibility implies that creating a coherent isolated environment requires multiple coordinated operations, such as setting up mount points, configuring user mappings, building a network topology, and assigning cgroup policies. Doing so directly often requires extensive scripting and intimate familiarity with kernel interfaces.
+
+\subsubsection*{Portability}
+\addcontentsline{toc}{subsubsection}{Portability}
+
+Full virtual machines can be packaged as images that include the guest operating system and are expected to boot on any compatible hypervisor that reproduces the virtual hardware environment. In contrast, an environment constructed from namespaces and cgroups depends on host kernel features and on host-specific configuration. Packaging an isolated application so that it can be instantiated on another server in a consistent way requires additional tooling, conventions, and image formats.
+
+\subsubsection*{Lack of datacenter-scale orchestration}
+\addcontentsline{toc}{subsubsection}{Lack of datacenter-scale orchestration}
+
+Cgroups and namespaces alone do not provide a control plane for placing workloads across a fleet of machines, reacting to machine failures, or coordinating networking and storage at cluster scale. Additional layers are required to manage the lifecycle of isolated environments, to provide service discovery, and to implement self-healing behaviors.
+
+\subsection{LXC containers}
+
+LXC (Linux Containers, commonly pronounced \emph{lecsi}) is a container technology that assembles cgroups and namespaces into a cohesive container abstraction and provides user-space configuration tools. LXC operates on a standard Linux kernel without requiring kernel patches.
+
+An LXC container can be understood as:
+
+\begin{itemize}
+\item a set of processes isolated by namespaces (for example mount, UTS, IPC, PID, network, and user namespaces),
+\item placed into cgroups to enforce resource constraints,
+\item configured via user-space tools that manage the container root file system, initialization process, and runtime parameters.
+\end{itemize}
+
+This organization turns low-level kernel primitives into a usable environment that resembles a virtual machine from the inside while remaining a set of ordinary processes from the outside.
+
+\section{Containers as a software packaging and execution unit}
+
+A \emph{container} is an executable unit of software in which application code is packaged together with its libraries and dependencies, using conventions that allow the unit to be run consistently across environments. Containerization relies on operating system virtualization, leveraging kernel mechanisms such as Linux namespaces and cgroups to isolate processes and control their resource access.
+
+\subsection{What containers do}
+
+Containers implement the following behaviors.
+
+\begin{itemize}
+\item \textbf{Process grouping with isolation}: a container groups one or more processes that collectively implement an application component. Namespaces provide a container-local view of system resources such as the file system and the network.
+\item \textbf{Resource governance}: cgroups impose constraints and shares over CPU, memory, and I/O resources for the processes belonging to the container.
+\item \textbf{Host operating system sharing}: containers share the host kernel. The host schedules container processes like any other processes.
+\item \textbf{Dual perspective}: from inside the container, the environment appears similar to a separate machine, with its own process tree, hostname, and network configuration. From outside, the container appears as a set of processes with associated cgroup membership and namespace associations.
+\end{itemize}
+
+\subsection{What containers do not do}
+
+Containers do not provide certain properties commonly associated with full virtual machines.
+
+\begin{itemize}
+\item \textbf{No hardware emulation}: containers do not emulate devices or provide a virtual hardware platform.
+\item \textbf{No distinct kernels}: containers do not run different kernels or operating systems. They execute on the host kernel.
+\item \textbf{Security requires configuration}: containerization does not automatically guarantee strong security isolation. Kernel attack surface is shared, and misconfiguration can lead to privilege escalation or data exposure. However, an appropriate security level can be achieved by combining namespaces, user namespaces, capability restrictions, mandatory access control, and careful image and runtime practices.
+\end{itemize}
+
+\section{Containers and virtual machines}
+
+Containers and virtual machines both provide isolated execution environments, but they differ in their abstraction boundary and resulting trade-offs.
+
+\subsection{Conceptual architecture comparison}
+
+A virtual machine typically consists of an application stack running on a guest operating system, which runs on virtual hardware provided by a hypervisor. Multiple virtual machines can share the same physical host, and each virtual machine includes its own kernel and system services.
+
+A containerized architecture typically consists of multiple application stacks running as isolated process groups on a shared host operating system. A container runtime (sometimes called a container engine) configures namespaces and cgroups and manages container images. The kernel and most device drivers are shared across containers.
+
+\subsection{Performance and density}
+
+Containers are generally faster to start, stop, freeze, and dispose than virtual machines because container creation does not require booting a guest operating system. Containers are lighter in terms of CPU and memory usage because they avoid instruction emulation and avoid duplicating kernel memory. These properties enable higher density, meaning that more isolated workloads can be hosted on the same physical machine.
+
+With mature kernel implementations, containerization can achieve performance close to native execution for many workloads, since system calls and scheduling operate directly on the host.
+
+\subsection{Isolation and flexibility}
+
+Virtual machines typically provide stronger isolation because the hypervisor boundary separates guest kernels from the host. This can mitigate the impact of guest kernel exploits and reduces shared kernel attack surface. Virtual machines also enable running different operating systems on the same host.
+
+Containers provide isolation primarily at the process level. Their security depends heavily on correct configuration, kernel hardening, and careful management of privileges. Containers cannot directly provide a different kernel per workload.
+
+\subsection{Comparison table}
+
+\begin{center}
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}@{}}
+\toprule
+\textbf{Aspect} & \textbf{Containers} & \textbf{Virtual machines}\\
+\midrule
+Abstraction boundary & Processes isolated by the host kernel (namespaces and cgroups) & Virtual hardware and guest kernels mediated by a hypervisor\\
+Startup latency & Typically milliseconds to seconds & Typically seconds to minutes\\
+Resource overhead & Low (shared kernel, no device emulation) & Higher (guest kernel, virtual hardware)\\
+Isolation strength & Depends on kernel and configuration; shared kernel boundary & Generally stronger; guest kernel isolated by hypervisor\\
+Operating system flexibility & Same kernel as host & Multiple operating systems possible\\
+Management unit & Image and container instance & VM image and VM instance\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Microservices and the role of containers}
+
+Modern applications are increasingly designed as collections of cooperating components rather than as monolithic systems.
+
+\subsection{Monolithic applications}
+
+A \emph{monolithic} application is designed, developed, and deployed as a single unit. A monolith often integrates multiple logical components, such as a web server, application logic, and a database, within one deployment artifact and one operational boundary. A common example is a web application stack composed of a Linux operating system, an HTTP server, a database server, and a scripting or application runtime.
+
+Monolithic design can lead to the following challenges:
+
+\begin{itemize}
+\item a cumbersome development and testing process because changes to any component may require rebuilding and revalidating the entire application,
+\item difficulty updating or scaling individual components since components are tightly coupled,
+\item limited scalability flexibility because scaling typically replicates the entire monolith even when demand concentrates on a specific function.
+\end{itemize}
+
+\subsection{Microservices and the single-responsibility principle}
+
+A \emph{microservices} architecture arranges an application as a collection of loosely coupled services. Each service supports a single business task and is designed to be independently deployable.
+
+A guiding principle for service decomposition is the \emph{single-responsibility principle}. A software module should be responsible to one, and only one, actor, where an actor is a group of stakeholders or users that requires a change in that module. Applied to microservices, the principle motivates creating services whose evolution is driven by a well-defined set of requirements and stakeholders, reducing cross-cutting changes across unrelated functions.
+
+Microservices commonly interact using request-response communication, frequently implemented using REST-style HTTP APIs. Service boundaries therefore shift inter-component interactions from in-process function calls to network communication.
+
+\subsection{Architectural consequences}
+
+In a monolith, the user interface, business logic, and data access layers are typically compiled and deployed together. In a microservices architecture, the user-facing component interacts with multiple back-end services, and each service can have its own data store. The resulting system resembles a network of services where each service exposes an API and can be scaled, updated, and deployed independently.
+
+\subsection{Why containers fit microservices}
+
+Containers provide a practical unit for packaging and executing microservices:
+
+\begin{itemize}
+\item \textbf{Self-contained deployment}: a container image bundles the service and its dependencies.
+\item \textbf{Low overhead}: many service instances can run on one host.
+\item \textbf{Fast start}: scaling a service can be accomplished by starting additional container instances.
+\item \textbf{Composability and replaceability}: service instances can be replaced frequently, facilitating rolling updates and rapid iteration.
+\end{itemize}
+
+\section{Operational challenges of microservices}
+
+While microservices improve modularity and independent deployment, they introduce operational complexity.
+
+\subsection{Communication and addressing}
+
+Microservices communicate over the network rather than using local interprocess communication mechanisms. Services therefore cannot assume that a dependency is reachable via localhost or shared memory. Instead, each service must locate other services using network addresses or names. If service instances scale dynamically, hard-coding addresses becomes infeasible.
+
+\subsection{Need for orchestration}
+
+Scaling microservices independently requires mechanisms to:
+
+\begin{itemize}
+\item schedule service instances onto available machines,
+\item manage service discovery so that services can find each other,
+\item provide load balancing across replicas,
+\item detect failures and replace failed instances,
+\item coordinate configuration as services move and scale.
+\end{itemize}
+
+These requirements motivate dedicated container orchestration systems.
+
+\section{Container deployment and orchestration}
+
+\subsection{Manual deployment}
+
+A straightforward approach is to connect to machines and start containers manually. This approach has the advantage of simplicity and availability because it requires no additional tooling beyond remote access and the container runtime. However, it does not scale well, is difficult to reproduce reliably, and does not provide self-healing behavior.
+
+\subsection{Deployment via scripting and configuration management}
+
+Automation can be introduced using configuration management systems or custom scripts. Such approaches improve reproducibility and integrate with existing operational environments. However, they often retain limitations such as manual scheduling decisions, limited portability across heterogeneous environments, and limited support for self-healing and cluster-wide policies.
+
+\subsection{Dedicated orchestrators}
+
+A dedicated orchestrator automatically matches containers to machines and manages lifecycle tasks. This can include scheduling based on resource needs, enforcing affinity constraints, managing replication, handling machine failures, and providing service discovery. Orchestrators introduce additional complexity and require operator training, but they enable scalable and automated operations.
+
+\subsection{Orchestration goals}
+
+Orchestration systems aim to provide a combination of essential and optional capabilities.
+
+\subsubsection*{Core goals}
+\addcontentsline{toc}{subsubsection}{Core goals}
+
+\begin{itemize}
+\item \textbf{Container lifecycle management}: start, stop, restart, and remove containers reliably.
+\item \textbf{Scheduling}: assign containers to machines based on resource requirements (CPU, memory), affinity constraints, and labels.
+\item \textbf{Replication}: run a specified number of replicas for fault tolerance and throughput.
+\item \textbf{Failure handling}: detect machine and process failures and reschedule workloads.
+\item \textbf{Discovery and inspection}: provide mechanisms to find services and to observe system state.
+\end{itemize}
+
+\textbf{Additional goals}
+
+\begin{itemize}
+\item \textbf{Virtual networking}: define virtual networks and tenant isolation for container communication.
+\item \textbf{Load balancing}: distribute traffic among replicas.
+\item \textbf{Automated updates}: perform rolling updates and rollbacks.
+\item \textbf{Autoscaling}: scale clusters and applications based on utilization and demand.
+\item \textbf{Storage provisioning}: provide persistent storage abstractions.
+\item \textbf{Late-binding configuration}: inject configuration at deployment time rather than baking it into images.
+\end{itemize}
+
+\section{Docker as a container platform}
+
+Docker is a widely used platform for building and running Linux containers. Although container-related technologies existed before its public release in 2013, Docker popularized containerization by emphasizing a developer-friendly workflow and portable image formats.
+
+\subsection{Motivations and differentiating features}
+
+Docker extends traditional container mechanisms by focusing on:
+
+\begin{itemize}
+\item \textbf{Portability}: container images are designed to run without machine-specific configuration, enabling consistent execution across desktops, data centers, and cloud environments.
+\item \textbf{Granular packaging and update workflows}: images are built in layers that support reuse and efficient distribution.
+\item \textbf{Automation and APIs}: container build and runtime operations are exposed via a consistent command-line interface and a programmatic API.
+\item \textbf{Image distribution}: registries support storing, tagging, and sharing images.
+\end{itemize}
+
+\subsection{Key concepts and components}
+
+Docker-based systems are commonly described using a set of core terms.
+
+\subsubsection*{Dockerfile}
+\addcontentsline{toc}{subsubsection}{Dockerfile}
+
+A Docker image is typically built from a text file called a \emph{Dockerfile}. A Dockerfile specifies instructions that the Docker engine executes to assemble an image. The instruction set is extensive but standardized, so builds are reproducible across environments.
+
+\subsubsection*{Images and layers}
+\addcontentsline{toc}{subsubsection}{Images and layers}
+
+A Docker \emph{image} is a read-only template that contains application code and all required dependencies. Images are composed of \emph{layers}, where each layer represents a build step. When changes are made, a new top layer is created. Previous layers remain available for reuse and rollback.
+
+\subsubsection*{Containers}
+\addcontentsline{toc}{subsubsection}{Containers}
+
+A Docker \emph{container} is a running instance of an image. Containers are ephemeral in the sense that they are intended to be disposable and recreatable. Users can interact with containers, and administrators can adjust runtime settings using Docker commands.
+
+\subsubsection*{Docker daemon and host}
+\addcontentsline{toc}{subsubsection}{Docker daemon and host}
+
+The Docker \emph{daemon} is a service that creates and manages images and containers. The machine on which the daemon runs is the Docker \emph{host}. Clients interact with the daemon through a local or remote API.
+
+\subsubsection*{Registries}
+\addcontentsline{toc}{subsubsection}{Registries}
+
+A Docker \emph{registry} is a storage and distribution system for images. Images are organized into repositories and identified using tags. Registries enable version tracking and sharing of images, including incremental uploads of changes.
+
+\subsection{Workflow: Dockerfile to image to container}
+
+A typical workflow is:
+
+\begin{enumerate}
+\item define a Dockerfile that specifies how to build the software environment,
+\item build an image from that Dockerfile,
+\item run one or more containers from the image.
+\end{enumerate}
+
+The following example illustrates a minimal Dockerfile for a Python web service. It demonstrates the principle of declarative build steps, dependency installation, and container startup command.
+
+\begin{codeblock}
+FROM python:3.12-slim
+WORKDIR /app
+COPY pyproject.toml /app/
+RUN pip install --no-cache-dir .
+
+COPY . /app/
+EXPOSE 8080
+CMD ["python", "-m", "myservice"]
+\end{codeblock}
+
+The port value 8080 is written in a monospaced typeface because it is a computer-related value and frequently corresponds to a network service port.
+
+\subsection{Docker architecture}
+
+A Docker deployment is commonly organized into a client, a daemon running on the host, and one or more registries.
+
+\begin{itemize}
+\item The \textbf{client} issues commands such as build, pull, and run. Commands may be executed locally on the host or transmitted to a remote daemon.
+\item The \textbf{daemon} receives commands, builds images, pulls images from registries, and runs containers.
+\item The \textbf{registry} stores images. When an image is pulled, layers are downloaded and cached.
+\end{itemize}
+
+In this arrangement, the daemon acts as the control center: it maintains local image storage, starts and monitors containers, and mediates network and storage integration.
+
+\section{Why orchestration becomes necessary}
+
+As the number of containers increases, managing them becomes complex even on a single machine. The main sources of complexity are:
+
+\begin{itemize}
+\item \textbf{Deployment}: ensuring the desired number of instances is running and updated.
+\item \textbf{Networking}: connecting containers and exposing services reliably.
+\item \textbf{Management}: observing state, enforcing policies, and recovering from failures.
+\end{itemize}
+
+These concerns motivate orchestration systems that provide a declarative control plane.
+
+\section{Kubernetes as a container orchestration platform}
+
+Kubernetes (often abbreviated as k8s) is a container orchestration platform for scheduling and automating the deployment, management, and scaling of containerized applications. Kubernetes is designed as a composable system that can manage large clusters and has been widely adopted.
+
+\subsection{Cluster model}
+
+A Kubernetes system is organized as a \emph{cluster} composed of multiple \emph{nodes}. Each node represents a compute host, which may be a physical machine or a virtual machine. Cluster operations are typically managed via kubectl, a command-line interface that communicates with the Kubernetes API.
+
+A cluster logically separates:
+
+\begin{itemize}
+\item a \textbf{control plane} that exposes the API and coordinates global decisions such as scheduling,
+\item and \textbf{worker nodes} that run application workloads.
+\end{itemize}
+
+\subsection{Control plane responsibilities}
+
+The control plane oversees nodes and manages workload scheduling. It maintains cluster state and drives the actual system towards a desired state specified by users.
+
+The control plane commonly includes:
+
+\begin{itemize}
+\item \textbf{API server (kube-apiserver)}: the front-end that exposes the Kubernetes API.
+\item \textbf{State store (etcd)}: a key-value store that holds cluster state.
+\item \textbf{Scheduler (kube-scheduler)}: assigns pods to nodes based on constraints and available resources.
+\item \textbf{Controllers}: reconcile actual state with desired state by continuously observing resources and taking actions.
+\end{itemize}
+
+Conceptually, users and automation systems interact with the API server. The scheduler and controllers act on the resulting desired state, while nodes report status back to the control plane.
+
+\subsection{Node agents and runtime}
+
+Worker nodes run agent processes that implement the control plane directives.
+
+\begin{itemize}
+\item \textbf{Kubelet}: communicates with the API server, receives pod specifications, and ensures the corresponding containers are running.
+\item \textbf{Container runtime}: pulls images from registries and creates and runs containers. Historically Docker was widely used, but Kubernetes supports multiple runtimes.
+\item \textbf{Kube-proxy}: manages network rules on the host to implement service networking abstractions.
+\end{itemize}
+
+\section{Kubernetes object model}
+
+Kubernetes represents workloads and configuration as objects. Users define objects in a declarative format, and the system attempts to realize the declared state.
+
+\subsection{Pods}
+
+A \emph{pod} is the basic execution unit of a Kubernetes application. It is the smallest object in the Kubernetes model that can be created and deployed. A pod contains one or more containers that cooperate to perform a function and that share certain resources.
+
+Key properties of pods include:
+
+\begin{itemize}
+\item \textbf{Single-node placement}: a pod is scheduled to exactly one node and its containers run on that node.
+\item \textbf{Shared context}: containers in a pod can share network identity and storage volumes, enabling sidecar patterns such as log shipping or proxying.
+\item \textbf{Process analogy}: a pod plays a role analogous to a process in an operating system, in the sense that it is the unit scheduled by the system and represents a running workload instance.
+\end{itemize}
+
+The following YAML specification illustrates a simple pod running an nginx container, exposing a port and mounting an ephemeral volume for logs.
+
+\begin{codeblock}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/
+  volumes:
+    - name: logs
+      emptyDir: {}
+\end{codeblock}
+
+The field containerPort: 8080 indicates that the container listens on port 8080 for TCP traffic.
+
+\subsection{Deployments}
+
+Pods are typically managed by higher-level controllers. A \emph{Deployment} declares a desired state for a replicated set of pods, such as running a fixed number of replicas of an application. The deployment controller then creates and updates pod replicas to converge to the desired state.
+
+A deployment supports:
+
+\begin{itemize}
+\item \textbf{Replica management}: maintaining a specified number of replicas.
+\item \textbf{Rolling updates}: gradually replacing old replicas with new ones to avoid downtime.
+\item \textbf{Rollback}: returning to a previous version if a rollout fails.
+\item \textbf{Pause and resume}: controlling the progress of updates.
+\end{itemize}
+
+The following YAML specification illustrates a deployment of three replicas of an nginx container.
+
+\begin{codeblock}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.14.2
+          ports:
+            - containerPort: 8080
+\end{codeblock}
+
+In this specification, the selector matches pods labeled app: nginx. The template describes the pod to be replicated.
+
+\subsection{Services}
+
+A \emph{Service} provides a stable network endpoint for a set of pods. Because pods are ephemeral and their IP addresses can change when they are rescheduled, services decouple clients from pod identities. A service selects pods using labels and can implement load balancing across the selected pods.
+
+Services commonly provide:
+
+\begin{itemize}
+\item a stable virtual IP address within the cluster,
+\item a DNS name that resolves to the service endpoint,
+\item load balancing among pod backends.
+\end{itemize}
+
+The following YAML specification illustrates a cluster-internal service that targets pods labeled app: nginx. It exposes a service port and forwards traffic to a target port on pods.
+
+\begin{codeblock}
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  type: ClusterIP
+  clusterIP: 10.96.0.100
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
+\end{codeblock}
+
+In this example, the service uses the cluster-internal IP address 10.96.0.100. The service receives TCP traffic on port 8080 and forwards it to port 80 on the selected pods.
+
+\section{Network policy}
+
+Kubernetes provides a \emph{NetworkPolicy} object to implement network access control between pods. A network policy specifies allowed flows by describing selectors and layer 3 and layer 4 parameters.
+
+A policy typically:
+
+\begin{itemize}
+\item selects a set of pods to which the policy applies using label selectors,
+\item specifies ingress rules that allow traffic to the selected pods from certain sources,
+\item specifies egress rules that allow traffic from the selected pods to certain destinations,
+\item may also include namespace selectors to scope rules across namespaces.
+\end{itemize}
+
+Network policies form a declarative firewall mechanism. Their enforcement depends on the cluster networking implementation supporting policy evaluation.
+
+\section{Core orchestration functions in Kubernetes}
+
+Kubernetes schedules and automates container-related tasks throughout the application lifecycle.
+
+\subsection{Rolling deployments}
+
+A deployment defines the desired number of replicas and the pod template for an application. A \emph{rollout} is a controlled change to the deployment, often involving a new container image version. Kubernetes performs rollouts incrementally, for example by creating new pods one at a time, verifying their health, and then terminating old pods.
+
+Zero-downtime updates can be achieved by ensuring that sufficient healthy replicas remain available while new replicas are created. Rollouts can be paused, resumed, and rolled back. A common alternative strategy is a \emph{blue-green} deployment in which two versions run simultaneously and traffic is switched to the new version once it is stable.
+
+\subsection{Service discovery}
+
+Applications running in a cluster require mechanisms to locate other services. Kubernetes supports service discovery through DNS and, in some environments, through injected environment variables. A service name is resolved to a stable endpoint, enabling clients to depend on logical service identities rather than on changing pod addresses.
+
+\subsection{Load balancing}
+
+When a service selects multiple pod replicas, traffic must be distributed among them. Kubernetes supports load balancing at the service level within the cluster, and it can integrate with external load balancers provided by the underlying infrastructure.
+
+The service abstraction enables both internal and external request distribution.
+
+\subsection{Health checking and self-healing}
+
+High availability requires detecting failed or unhealthy containers and replacing them. Kubernetes provides probing mechanisms to assess container health. When a container fails or does not meet health requirements, Kubernetes can restart it or replace its pod instance, thereby reducing downtime.
+
+\subsection{Cluster networking}
+
+Cluster networking connects pods across machines and manages address assignment. Kubernetes networking aims to provide a model in which each pod can communicate with other pods without network address translation, subject to policies and topology. Implementations provide mechanisms for IP management, routing, and integration with services.
+
+\subsection{Autoscaling}
+
+As load increases, more pod replicas may be required to maintain performance. Kubernetes supports autoscaling by monitoring metrics such as CPU and memory usage and by using user-defined telemetry. Based on configured policies, the system increases or decreases the number of replicas.
+
+Autoscaling can also apply to cluster resources, where node counts are adjusted to improve utilization or to accommodate increased workload demand.
+
+\subsection{Declarative configuration}
+
+A central design principle of Kubernetes is \emph{declarative configuration}. Users declare a desired state (for example four running replicas of a web server), and the system continuously acts to achieve and maintain that state.
+
+Declarative configuration contrasts with imperative approaches where operators specify sequences of actions to produce a state. Imperative procedures can be error-prone and can complicate rollback because the system state depends on the exact history of executed actions. With declarative configuration, the desired state is the primary artifact, and reconciliation logic aims to make the actual state match it.
+

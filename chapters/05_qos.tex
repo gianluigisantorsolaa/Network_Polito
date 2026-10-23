@@ -1,0 +1,637 @@
+\chapter{Quality of Service}
+
+IP networks operate according to the \emph{best effort} principle: the sender tries to send packets over the network and hopes that they reach the destination as fast as possible, but no guarantee is given in terms of latency or bandwidth, and the speed at which packets arrive is hard to predict. Congestion and different delays, caused by the time that packets spend in the buffers of the routers, are common.
+
+For many applications, such as the web or email, this is not an issue: a longer delay is considered acceptable. For others, mainly \textbf{multimedia applications}, which deal with media such as images, audio and video, it is almost never acceptable. If the goal of a football match is streamed five minutes late, users, who have already been informed through social networks or phone calls, will switch to another service next time; if a concert is streamed with a lot of lag, the songs cannot be understood. The communication takes place and packets reach the destination, but with a poor \textbf{quality of service (QoS)}: high latency, high delay and problems such as jitter, which will be discussed later.
+
+Introducing QoS mechanisms in a best effort network is therefore a challenge, and it somehow contrasts with the best effort principle itself. IP was not the only possible network layer protocol: ATM, for many years considered a good alternative, was based on a resource reservation protocol. Before two devices started to communicate, they reserved all the resources required, such as a certain amount of bandwidth and a threshold on latency, and the communication took place only if the intermediate nodes provided guarantees about these requirements. ATM is no longer used and IP became the winning protocol, but QoS-oriented support is still needed. This chapter shows how some QoS mechanisms can be introduced. Unfortunately, most of them are of limited use in practice or not used at all, also because congestion in networks is not so frequent, but it is interesting to see the attempts to improve the service for specific kinds of applications.
+
+\section{Fundamentals of media coding}
+
+\subsection{From analog signals to digital representations}
+
+Multimedia applications typically involve the transport of audio, images and video over packet networks. These media originate as \textbf{continuous--time analog signals}. Packet networks, however, operate on \textbf{discrete--time, discrete--amplitude} sequences that can be represented and processed digitally.
+
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image119.png}
+\end{center}
+
+
+Reality is analog: its signals evolve over domains whose values are typically infinite, whereas the values of the digital world are discrete, so a conversion is needed before transmission. An analog signal is \emph{continuous in time}: it evolves without any interruption, so that, millisecond after millisecond, the signal keeps existing. It is also \emph{continuous in amplitude}: for example, the frequency of a voice, measured in Hertz, can take the whole spectrum of values, not only 100, 101 or 102 Hz but also all the intermediate values, with infinite decimals, which cannot be represented in a digital domain. The conversion to a signal that is discrete in time and in amplitude is performed by two operations: \textbf{sampling}, which works on the time aspect, and \textbf{quantization}, which works on the amplitude. The resulting digital signal is then encoded and compressed into a sequence of bits, which are what is actually sent over the network, for instance as light values on fiber optic cables or as electrical values.
+
+\textbf{Media coding} encompasses the techniques used to convert analog signals into efficient digital form suitable for storage, processing and transmission. The process consists of two principal stages:
+
+\begin{enumerate}
+\item \textbf{Sampling and quantization}, which convert the analog signal into a discrete sequence of numerical samples.
+\item \textbf{Coding and compression}, which transform the numerical sequence into a compact bit stream.
+\end{enumerate}
+
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image120.png}
+\end{center}
+
+The goal is to obtain a digital representation that is compact yet sufficiently faithful to the original signal for the intended application.
+
+\subsection{The media coding pipeline}
+
+Given an analog source, the standard sequence of operations is:
+
+\begin{enumerate}
+\item The analog signal is \textbf{sampled} at regular intervals in time (and space for images and video).
+\item Each sample is \textbf{quantized} to one of a finite set of amplitude levels.
+\item The resulting integers are mapped to binary values to form a digital bit stream.
+\item The bit stream is \textbf{encoded and compressed} to reduce redundancy.
+\end{enumerate}
+
+Each step influences the perceptual quality of the reconstructed signal as well as the computational and bandwidth requirements.
+
+\section{Sampling and quantization}
+
+\subsection{Sampling of analog signals}
+
+Sampling transforms a continuous--time signal $x(t)$ into a discrete sequence by evaluating it at uniform intervals:
+
+\[ x[n] = x(nT_s), \quad n \in \mathbb{Z}, \]
+
+\noindent where $T_s$ is the sampling period and $f_s = 1/T_s$ is the sampling frequency.
+
+The sampling frequency must be sufficiently high to preserve the essential information of the original signal. If the highest frequency component present is $f_{\max}$, faithful reconstruction requires:
+
+\[ f_s \ge 2 f_{\max}. \]
+
+This lower bound is known as the \textbf{Nyquist rate}. In practice, sampling frequencies are chosen somewhat higher to accommodate imperfections in filtering and signal variability.
+
+For a signal whose significant content lies within a range of frequencies such as 90 Hz to 120 Hz, any valid sampling frequency must exceed twice the largest relevant frequency component. Higher sampling frequencies produce more samples and therefore increase the data rate.
+
+Sampling does not preserve all the intermediate points of the signal: a sampling time is established and, at each sampling time, a sample is extracted, so only a sequence of points remains and the intermediate points are lost. This is a loss of information, which is natural, because not everything can be represented in the digital domain: some information must be discarded, balancing the quality of what is preserved against the storage needed to preserve it. The choice of the sampling time is not trivial and depends on multiple factors.
+\subsection{Quantization of samples}
+
+After sampling, the resulting real-valued samples must be mapped to discrete amplitude levels for digital representation. A \textbf{quantizer} replaces sample $x[n]$ with a reconstruction value:
+
+\[ \hat{x}[n] = Q(x[n]). \]
+
+A common design is the \textbf{uniform scalar quantizer}, in which the amplitude range is divided into equal-width intervals. Each sample is assigned the reconstruction level associated with the interval containing it.
+
+After sampling, the time domain is discrete, but the amplitudes are still real numbers (for example 118.2027\ldots{} or 112.22\ldots{} Hz) that cannot be represented digitally either. In a quantizer, the full amplitude spectrum, from the minimum to the maximum value, is divided into ranges (for instance eight ranges), and a single representative value is associated with each range: in the example, the upper value of the range (120, 115, 110 Hz and so on), but a quantizer may also choose the lower value or the average between the minimum and the maximum of the range. Each sample then loses its original value and takes the representative value of the range in which it falls: for example, samples of 118 and 116 Hz both become 120 Hz. Information is lost again, because two different values are mapped to the same one, but this is necessary to limit the amount of data to be stored.
+
+With $L$ quantization levels, each output sample can be represented using $b = \log_2 L$ bits, assuming $L$ is a power of two. Typical values in audio applications include 8 bits per sample (sufficient for some voice systems) and 16 bits per sample (common for high-fidelity audio).
+
+\subsection{Quantization error and its effects}
+
+Quantization introduces a difference between the original and quantized values:
+
+\[ e[n] = x[n] - \hat{x}[n]. \]
+
+This \textbf{quantization error} acts as noise added to the signal. The error cannot be eliminated, but its magnitude decreases as the number of quantization levels increases.
+
+A widely used metric for evaluating quality is the \textbf{signal-to-quantization-noise ratio} (SQNR). For a uniform quantizer, the average error power scales with the square of the quantization step size. Thus, increasing $b$ reduces the step size and improves the SQNR.
+
+The perceptual impact of quantization depends on both the signal characteristics and human sensitivity. For many signals, especially audio, modest quantization noise may be imperceptible when the quantizer has sufficiently fine resolution.
+
+Sampling and quantization together introduce a loss of information, and the actual loss of quality depends on how much information is discarded. Since signals are perceived through human organs such as ears and eyes, which are not perfect, a signal reconstructed from a digital representation that has discarded several pieces of information may still be perceived as the original one: for instance, some ears cannot distinguish one frequency from another one, so mapping all the intermediate frequencies to the same value is acceptable. To obtain this property, not too much information must be discarded, and it must be evaluated case by case whether the loss is acceptable. In some scenarios it is more important to limit the number of bytes that represent the signal before sending it over the network, and a higher loss of quality is accepted in order to reduce the storage needed for the samples.
+\subsection{Resolution, bit rate and resource trade-offs}
+
+If the sampling frequency is $f_s$ and the number of bits per sample is $b$, the raw bit rate required to represent the signal is:
+
+\[ R = f_s \cdot b. \]
+
+For example:
+
+\begin{itemize}
+\item 44.1 kHz sampling with 16 bits per sample yields approximately 705.6 kbps for a single audio channel.
+\item Two channels (stereo) require about 1.41 Mbps.
+\end{itemize}
+
+Higher sampling frequency or larger quantization depth improves quality but increases the number of transmitted bits. This fundamental trade-off must be balanced against network constraints and application requirements.
+
+\section{Coding of samples and compression}
+
+\subsection{From raw samples to encoded bit streams}
+
+A naive digital representation stores each quantized sample using a fixed number of bits. This approach ignores statistical and perceptual redundancies present in multimedia signals. \textbf{Compression} techniques exploit these redundancies to reduce the number of bits while maintaining acceptable quality.
+
+
+The step that follows quantization is the \textbf{encoding}, which maps each quantized numerical value to a sequence of bits. The simplest solution is to use $\log_2 N$ bits, where $N$ is the number of quantization ranges: with $N = 8$ ranges, $\log_2 8 = 3$ bits are enough to represent all the eight quantized values (from 000 to 111). The decoder needs a table for the inverse mapping from bits to analog values, because a code such as 111 does not mean 120 Hz or 105 Hz by itself: its meaning depends on how the encoding algorithm has been defined. No information is lost in this phase, but the resulting number of bits may still be too large for some applications; in that case compression algorithms reduce it further, at the price of a possible reduction of quality, saving storage and transmission time.
+
+In many forms of multimedia:
+
+\begin{itemize}
+\item Audio samples exhibit strong temporal correlation.
+\item Image pixels display similarity among neighbors.
+\item Video frames contain regions that change little over time.
+\end{itemize}
+
+By reducing redundancy, compression techniques convert the raw sequence of samples into a compact bit stream that retains perceptually significant information.
+
+\subsection{Lossless and lossy compression}
+
+Compression techniques can be classified as lossless or lossy.
+
+\textbf{Lossless compression} \textbf{Lossless compression} allows exact reconstruction of the original digital samples after decompression. It preserves all information and introduces no distortion.
+
+Characteristics include:
+
+\begin{itemize}
+\item Exact recovery of the original signal.
+\item Moderate compression factors, since no information may be discarded.
+\item Use in contexts where fidelity is critical.
+\end{itemize}
+
+Typical methods include entropy coding and dictionary-based schemes.
+
+\textbf{Lossy compression} \textbf{Lossy compression} permits controlled degradation of the reconstructed signal by discarding components that are less perceptually significant.
+
+Characteristics include:
+
+\begin{itemize}
+\item Only approximate reconstruction of the original.
+\item Potentially very large compression factors.
+\item Possible perceptual artifacts if compression is excessive.
+\item Common use in consumer audio, image distribution and video services.
+\end{itemize}
+
+Designs rely on psychoacoustic or psychovisual models to identify information that can be discarded with minimal perceptual impact.
+
+A lossless algorithm uses fewer bits than the $\log_2 N$ normally required for each quantized value without any impact on quality; to achieve this, only limited compression factors can be employed, because otherwise too many bits would be cut. With a lossy algorithm, instead, the removed information cannot be restored anymore: it is lost forever, with a clear impact on the quality of the signal, but fewer bits are stored or sent. There is no universally best solution: the choice depends on the application. For a perfect audio quality a lossless technique such as FLAC may be chosen, whereas to store many more tracks on a smartphone a lossy format such as MP3 is preferred.
+
+
+\subsection{Redundancy in multimedia signals}
+
+\textbf{Spatial redundancy} \textbf{Spatial redundancy} arises from correlations among neighboring spatial samples. In images, large regions often have uniform or slowly varying intensity. Instead of encoding each pixel individually, one may encode:
+
+\begin{itemize}
+\item a representative value,
+\item together with the number of repetitions.
+\end{itemize}
+
+This principle underlies methods such as run-length coding. More advanced techniques apply transforms that concentrate signal energy into fewer coefficients, allowing many coefficients to be quantized coarsely or omitted.
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image121.png}
+\end{center}
+
+As an example, consider an image with 200 pixels of the same blue color. Encoding each of them with the sequence of bits representing that blue is a valid lossless technique, but it can be improved: one may encode only the first pixel and then the number of pixels having the same color. The receiver can restore the original image, because it decodes one pixel and replicates it for the indicated number of times, so the technique is still lossless, with fewer bits.
+
+\textbf{Temporal redundancy} \textbf{Temporal redundancy} arises when successive samples in time are similar. Video sequences often contain frames with only small temporal differences.
+
+A predictive strategy involves:
+
+\begin{enumerate}
+\item Estimating motion or change between successive frames,
+\item Predicting the next frame using this estimate,
+\item Encoding only the difference between the predicted and actual frame.
+\end{enumerate}
+
+Since the prediction error typically has lower variance than the original frame, fewer bits are required to encode it. Similar predictive ideas apply in audio coding, where samples evolve smoothly in time.
+
+Between two consecutive frames of a video there are typically few differences: for instance, in two frames showing a runner, only the hand and the foot have slightly moved. With \emph{differential encoding}, the first frame is encoded completely, and for the following frames only the differences with respect to the previous one are encoded, for example that pixel 880 changed from blue to purple and pixel 220 became yellow, without encoding any information about the pixels that did not change. This is still a lossless technique, and it reduces the number of bits. In a video, a full frame is encoded when a new scene appears, because the frame is completely different from the previous one, or periodically after a certain number of frames, to refresh the encoding and to provide a new frame with respect to which the following ones can be encoded differentially. Many more advanced techniques exist beyond the spatial and temporal reasoning illustrated here.
+
+\subsection{Combined spatial and temporal reduction}
+
+Modern codecs jointly exploit spatial and temporal redundancy. In video, for example, spatial transforms may be applied to intra-frame prediction residuals, while temporal prediction reduces inter-frame redundancy. The combined approach yields substantial compression gains while maintaining acceptable perceptual quality.
+
+There is no single best coding choice, including the compression algorithm: it depends on the specific application and on:
+\begin{itemize}
+	\item the \textbf{processing capability of the terminals}, because some algorithms may not be supported by some terminals, as they may require operations too demanding in terms of computing capabilities;
+	\item the \textbf{resource availability}, both in the network and in the storage: a smartphone with a limited amount of storage requires lossy compression for audio and video, otherwise its memory would be filled immediately;
+	\item the \textbf{type of application}: live (real-time) applications may accept some loss of information, whereas in store-and-retrieve applications more data can be stored, since both space and time are available.
+\end{itemize}
+
+\section{Networked multimedia applications}
+
+\subsection{Overview of multimedia services in packet networks}
+
+A wide range of modern networked services are based on the transmission of multimedia information. Such services may involve one or multiple forms of media, including audio, images and video. Even applications that employ a single medium typically exhibit characteristics that distinguish them from traditional data services. Representative examples include information retrieval platforms, broadcast services, on-demand video distribution, telephony, real-time conferencing, interactive gaming, distance learning environments and immersive virtual reality systems.
+
+These applications impose requirements that differ substantially from those associated with conventional best-effort data transfer. Their operation relies on sustained information flows, real-time constraints, interactivity and often communication among groups of users. The combination of these characteristics necessitates careful consideration of the behaviour of packet networks under load.
+
+A \textbf{networked multimedia application} differs from a multimedia application because the multimedia data are transferred over a computer network, most often the Internet; Netflix is an example. Applications such as Photoshop or GIMP work with media such as images and video but not through the network, so they are multimedia applications that are not networked. The difference is not trivial: for a networked multimedia application one must consider how the network can accommodate its requests, because these applications have specific features that impact the network.
+
+\subsection{Distinctive characteristics of multimedia traffic}
+Networked multimedia applications may have one or more of four distinctive features: \textbf{streaming}, \textbf{interactivity}, \textbf{large transmission bandwidth} and \textbf{group communications}. Depending on the features that characterize an application, the network must satisfy different requirements in order to provide a good quality of service. When an application has two or more of these features, all the corresponding requirements must be satisfied: it is a more complex networked multimedia application, with stricter requirements.
+
+\subsubsection*{Streaming}
+\addcontentsline{toc}{subsubsection}{Streaming}
+
+Multimedia applications frequently generate a \textbf{continuous flow of data}. Unlike applications such as electronic mail or traditional web browsing, which produce data sporadically, multimedia streams generate traffic at regular intervals that must be preserved during transport.
+
+If samples are produced at specific temporal intervals, then the received stream must adhere to the same temporal structure. For instance, if a system generates one sample every 125 microseconds, the playback subsystem must receive and process samples at an equivalent rate to maintain uninterrupted output. Deviations from this profile disrupt playout and may cause buffer underflow, loss of continuity or temporal artifacts.
+
+Applications such as the web and email, instead, mainly work with a request and response paradigm, in which the response is sent only after a request from a client. A browser downloads the content of a website, and afterwards the user may spend minutes or hours on it without requesting any other information from the web server; an email client may check the mail server periodically, even every 10 seconds, but this is still not a continuous flow of data. In a streaming application, like the streaming of a sport match or of a concert, the flow of data is continuous, and the cadence of the samples at the destination must be the same as the generated one, so that the first sample is played back, the second after 125 microseconds, the third after another 125 microseconds, and so on, with a continuous playout. This is unlikely to happen by itself in a network, because the variability with which samples reach the destination cannot be controlled: the network has to do something more to provide this kind of quality of service.
+
+\subsubsection*{Interactivity}
+\addcontentsline{toc}{subsubsection}{Interactivity}
+
+Traditional data applications provide limited interactivity, typically involving long response times or asynchronous communication. By contrast, multimedia applications often require \textbf{rapid and bidirectional interaction}. Users may interact with other humans, automated systems or both.
+
+High interactivity demands short response times, as delays perceptible to users degrade the quality of experience. In conversational scenarios, excessive response time leads to repeated interruptions, misalignment of dialog and reduced usability. Consequently, underlying networks must support low-latency communication paths.
+
+Web and email applications are not highly interactive, because the interval between a request and the next one may be large: for example, a reply to an email may arrive after a day, a week, or never. Highly interactive networked multimedia applications require, instead, that humans with humans, humans with devices, or devices with devices interact rapidly, so they require short response times. Congestion in the network may be unacceptable for them, because the reply may arrive too late and may not be considered valid by the requester. This requirement is different from the one of streaming: streaming requires the same cadence of samples as the generated one, to provide a good playout, whereas interactivity requires short response times, with continuous requests and responses one after the other.
+
+\subsubsection*{Large bandwidth and group communication}
+\addcontentsline{toc}{subsubsection}{Large bandwidth and group communication}
+
+Many forms of multimedia require \textbf{substantial transmission bandwidth}. High-definition video, interactive gaming and immersive virtual environments are particularly demanding due to the large volume of data generated per unit time.
+
+A large transmission bandwidth is commonly required by networked applications that must send huge amounts of data, such as virtual reality applications or distributed interactive gaming, where a lot of information about the scene in which the game takes place, the decisions made by the players, and so on must be sent over the network.
+
+In addition, numerous multimedia applications rely on \textbf{group communications}. These may involve one-to-many or many-to-many exchanges, where the same content must be conveyed to multiple recipients. Efficient support for such communication patterns is crucial to avoid redundant transmissions and excessive load on the network.
+
+Applications involving many-to-many communications also require techniques to manage group communications, that is, the possibility that a sender reaches multiple destinations at the same time. This is not envisioned by the original unicast-based IP, in which a sender sends packets to a specific destination in the network.
+
+\section{Requirements imposed by multimedia applications}
+
+\subsection{Requirements associated with streaming}
+
+Streaming means that a \textbf{continuous flow of data} must be transmitted over the network in order for the application to be effective. Its requirements concern loss and delay variability.
+
+\textbf{Loss.} Zero loss is \emph{not} required. If some packets (or part of a frame) of a live concert are lost, the effect is negligible, because a moment later the user looks at a completely different frame and forgets what happened before. This is also why UDP, which does not require all the data to reach the destination (unlike TCP), is often a good transport protocol for streaming. Nevertheless, the loss should remain \textbf{limited}: if most of the data is lost, nothing can be seen or heard and the quality of service is compromised.
+
+\textbf{Jitter.} The stronger requirement is \textbf{low jitter}, i.e.\ low variability of the delay. Packets of the same flow are subject to different delays: some are ``lucky'' and reach the destination immediately, others are stuck in the buffers of intermediate routers or follow different paths. In the ideal case all delays are constant and the jitter is zero; this never happens in practice, so the goal is at least to keep the delay \emph{constant}. Low jitter matters because the traffic profile generated at the source should be the same as the one received at the destination, in order to provide a continuous play-out: if the source emits packets with a regular cadence while the destination receives bursts followed by long gaps (e.g.\ seven packets immediately, then a long delay, then one packet, then two\ldots), the delay of each packet becomes unpredictable and the play-out is disrupted. Quality of service techniques, either at the end points or in the backbone, must restore or preserve the original traffic profile.
+
+\begin{notebox}
+	\textbf{Low jitter does not mean low delay.} For a streaming application it is acceptable that all packets arrive after a huge delay, as long as such delay is \emph{constant}.
+\end{notebox}
+
+\begin{center}
+	\safeimg[width=4.54306in,height=2.25278in]{media/image122.png}
+\end{center}
+
+
+If delay variability is significant, the temporal structure of the arriving data is distorted relative to the original. Compensation techniques can be applied, such as delaying early packets until late packets arrive, but these increase the end-to-end delay and may be unacceptable for interactive scenarios.
+
+\subsection{Requirements associated with interactivity}
+
+Interactive multimedia applications require \textbf{low one-way delay}. Human verbal interaction typically becomes impaired when one-way delays exceed approximately 100--150 ms, leading to conversational overlap and repeated interruptions.
+
+Here the requirement is again about delay, but the delay must be \textbf{low}, not merely constant: in order to have interactivity, too much time cannot elapse between a request and its response. For a verbal conversation over an IP network the acceptable delay is at most 100~ms (150~ms in the worst case); beyond this, questions and answers overlap and the conversation becomes practically unfeasible.
+
+In packet networks, excessive delay often originates in congestion within router buffers. When multiple packets contend for the same output interface, queuing occurs, and routers must temporarily store packets. Since buffering increases delay, and since delays fluctuate with instantaneous queue occupancy, networks must regulate queuing to meet interactive requirements.
+
+To keep the delay low, each router should take the forwarding decision for a received packet as fast as possible and keep it in its buffer for the least possible time. This is feasible in normal conditions, but impractical under \textbf{congestion}: many packets are present in the buffers, and the router must decide which packets leave earlier than the others, a decision that, as will be seen, is not straightforward.
+
+\begin{notebox}
+	\textbf{Summary.} Streaming applications require \textbf{low jitter} (constant delay); highly interactive applications require \textbf{low delay}.
+\end{notebox}
+
+\subsection{Requirements associated with high bandwidth}
+
+High-bandwidth multimedia applications require substantial \textbf{transmission capacity}, \textbf{buffer space} in intermediate nodes and \textbf{processing power} for operations such as routing and scheduling. The feasibility of supporting such applications depends heavily on network architecture and technology. Improvements in physical-layer capabilities and router hardware directly enhance the ability of networks to support bandwidth-intensive multimedia workloads.
+
+These requirements do not concern delay: they concern the \textbf{availability of resources}. Links must have an adequate bandwidth; routers need enough \emph{memory} in their buffers (otherwise most data is lost because of congestion in a too small buffer) and enough \emph{processing power} (otherwise packets get stuck in possibly large buffers, again causing loss). All these factors depend on the \textbf{a priori design} of the network, i.e.\ on which links and routers are purchased and installed to allow a certain quality of service. The issue is becoming less important as technology advances: routers with more memory and links with higher bandwidth are cheaper, and networks can be planned with redundancy.
+
+\subsection{Requirements associated with group communication}
+
+Multimedia systems involving multiple participants benefit from \textbf{multicast transmission services}. Efficient mechanisms, such as network-layer multicasting, enable data to be replicated within the network rather than at the source, thereby reducing redundant transmissions. Additional architectural elements, such as reflectors or multipoint control units, may be employed to manage and distribute group communication traffic effectively.
+
+\begin{itemize}
+	\item \textbf{Server with reflector functionality} (e.g.\ a multipoint conference unit). It simulates multicast through unicast communications: the source sends unicast packets to the server (whose IP address is known in advance) and the server forwards a copy to each final destination. The drawbacks are the redundancy of the communications (packets are duplicated) and the need for an extra device with a great processing power.
+	\item \textbf{IP multicast}. With IPv4 multicast was poorly supported, so an experimental backbone parallel to the Internet, the \textbf{MBone}, was created to allow IPv4 multicast communications. With IPv6 the problem no longer exists, and multicast is the ideal solution, avoiding when possible the use of reflector servers.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Recap.} Large bandwidth and group communication already have solutions. The open issues concern streaming and interactive applications, which share a common factor: the \textbf{delay} (timing issues in the way packets reach their destination). This is why they are called \textbf{real-time} applications.
+\end{notebox}
+
+\section{Delay and its implications for multimedia systems}
+
+\subsection{The nature of delay in multimedia communication}
+
+Multimedia applications are inherently \textbf{real-time} in the sense that the timing of results is as important as the correctness of the data conveyed. Delays must be bounded and controlled, although they need not necessarily be minimal in all cases. The defining requirement is that delay remain predictably within the limits acceptable for the specific application.
+
+\begin{center}
+	\safeimg[width=2.5in,height=1.24in]{media/image130.png}
+\end{center}
+
+\subsection{Variability of delay}
+
+Packet delay varies with the \textbf{instantaneous load} at network nodes. When multiple packets arrive at a router interface and compete for transmission, some must be buffered, introducing additional queuing delay. As queue lengths fluctuate with traffic intensity, the resulting delay varies over time. This variability complicates the maintenance of consistent playout timing at the receiving end.
+
+\begin{center}
+	\safeimg[width=2.6in,height=1.24in]{media/image131.png}
+\end{center}
+
+Controlling the delay is one of the most critical problems in a network, because the way an intermediate router manages the packets in its buffer is not directly accessible. At most, algorithms can be installed in the routers \emph{a priori}, hoping that they work as expected and do not cause other issues. The ideal solution would be to observe the instantaneous state of the buffers and privilege some packets accordingly (for instance delaying all packets of a group to make their delay constant), but controlling the delay for the \textbf{instantaneous load} is not feasible.
+
+\section{Countermeasures for supporting multimedia traffic}
+
+\subsection{Countermeasures implemented in end systems}
+
+End systems may employ several techniques to mitigate network-induced impairments:
+
+\begin{itemize}
+\item \textbf{Adaptation to network conditions} (source side). Before sending, the source analyzes the congestion state of the network (e.g.\ from the round-trip time) and adapts the rate of the next packets: if congestion is detected it is better that packets stay in the end system rather than get stuck in router buffers. Although effective, this relies on the application itself, which must be programmed to give commands to layers~4 and~3 of the protocol stack; this is demanded to developers and therefore seldom done.
+\item \textbf{Compensation for delay variation} (destination side). When the jitter is high, all delays can be made constant by conforming each data unit to the \emph{maximum} delay among those that occurred. The end-to-end delay increases, so this is not feasible for interactive applications, but it is fine for streaming ones, which only need a constant delay. This is what happens in the browser with Netflix or YouTube: data are put in an intermediate buffer and playout starts only when enough data units are available to guarantee continuous reproduction; the delay is higher but constant.
+\end{itemize}
+
+\subsection{Countermeasures implemented within the network}
+
+Networks themselves may deploy techniques to provide improved support for multimedia traffic:
+
+\begin{itemize}
+\item \textbf{Traffic classification}, which identifies packets belonging to specific applications or traffic classes. Although classification alone does not provide guarantees, it is essential for enabling differentiated treatment.
+\item \textbf{Advanced scheduling algorithms}, which determine the order in which packets are transmitted. Traditional FIFO queuing is insufficient for applications requiring quality of service, and more sophisticated policies must be used to ensure predictable behaviour.
+\item \textbf{Control of traffic entering the network}, achieved through admission control and policing mechanisms, which prevent excessive queue occupancy and mitigate congestion.
+\end{itemize}
+
+These countermeasures are harder to control than those at the end systems, since they must be enforced by routers. The first two are two steps of the same technique: classification is a preliminary operation (a mapping, not a QoS technique by itself) and scheduling treats the resulting classes differently, assigning them different priorities depending on whether they belong to multimedia applications and on how strict their delay requirements are. The third technique is complementary: the first hop of a flow checks whether the source sends too much data and, if so, makes it send fewer packets, to avoid impacting the following routers on the path.
+
+\section{Quality of service support}
+
+Effective support for multimedia applications requires the combined use of all three categories of countermeasures. Networks must limit the volume of incoming traffic so that nodes do not become overloaded, and must handle appropriately any flows requiring specific performance guarantees. These coordinated measures collectively enable the delivery of multimedia content with the quality constraints imposed by real-time and interactive applications.
+
+\section{Quality of service support: classification}
+
+\subsection{Purpose of classification}
+
+Quality of service mechanisms rely on the ability of the network to distinguish among different traffic flows. \textbf{Classification} is the operation that identifies the flow to which each incoming packet belongs and determines the queue in which that packet must be stored. By separating packets into distinct queues, the network can apply differentiated scheduling and forwarding policies, thereby ensuring that flows requiring specific performance properties receive appropriate treatment.
+
+\begin{center}
+\safeimg[width=4.42917in,height=2.3in]{media/image18.png}
+\end{center}
+
+Packets belonging to applications with stringent delay or jitter constraints may be assigned to queues with higher priority, while elastic or background traffic may be placed in lower-priority queues. The classification step therefore plays a foundational role in enabling differentiated handling of heterogeneous traffic.
+
+A generic router normally does not distinguish packets by source: it only looks up the destination IP address to find the next hop. With classification, instead, the router identifies the class of each packet. Classes can be defined per specific application or for a group of applications. For each class a different queue is reserved: with three classes (high, medium, low priority) the \textbf{classifier} places each incoming packet in the queue of its class. A packet cannot be placed in two queues, because a clear distinction is needed for the scheduling algorithm to treat them differently.
+
+\subsection{Basis for classification}
+
+Classification typically relies on information carried in protocol headers. A widely used approach is based on the \textbf{IP five-tuple}, which consists of:
+
+\begin{itemize}
+\item destination IP address,
+\item source IP address,
+\item transport protocol,
+\item destination port,
+\item source port.
+\end{itemize}
+
+This combination uniquely identifies most unicast flows in modern networks.
+
+In most cases the classifier looks only at these five fields; reading them is easy for a node, since they are found in the IP header and in the transport-layer header. Looking at reserved QoS fields such as Type of Service is a peculiar case.
+
+Traditional routers examine only a limited subset of header fields, primarily the destination IP address and ancillary fields such as the time-to-live. However, routers designed to support quality of service may also inspect dedicated fields intended for differentiated treatment. An example is the \textbf{Type of Service} field in the IP header, which can encode priority or service class information.
+
+\subsection{Complexity and hardware support}
+
+Classification is computationally intensive because it requires examination of transport-layer fields in addition to network-layer information. The lookup string, often including five distinct header components, can be long, and matching each packet against potentially numerous flow specifications constitutes a nontrivial operation.
+
+Indeed, a router commonly looks up only the destination IP address, whereas here it must also inspect the transport-level header; moreover the string containing the five values is long, so storing many of them in memory and looking them up efficiently is complex.
+
+Owing to these demands, classification is commonly implemented in specialized hardware. Two prominent technologies are:
+
+\begin{itemize}
+\item \textbf{Application specific integrated circuits (ASICs)}, which provide high-speed packet processing tailored to classification and forwarding tasks.
+\item \textbf{Content addressable memory (CAM)}, in which memory locations are identified by their content rather than by an address. CAM structures permit rapid matching of header fields against stored patterns, enabling packet classification at line rate. The index of the memory is the content itself, i.e.\ the value of the IP five-tuple.
+\end{itemize}
+
+These hardware mechanisms ensure that classification does not become a bottleneck, even in high-speed routers supporting large numbers of simultaneous flows.
+
+\section{Quality of service support: packet scheduling}
+
+\subsection{Traditional queuing}
+
+Packet scheduling governs the order in which queued packets are transmitted over an output link. The simplest mechanism is \textbf{first-in first-out} (FIFO) queuing, where packets are transmitted strictly in the order of arrival. This method treats all flows identically and offers no differentiation based on service requirements.
+
+\begin{center}
+\safeimg[width=4.42917in,height=1.64861in]{media/image19.png}
+\end{center}
+
+In FIFO systems, the output link is shared dynamically among multiple flows through statistical multiplexing. As packets from different flows interleave, their output timing may deviate significantly from the timing at which they were originally generated. This variability can degrade the performance of applications that rely on consistent timing, particularly multimedia streams that require steady play-out.
+
+
+Classification is only the preliminary operation; what really matters for QoS is how the packets of the different queues are \textbf{interleaved in the single output queue}. Scheduling was already an issue for the first routers, but it was solved naively with FIFO, which is fine when the router has a single input queue: packets A, B, C, D, E leave in the same order in which they arrived.
+
+\subsection{Multiple queues and scheduling}
+
+To accommodate heterogeneous traffic requirements, routers often maintain \textbf{multiple queues}, grouping packets according to classification results. Each queue can then be serviced according to a scheduling policy that reflects its priority or bandwidth requirements.
+
+\begin{center}
+	\safeimg[width=3.5in,height=1.26in]{media/image132.png}
+\end{center}
+
+Different classes of traffic can thus be separated, preventing high-volume or delay-tolerant flows from disrupting delay-sensitive or priority traffic. Scheduling algorithms define how the router alternates among these queues when selecting the next packet to transmit.
+
+With a plain FIFO and multiple input queues, packets are taken according to their order of arrival, so they are interleaved and subject to different delays and the distinction among classes \emph{disappears}. For example, if a packet of the high-importance (orange) class arrives after all the others, it is the last one sent, even though that flow should have lower delay. Different priorities require more sophisticated algorithms.
+
+\subsection{Scheduling algorithms}
+
+Various scheduling mechanisms have been developed to provide differentiated performance guarantees while controlling delay, jitter and fairness. Common algorithms include priority queuing, round robin, weighted round robin, fair queuing and weighted fair queuing.
+
+They are listed from the simplest to the most complex. The most complex ones may be theoretically the best, but they are rarely implemented because they are computationally demanding: for instance, weighted fair queuing is not found in modern routers and is applicable only in specific scenarios.
+
+\subsubsection*{Priority queuing}
+\addcontentsline{toc}{subsubsection}{Priority queuing}
+
+In \textbf{priority queuing}, each queue is assigned a fixed priority level. The scheduler always serves the highest-priority nonempty queue before considering lower-priority queues. This approach ensures rapid service for critical traffic but can lead to \textbf{starvation} of lower-priority queues if high-priority traffic persists.
+
+
+\begin{center}
+\safeimg[width=4.42917in,height=1.64861in]{media/image20.png}
+\end{center}
+
+\textbf{Example.} Assume three classes and the following situation: two high-priority (green), three medium-priority (orange) and three low-priority (blue) packets. The output is: first the two green packets, then the three orange ones, then the three blue ones. If, while the medium-priority queue is being served, a new high-priority packet arrives, the service of the medium queue is immediately stopped and the new high-priority packet is sent; then the medium queue resumes, and if a high-priority and a medium-priority packet arrive later, the high one is served first, then the medium one, and only afterwards the remaining low-priority packets.
+
+\textbf{Main issue: indefinite postponement (starvation).} If the highest-priority queue continuously receives packets, medium- and low-priority packets remain stuck forever in the buffer. This is acceptable only when absolute importance must be guaranteed to one application (or class) and nothing is cared about the others: for them it is not even best effort, but a ``worse best effort'', since their packets have no guarantee and other classes have more.
+
+\subsubsection*{Round robin scheduling}
+\addcontentsline{toc}{subsubsection}{Round robin scheduling}
+
+\textbf{Round robin} scheduling cycles among queues, taking one packet from each queue in sequence. All queues are treated equally, making this method simple and inherently fair under the assumption that all packets have similar size.
+
+\begin{center}
+\safeimg[width=4.42917in,height=1.64861in]{media/image21.png}
+\end{center}
+
+In each scheduling cycle the router processes \textbf{one packet for each queue}; in the example each cycle is composed of a green, an orange and a blue packet. When a queue has no more packets (e.g.\ the blue queue in the third cycle, which only had two) it is simply skipped. Round robin completely avoids starvation, since one packet per queue is guaranteed in every cycle, but it \textbf{ignores the concept of priority}: the labels highest/medium/lowest priority become irrelevant. It is therefore a good choice when applications are divided into classes that all have the \emph{same importance}.
+
+However, since packet sizes vary in practical networks, round robin may allocate unequal amounts of bandwidth to different queues. A queue containing larger packets consumes more transmission time per scheduling round, producing unfair service distribution.
+
+\subsubsection*{Weighted round robin}
+\addcontentsline{toc}{subsubsection}{Weighted round robin}
+
+\textbf{Weighted round robin} addresses this limitation by assigning a weight to each queue. During each scheduling cycle, the scheduler transmits a number of packets proportional to the weight of each queue. A queue with weight $w$ may transmit $w$ packets per cycle, allowing differentiated service levels among classes while retaining the simplicity of round-based scheduling.
+
+For instance, with a high-, a medium- and a low-priority queue, each cycle may schedule three high-priority, two medium-priority and one low-priority packet. It is a trade-off between starvation and equal priority: important applications get more packets in less time, while the least important ones are never completely neglected (some of their packets are guaranteed in every cycle, although fewer).
+
+\begin{center}
+	\safeimg[width=4.22917in,height=1.44861in]{media/image22.png}
+\end{center}
+
+
+Although weighted round robin improves fairness relative to round robin, the algorithm still operates on packet counts rather than transmission time. When packet sizes vary, queues with larger packets may receive disproportionately more bandwidth than intended.
+
+The pictures used to explain these algorithms show packets of the \emph{same size}, an approximation of reality, where packet sizes vary. With varying sizes, round robin is no longer fair: if one of three equal-priority classes has bigger packets, they consume more bandwidth and the class de facto gets a higher priority, against the original intention. Both round robin and weighted round robin work well only under the hypothesis of equally sized packets.
+
+
+\begin{center}
+\safeimg[width=4.42917in,height=1.64444in]{media/image23.png}
+\end{center}
+
+\subsubsection*{Fair queuing}
+\addcontentsline{toc}{subsubsection}{Fair queuing}
+
+\textbf{Fair queuing} aims to give each traffic class an equal share of the output link bandwidth by scheduling packets based on the amount of service received rather than on packet counts. 
+
+\begin{center}
+	\safeimg[width=4.42917in,height=1.64861in]{media/image123.png}
+\end{center}
+
+
+The scheduler conceptually emulates bit-by-bit round robin service among queues, approximating perfect fairness even in the presence of variable packet sizes.
+
+In round robin each cycle processes one \emph{packet} per queue; in fair queuing each cycle processes the same \textbf{amount of data} (bits) for each queue, which may correspond to one or several packets. If a packet is bigger than this amount, it must wait for the corresponding number of scheduling cycles. Example: if the low-priority class contains a single big blue packet, it is sent only in the second cycle, after the green and orange packets of the first cycle; the second cycle then contains the remaining green and orange packets and, finally, the big blue one. The reasoning is no longer on the number of packets but on \textbf{bandwidth}: in each cycle the same share of bandwidth is reserved for each queue. All queues, however, are still assumed to have the same importance.
+
+
+In practice, fair queuing computes a virtual finish time for each packet based on its length and the service history of its queue. Packets are then transmitted in order of increasing finish time, ensuring that each class receives an equitable fraction of the available bandwidth.
+
+\subsubsection*{Weighted fair queuing}
+\addcontentsline{toc}{subsubsection}{Weighted fair queuing}
+
+\textbf{Weighted fair queuing} generalizes fair queuing by allocating bandwidth shares proportional to assigned weights. A class with weight $w$ receives a fraction of service proportional to $w$, enabling sophisticated quality of service differentiation while preserving fairness among queues of equal weight.
+
+For example, in each scheduling cycle 50\% of the bandwidth may be reserved to the highest-priority class, 30\% to the medium one and 20\% to the lowest one. The number of packets sent in a cycle therefore depends on whether they are small enough to fit in the bandwidth share of that cycle. WFQ overcomes the limitations of both round robin (equal packet sizes) and plain fair queuing (equal importance), but it is a very complex algorithm: the router must keep track of the size of all packets and compare them to the shares. For this reason it is usually \textbf{not implemented}; a simpler weighted round robin is preferred, accepting some unfairness.
+
+\begin{center}
+\safeimg[width=4.42917in,height=1.44583in]{media/image25.png}
+\end{center}
+
+Weighted fair queuing is considered an idealized scheduling discipline because it offers strong fairness, predictable delay bounds and precise bandwidth allocation. However, its practical implementation is complex due to the need for continuous estimation of virtual service times and dynamic queue state management.
+
+\section{Quality of service support: traffic control}
+Classification together with packet scheduling improves the quality of service of some classes, because different priorities give some of them benefits in terms of timing (low or constant delay). Other countermeasures act directly on the \textbf{traffic}, trying to control it before it enters the network. Two classes can be considered: \textbf{a priori} traffic control, which dimensions and designs the network so that it already provides good quality of service, and \textbf{a posteriori} traffic control, which improves the QoS of a network that is already operative, through algorithms controlling the traffic entering the network or the way resources are reserved.
+
+\subsection{Traffic control performed a priori}
+
+Traffic control mechanisms may operate before packets enter the network or after they arrive at boundary devices. When performed \textbf{a priori}, traffic control concerns the dimensioning and organization of the network itself.
+
+\subsubsection*{Network engineering}
+\addcontentsline{toc}{subsubsection}{Network engineering}
+
+Network engineering defines the physical and logical capacity of a network according to expected traffic demand. The service provider must ensure that the network has sufficient transmission capacity, buffer resources and switching capabilities to sustain the aggregate load. Furthermore, the provider must sell services to customers in a manner consistent with the actual network size, so that demand does not exceed available resources.
+
+This can be done only partially: at the beginning the provider has expectations on the number and requirements of its future customers, but reality may differ, and the network may turn out to be under- or over-dimensioned depending on the applications actually used. Network engineering must always be done, but it is \textbf{not a panacea}: other mechanisms, such as the scheduling algorithms above, are still needed.
+
+\subsubsection*{Traffic engineering}
+\addcontentsline{toc}{subsubsection}{Traffic engineering}
+
+Traffic engineering determines how traffic should be distributed across network nodes, given the existing network size and anticipated load. This may involve routing flows along paths that are not the shortest, in order to balance load and avoid congestion. The objective is a controlled allocation of traffic across the network to ensure that no single portion becomes overloaded.
+
+This goes against the way ordinary routers work: they use the shortest path for every flow, and packets towards the same destination follow the same path, built by the routing protocols running on all routers. The philosophy of traffic engineering is twofold. First, the traffic of some applications can be made to follow \emph{longer} paths, so that the shortest paths are reserved for other kinds of applications. Second, in the extreme case the packets of the \emph{same flow} towards the same destination can be spread over different paths, exploiting the redundancy of the network, so that they do not congest a single path. Normal routing protocols do not support such metrics, so different protocols are needed.
+
+\textbf{Example: MPLS (Multi-Protocol Label Switching).} MPLS creates a sort of layer over IP: in the backbone (e.g.\ of a service provider) packets are forwarded by MPLS switches not on the basis of the destination IP address but of a \textbf{tag} (label) added before the packet enters the MPLS backbone. Tags can be assigned freely: packets of the same flow can receive different tags and follow different paths, or flows of different applications can be tagged in the same way to follow the same path and get the same priority. MPLS works with IP and with other protocols (hence ``multi-protocol''). It is a perfect solution for traffic engineering, since it improves the way traffic crosses the network without modifying the network itself, apart from introducing the MPLS switches. (MPLS was a topic of previous editions of the course, later cut to leave space for cloud computing.)
+
+\subsection{Traffic control performed a posteriori}
+
+Traffic control may also be applied after traffic reaches network access points or routers, operating either at the granularity of individual packets or at the granularity of flows.
+
+Here the network is already built (and MPLS may not be usable), so the only option is to mitigate possible issues. The two levels are the \textbf{call (flow) level}, which reserves resources before the communication takes place, and the \textbf{packet level}.
+
+\subsubsection*{Packet-level control}
+\addcontentsline{toc}{subsubsection}{Packet-level control}
+
+Packet-level control mechanisms regulate how many packets from a source are permitted to enter the network. If an application or host exceeds the allowable rate, packets may be delayed, shaped or discarded. Two principal techniques are used:
+
+\begin{itemize}
+\item \textbf{Shaping}, which delays packets so that outbound traffic conforms to a target profile.
+\item \textbf{Policing}, which enforces conformance by discarding or marking packets that exceed the permitted rate.
+\end{itemize}
+
+The techniques are the same whether applied by a host or by a router: they are called \emph{shaping} when applied by the host and \emph{policing} when applied by the access node (the first-hop router). Their aim is that the traffic entering the network has a good profile with respect to what the network can sustain and to the requirements of the application.
+
+\subsubsection*{Flow-level control}
+\addcontentsline{toc}{subsubsection}{Flow-level control}
+
+At the flow level, resource reservation protocols aim to secure network resources for individual sessions. An example is the \textbf{Resource Reservation Protocol (RSVP)}, which attempts to reserve bandwidth and related resources along the path between a sender and a receiver. Reservations are maintained as \emph{soft state}, requiring periodic refresh messages to remain active. If any router cannot meet the reservation request, it may reject the request entirely or accept it partially.
+
+The idea comes from ATM, an alternative network-layer protocol that was planned as a competitor of IP: while IP follows a best-effort paradigm, ATM was \textbf{connection-oriented}. Before sending, a source had to interact with all the routers along the path, and the communication took place only if they allowed the source to reserve the requested resources (e.g.\ buffer memory and a guaranteed minimum bandwidth); those resources could then not be used by others. If the reservation failed, the communication did not occur at all. This is one of the reasons why IP won: in the IP philosophy everyone can try to send packets and hopes they arrive, whereas in ATM a source might never be able to send. The idea was nevertheless considered acceptable for multimedia applications, so it was ported to a protocol working over IP: RSVP.
+
+\textbf{RSVP operation.} Before the communication starts, the sender sends a packet to the destination; each router on the path marks it with its availability to satisfy the request. The destination sends a reply back to the sender, which crosses the routers again (so they also learn the requirements of the destination), and the source finally receives the reply with all the marks. If all routers are available to reserve the resources the communication starts; otherwise it is immediately stopped. After a successful start, the source must periodically maintain the state active on all routers, otherwise after some time they release the resources so that they can be used for other flows.
+
+\subsection{Shaping and policing mechanisms}
+
+Traffic entering the network must conform to a \textbf{traffic profile} consisting of an average bit rate and a maximum burst size. The profile may be requested by the application or determined by the service provider based on network capacity.
+
+The average bit rate is the amount of bits that can be sent in a given period (e.g.\ a second), but it is not enough to characterize a flow: the \textbf{maximum burst size} is the maximum amount of data that the source can send at a single instant. The burst size represents the instantaneous load, which is what impacts delays, since routers may be congested by it.
+
+\subsubsection*{Token bucket mechanism}
+\addcontentsline{toc}{subsubsection}{Token bucket mechanism}
+
+A widely used mechanism for enforcing traffic profiles is the \textbf{token bucket} algorithm. Consider an application that generates traffic at an average rate of 1 MBps with a maximum burst size of 10 MB. Tokens are placed into a bucket at the average rate; for instance, if one token represents one bit, then one token arrives every microsecond. A packet is forwarded only if sufficient tokens exist in the bucket, and the corresponding number of tokens is removed. The bucket size equals the maximum allowed burst.
+
+\begin{center}
+	\safeimg[width=3.2in,height=2.17in]{media/image133.png}
+\end{center}
+
+This algorithm can be employed by:
+
+\begin{itemize}
+\item \textbf{network access devices}, where it acts as a policing mechanism;
+\item \textbf{end hosts}, where it operates as a shaping mechanism.
+\end{itemize}
+
+\textbf{Worked example.} Take the profile above (1~MBps, maximum burst 10~MB), with the algorithm applied by the access node (policing). The node keeps a bucket of tokens, each token being the possibility to send some data (here one bit). The bucket has the size of the maximum acceptable burst (10 megatokens) and is filled at the average rate (one token per microsecond). A bit can be sent only if there is a token in the bucket, which is removed when the bit is sent.
+
+\begin{itemize}
+	\item Sending 10~MB at once is possible only if 10 megatokens have been saved: the source must wait long enough for the bucket to fill.
+	\item Sending 1~GB in a single burst is \emph{never} possible, because the bucket holds at most 10 megatokens.
+\end{itemize}
+
+The mechanism is a \textbf{guardrail} on what a source may send, and conforming to it requires only (i) waiting for the time needed to accumulate the tokens corresponding to the data to be sent and (ii) never exceeding the maximum burst size. When applied by the source it is a self-imposed guardrail; when applied by the access router, the router must also inform the source that a packet cannot be sent because it is too big or must wait before entering the backbone. The algorithm is not revolutionary: it only adds checks on how packets may cause congestion. It can be applied differently to each flow (a flow may have a larger bucket, another a bucket filled faster), which again allows giving different priorities to different applications.
+
+\section{Quality of service frameworks}
+
+The techniques seen so far are almost independent, but effective QoS requires combining several of them in a \textbf{framework}. Two frameworks were developed over time to provide QoS over IP networks: IntServ and DiffServ.
+
+\subsection{Integrated services}
+
+The \textbf{Integrated Services (IntServ)} architecture sought to provide guaranteed QoS for individual flows in IP networks. Conceptually similar to earlier digital communication systems that combined loss-sensitive computer data with delay-sensitive telecommunication services, IntServ introduces per-flow resource reservation.
+
+The Resource Reservation Protocol is used to transmit reservation requests through the network. Each router along the path must determine whether it can satisfy the request. If resources are available, the router admits the flow and guarantees its QoS for the duration of the reservation.
+
+IntServ gives \textbf{strong guarantees} to multimedia applications. It requires the use of RSVP (following the philosophy of ATM) and guaranteed QoS obtained, for example, with MPLS for traffic engineering: all the most restrictive mechanisms seen so far (traffic engineering and per-flow resource reservation) are used.
+
+Although the framework is standardized and implemented in routing equipment, it is not practical for large public networks, primarily due to:
+
+\begin{itemize}
+\item \textbf{high complexity}, since each router must maintain state for numerous flows and employ sophisticated scheduling algorithms;
+\item \textbf{low scalability}, as QoS guarantees can be maintained only for a limited number of flows. Moreover, alternative protocols beyond IP itself are needed and a lot of intermediate devices must be controlled.
+\end{itemize}
+
+Although the framework is standardized and many routers claim IntServ compliance, nobody uses it today because it is too complex.
+
+\subsection{Differentiated services}
+
+\textbf{Differentiated Services (DiffServ)} adopts a more scalable approach, offering differentiated performance not to individual flows but to a limited number of well-defined traffic classes. DiffServ does not attempt per-flow resource reservation and does not guarantee end-to-end QoS for single applications.
+
+Routers rely on the DiffServ (DS) field in the IP header to classify packets into service classes. Each class receives distinct queueing and forwarding treatment. Individual applications within a class do not receive explicit guarantees, but aggregate behaviour for the class can be managed.
+
+Effective DiffServ operation requires additional traffic control measures, including:
+
+\begin{itemize}
+\item network engineering,
+\item traffic engineering,
+\item access policing at network boundaries.
+\end{itemize}
+
+DiffServ achieves:
+
+\begin{itemize}
+\item \textbf{simplicity}, because routers need not maintain per-flow state and can rely on simpler scheduling mechanisms;
+\item \textbf{scalability}, because a small number of classes is easier to manage than a large number of flows.
+\end{itemize}
+
+However, efficiency is limited because the absence of explicit reservations prevents the network from precisely predicting or controlling the amount of generated traffic.
+
+Network operators can only estimate load and provision resources accordingly.
+
+DiffServ is a simplified version of IntServ: it tries to give different priorities to different services (groups of applications) without strong guarantees. More sophisticated scheduling algorithms than FIFO may be used, but on a limited number of classes, typically distinguished through the type-of-service field of the IP header. Traffic engineering is not always performed, and the use of a resource reservation protocol is not mandatory (in fact not recommended, as it would make DiffServ too complex again). Shaping and policing algorithms such as the token bucket are instead welcome, since they impose no strict requirements and act as simple guardrails that mitigate some issues without being the final solution.
+
+The drawback is that DiffServ is less efficient than IntServ in providing QoS, but this is not a real issue nowadays, because networks are not so congested: some additional help, not too invasive, is enough. In practice even DiffServ is not widely employed, and mostly in a very simplified form (for instance, a service provider gives higher priority to one application or group of applications and treats all the others equally). As networks behave well, QoS techniques are still used, but not widely.
+
+\begin{notebox}
+	\textbf{Course remark.} This is the last topic on advanced computer networking; the rest of the course deals with cloud computing, and the last lecture will go back to (virtualized) networks.
+\end{notebox}
+

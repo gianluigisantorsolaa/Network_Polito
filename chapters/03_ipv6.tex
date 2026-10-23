@@ -1,0 +1,1421 @@
+\chapter{IPv6}
+
+\section{Motivation for a new version of the internet protocol}
+
+The internet protocol version 4 (IPv4) has been the dominant network layer protocol in the Internet for several decades. Its success is due to its simplicity, flexibility and the robustness of the overall TCP/IP architecture. Nevertheless, the evolution of the Internet has exposed structural limitations of IPv4 that cannot be addressed only by incremental modifications of the protocol or operational practices.
+
+The fundamental reason for the design of a new version of IP is the need for \textbf{a larger address space}. IPv4 addresses are 32 bits long, which yields a theoretical space of $2^{32}$ different addresses. This space is insufficient to support the current and foreseeable number of communicating devices and networks, especially if addresses are to be assigned in a structured and scalable manner.
+
+Although the growth of the global Internet is the principal motivation, several additional objectives guided the design of IP version 6 (IPv6):
+
+\begin{itemize}
+\item improved efficiency on local area networks;
+\item native support for \textbf{multicast} and \textbf{anycast} addressing;
+\item integrated support for \textbf{security} mechanisms at the network layer;
+\item better support for \textbf{policy-based routing};
+\item \textbf{plug-and-play} configuration capabilities, both stateful and stateless;
+\item primitives for \textbf{traffic differentiation} and \textbf{quality-of-service} (QoS) support;
+\item explicit mechanisms to support \textbf{mobility}.
+\end{itemize}
+
+Many of these objectives were partially achieved later by extending IPv4 or by deploying auxiliary mechanisms. However, these retrofitted solutions typically introduce additional complexity and cannot fully overcome the structural constraints of IPv4.
+
+\section{Limitations of the IPv4 address space}
+
+\subsection{Nominal size of the IPv4 space}
+
+An IPv4 address consists of 32 bits. If every possible bit pattern could be used as a unique unicast address, the address space would contain
+
+232= 4 294 967 296 distinct addresses, which is approximately four billion. At first sight this number appears large, especially when compared with the number of hosts on the early Internet.
+
+In practice, the effective number of usable addresses is significantly smaller due to historical design choices and practical constraints in address assignment and routing.
+
+\subsection{Classful addressing and reserved blocks}
+
+The original IPv4 addressing architecture was based on \textbf{classful addressing}. The 32-bit address space was partitioned into several classes, each with a fixed-length prefix and a fixed division between network and host identifiers:
+
+\begin{itemize}
+\item \textbf{Class A} addresses, with a leading bit pattern of 0, used an 8-bit network identifier and a 24-bit host identifier.
+\item \textbf{Class B} addresses, with a leading pattern 10, used a 16-bit network identifier and a 16-bit host identifier.
+\item \textbf{Class C} addresses, with a leading pattern 110, used a 24-bit network identifier and an 8-bit host identifier.
+\item Addresses starting with the bit pattern 1110 were designated for \textbf{multicast}.
+\item Addresses starting with 1111 were reserved for future use and for special purposes such as experimental addresses.
+\end{itemize}
+
+Because multicast and reserved addresses cannot be assigned as ordinary unicast addresses, only a subset of the $2^{32}$ addresses can actually be used for unicast communication. Class D and E addresses (those beginning with 1110 and 1111) constitute approximately one eighth of the whole space, thereby immediately reducing the maximum unicast pool from about four billion to roughly 3.5 billion addresses.
+
+Furthermore, specific address ranges are reserved for special purposes, such as:
+
+\begin{itemize}
+\item \textbf{loopback} addresses (127.0.0.0/8);
+\item \textbf{link-local} addresses used for automatic configuration (169.254.0.0/16);
+\item \textbf{private} address ranges reserved for use inside local networks (discussed in detail below).
+\end{itemize}
+
+These reservations are necessary for correct operation of the protocol but further reduce the usable public unicast space.
+
+\subsection{Hierarchical allocation and fragmentation of the address space}
+
+IPv4 addresses are not distributed as isolated integers but as \textbf{prefixes} that correspond to IP networks or subnetworks. To enable scalable routing, the allocation process is inherently hierarchical. A high-level authority assigns large blocks of addresses to intermediate organizations, which then subdivide these blocks and allocate them to networks.
+
+In a hierarchical system, each physical network is identified by a unique prefix. Two distinct networks cannot use the same prefix, even if they are administratively independent and never communicate directly. This requirement inevitably leads to fragmentation and pockets of unused addresses within allocated blocks. For example, an organization allocated a /16 prefix may only need a fraction of the corresponding 216 host addresses but cannot easily return the unused portion without breaking aggregation.
+
+Consequently, a substantial number of IPv4 addresses remain unused yet unavailable for reallocation, simply because they lie within assigned prefixes that must remain contiguous to support efficient routing.
+
+\subsection{Growth in the number of connected devices}
+
+The early Internet connected primarily large computers at research institutions and a limited number of workstations. Over time, the user base expanded to include personal computers in homes and offices, and later a multitude of mobile devices and embedded systems. Several distinct trends have stressed the IPv4 address space:
+
+\begin{itemize}
+\item A significant fraction of the world population (roughly half, about 4
+billion people) has permanent or semi-permanent Internet access at home,
+often with multiple devices per household.
+\item There are billions of mobile phones and other handheld devices capable of
+IP connectivity (about 5.5 billion).
+\item The \textbf{Internet of Things} (IoT) envisions tens of billions of
+sensors, actuators and other embedded devices (about another 50 billion
+within this decade) that may require individual IP addresses, at least
+within their local networks and often globally.
+\end{itemize}
+
+When these trends are combined with the inefficiencies in allocation and the reserved parts of the address space, it becomes clear that the IPv4 address pool is insufficient to provide globally unique addresses to all current and future devices.
+
+\section{Interim IPv4-based mitigations}
+
+\subsection{Variable-length subnet masks and address tailoring}
+
+One early response to address scarcity was to allocate networks with sizes tailored to the actual number of hosts. Instead of using only the fixed network sizes implied by classful addressing, administrators introduced the concept of a \textbf{netmask} to define how many bits of an address identify the network and how many bits identify the host.
+
+This practice, formalized as \textbf{classless inter-domain routing} (CIDR), allows the allocation of prefixes of arbitrary length, such as 192.0.2.0/27 for a network with 32 addresses. On local networks, \textbf{subnetting} divides a larger allocated prefix into smaller subprefixes, each corresponding to a distinct broadcast domain. Tailored networks mitigate waste but do not change the fundamental limitation of a 32-bit address space.
+
+\subsection{Private address spaces}
+
+Another significant measure was the definition of \textbf{private address ranges} in RFC 1918. These ranges (10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16) are not globally routable. They are intended for use within organizational or residential networks, which can freely assign private addresses without coordination with external authorities.
+
+Private addressing allows a very large number of internal hosts to communicate within an intranet even if only a small set of public addresses is available for external connectivity. However, by itself private addressing is not sufficient for communication with the broader Internet; some form of translation between private and public addresses is necessary at the boundary.
+
+\subsection{Network address translation}
+
+\textbf{Network address translation} (NAT) was introduced to bridge the gap between private networks and the public Internet. A NAT device, typically located at the edge of a local network, rewrites IP addresses (and often transport-layer port numbers) in packet headers so that multiple internal hosts can share a smaller pool of external addresses.
+
+In a common scenario, all internal hosts use private addresses, while the NAT device has one or a few public addresses. Outgoing packets from an internal host have their source address and port translated to one of the public addresses and an available external port. The NAT device maintains a translation table that records the mapping between internal and external tuples; incoming packets are translated back according to this table and forwarded to the correct internal host.
+
+While NAT has become extremely widespread due to its effectiveness in conserving public addresses, it has several drawbacks:
+
+\begin{itemize}
+\item It \textbf{breaks end-to-end reachability}. External hosts cannot initiate connections directly to internal hosts unless specific configuration (such as port forwarding) is performed.
+\item It increases the processing load on border devices, which must inspect and modify each packet, often including transport-layer headers.
+\item It complicates applications that embed IP addresses or port numbers inside payloads, or that rely on end-to-end security mechanisms.
+\item It introduces additional state at network boundaries, which can become a point of failure and complicates troubleshooting.
+\end{itemize}
+
+NAT is therefore an operational workaround rather than a clean architectural solution.
+
+\subsection{Application-layer gateways and RSIP}
+
+To cope with protocols that do not function correctly through simple NAT, \textbf{application-layer gateways} (ALGs) were introduced. An ALG is an intermediary that understands the semantics of a particular application protocol and can modify not only headers but also payloads, for instance to replace embedded addresses or ports. While ALGs solve interoperability issues in specific cases, they further increase complexity and introduce protocol-specific state in the network.
+
+An alternative concept proposed to overcome some limitations of NAT was \textbf{Realm Specific IP} (RSIP). In RSIP, hosts obtain temporary public addresses or address/port combinations from a gateway and use them directly, while the gateway manages mapping state. RSIP preserves more end-to-end transparency than traditional NAT but still depends on address and port sharing. It was not widely deployed and remains largely of historical interest.
+
+Overall, interim IPv4-based solutions such as private addressing, NAT, ALGs and RSIP have been effective in delaying exhaustion of the public address space. However, they do not eliminate the structural limitations of IPv4 and often compromise the simplicity and transparency of the original IP architecture.
+
+\section{Management of the global IPv4 address pool}
+
+\subsection{IANA and regional internet registries}
+
+The global distribution of IP address space is coordinated by a hierarchy of organizations. At the top level, the \textbf{Internet Assigned Numbers Authority} (IANA) manages the unallocated global address pool. IANA allocates large blocks of IPv4 addresses, typically /8 prefixes (each containing $2^{24}$ addresses), to \textbf{regional internet registries} (RIRs).
+
+There are five RIRs, each responsible for a large geographical region:
+
+\begin{itemize}
+\item \textbf{AFRINIC}: Africa.
+\item \textbf{APNIC}: East Asia, Australia and Oceania.
+\item \textbf{ARIN}: the United States, Canada and parts of the Caribbean.
+\item \textbf{LACNIC}: Latin America, Mexico and parts of the Caribbean.
+\item \textbf{RIPE NCC}: Europe, the Middle East and Central Asia.
+\end{itemize}
+
+RIRs in turn allocate smaller prefixes to \textbf{national internet registries} (NIRs) where such entities exist, and to \textbf{local internet registries} (LIRs) such as Internet service providers and large organizations. LIRs finally assign addresses or address blocks to end users and networks.
+
+This hierarchical structure serves two purposes. First, it distributes the administrative workload of address management. Second, it supports route aggregation, since address blocks allocated within a region can often be announced as contiguous prefixes, thereby reducing the number of entries in global routing tables.
+
+\begin{center}
+\safeimg[width=3.82in,height=2.97in]{media/image46.png}
+\end{center}
+
+\subsection{Status of IPv4 address exhaustion}
+
+Over the years, IANA has gradually allocated almost all IPv4 /8 blocks to the RIRs. Once IANA's central pool was depleted, RIRs began to exhaust their own regional pools in turn. Different regions experienced exhaustion at different times, reflecting varying growth rates and historical allocations.
+
+Charts of the IPv4 address pool status over time show a dramatic decrease in the number of unallocated /8 blocks. Around 2010, IANA still held several unallocated /8 prefixes, and each RIR had a substantial remaining pool. In subsequent years, the remaining free space declined sharply. Eventually, IANA exhausted its central pool, and each RIR entered a \textbf{last /8} or \textbf{exhaustion} phase in which only very small allocations are made under strict policies, mainly to support critical infrastructure and facilitate IPv6 transition.
+
+As a result, obtaining new large IPv4 address allocations has become extremely difficult. Organizations that need additional IPv4 addresses increasingly rely on address markets, address sharing techniques, or accelerated deployment of IPv6.
+
+\begin{center}
+\safeimg[width=5.0in,height=2.39in]{media/image47.png}
+\end{center}
+
+\section{Routing scalability in IPv4}
+
+\subsection{Growth of global routing tables}
+
+The Internet consists of many interconnected \textbf{autonomous systems} (ASes), each operating one or more networks. Inter-domain routing, most notably via the Border Gateway Protocol (BGP), requires routers to maintain information about how to reach the prefixes that are globally routable.
+
+Every distinct IP prefix that is advertised in BGP contributes an entry to the global routing table. As the number of networks and prefixes grows, so does the size of routing tables, particularly in backbone routers that must maintain a complete view of global reachability.
+
+Large routing tables introduce several challenges:
+
+\begin{itemize}
+\item \textbf{Memory requirements}: routers must allocate sufficient memory to store all entries and associated attributes.
+\item \textbf{Processing load}: routers must process routing updates, compute best paths and install forwarding entries at line rate.
+\item \textbf{Convergence time}: when routes change due to failures or policy modifications, updates must propagate and be processed, which can take longer when there are many entries.
+\end{itemize}
+
+Routing scalability is thus closely tied to the structure and allocation of address space.
+
+\subsection{Route aggregation and CIDR}
+
+To mitigate routing table growth, IPv4 introduced \textbf{classless inter-domain routing} (CIDR). In CIDR, contiguous address blocks that share a common prefix can be represented and advertised as a single aggregated route.
+
+For example, if an organization owns the networks 1.2.1.0/24, 1.2.2.0/24, and so on up to 1.2.255.0/24, these can be aggregated into a single 1.2.0.0/16 route. External routers then only need one entry for the aggregated prefix instead of 255 separate entries.
+
+CIDR requires that address assignments be made in a \textbf{topologically meaningful} and \textbf{contiguous} manner. If prefixes that should be aggregated are fragmented or assigned to unrelated organizations, aggregation opportunities are lost. Historical allocations made under the classful system were not always rational from the perspective of later aggregation, which limits the potential benefits of CIDR.
+
+\subsection{Interim policies for routing scalability}
+
+In addition to CIDR, RIRs adopted policies aimed at preserving the aggregation structure. For instance, they assign address blocks preferentially to large providers and organizations that can aggregate many customer networks under a single prefix. A typical policy might restrict the minimum allocation to prefixes no longer than /20, corresponding to 4096 addresses. Smaller networks then receive suballocations from their upstream provider rather than direct allocations from the RIR.
+
+While such policies help to constrain the number of globally advertised prefixes, they cannot completely solve the problem. Multihoming, traffic engineering requirements and legacy allocations all contribute to deaggregation, where smaller subprefixes of larger blocks are advertised separately. As a result, routing table sizes have continued to grow.
+
+Routing protocol scalability remains an open issue. Protocols such as BGP were not originally designed with the current scale in mind, and various extensions and operational practices are required to maintain stability.
+
+One of the goals of IPv6 was to provide a fresh address space whose allocation could be planned with aggregation and routing scalability in mind from the outset. In practice, however, similar operational pressures apply, and routing scalability continues to be an important challenge.
+
+\section{Historical development of IPv6}
+
+\subsection{The IP next generation effort}
+
+By the early 1990s it had become clear that IPv4 would not be sufficient in the long term. In response, the Internet Engineering Task Force (IETF) initiated a process to define a successor protocol, known as \textbf{IP next generation} (IPng).
+
+A pivotal moment occurred at an IETF meeting in Boston in 1992, where a formal call for proposals for IPng was issued. Dedicated working groups were established to evaluate candidate technologies and develop a transition strategy from IPv4 to the new protocol.
+
+\subsection{Early proposals}
+
+Several proposals were submitted to the IPng effort, reflecting different design philosophies and degrees of compatibility with existing protocols:
+
+\begin{itemize}
+\item \textbf{TUBA} (TCP and UDP with Bigger Addresses) proposed to adopt the ISO Connectionless Network Protocol (CLNP) as the new IP layer while keeping the existing TCP and UDP transport protocols. This approach sought to leverage existing OSI standards.
+\item \textbf{CATNIP} aimed at integrating multiple network- and transport-layer protocols, including IP, CLNP, IPX, TP4, SPX, TCP and UDP, into a unified framework.
+\item \textbf{SIPP} (Simple Internet Protocol Plus) was conceived as an incremental evolution of IPv4. Its design philosophy was to retain the basic structure of IP while fixing specific drawbacks and extending the address size.
+\end{itemize}
+
+The evaluation of these proposals considered technical merits, deployment complexity, compatibility with existing infrastructure and the feasibility of a gradual transition.
+
+\subsection{Selection of IPv6}
+
+The proposal that ultimately prevailed was based on SIPP. The adopted design increased the address length to 128 bits and removed or simplified rarely used or problematic header fields. The resulting protocol, initially called \textbf{IP version 6}, preserves the fundamental datagram model of IPv4 while providing:
+
+\begin{itemize}
+\item an address space large enough to accommodate current and future devices with ample room for hierarchical allocation and special-purpose addressing;
+\item a simplified base header that facilitates efficient processing in routers;
+\item explicit support for extension headers, allowing new features to be added in a structured way without redesigning the base protocol;
+\item built-in mechanisms for autoconfiguration, mobility, QoS and security.
+\end{itemize}
+
+The definition of IPv6 took considerable time, and its deployment has progressed gradually. During this period, many of the originally anticipated benefits of IPv6 were partially realized in IPv4 through protocols such as IPsec, multicast extensions, differentiated services and mobile IP. In addition, address conservation techniques like NAT became deeply entrenched.
+
+Consequently, by the time IPv6 reached production-level maturity, numerous IPv4-based solutions were widely deployed and considered acceptable for many use cases. This historical trajectory has contributed to the relatively slow pace of IPv6 adoption, despite its clear architectural advantages and the continued pressure of IPv4 address exhaustion.
+
+\section{IPv6 address space}
+
+\subsection{Scientific criteria for determining address length}
+
+The selection of the IPv6 address size was based on a quantitative analysis of long-term requirements for global connectivity. A central concept in this analysis is \textbf{addressing efficiency}, denoted by $H$, which represents the ratio between the number of assigned addresses and the total number of addresses available in a given prefix. Empirical observations in several large non-IP networks indicate that $H$ typically ranges between 0.14 (pessimistic) and 0.26 (optimistic).
+
+For a given address length $n$, the number of effectively usable addresses is approximately $H \cdot 2^n$. Using these efficiency bounds, the expected number of usable addresses for various values of $n$ is shown in the following representative scale:
+
+\subsection{Justification for 128-bit addressing}
+
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Length} & \textbf{Usable addresses (pessimistic)} & \textbf{Usable addresses (optimistic)}\\
+\midrule
+32 bits & $3 \times 10^{4}$ & $2 \times 10^{8}$\\
+64 bits & $9 \times 10^{8}$ & $4 \times 10^{16}$\\
+80 bits & $1.6 \times 10^{11}$ & $2.6 \times 10^{27}$\\
+128 bits & $8 \times 10^{17}$ & $2 \times 10^{33}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These magnitudes demonstrate that address lengths below 64 bits are clearly insufficient for global deployment. Even at 80 bits, the pessimistic estimate is inadequate for large-scale future projections. Only 128 bits ensure sufficient room for hierarchical allocation, sparse population patterns and long-term global growth.
+
+The adoption of 128-bit addresses was motivated by the need to support extremely large numbers of globally connected devices. One conservative projection assumes the eventual existence of up to one million billion networked endpoints, corresponding to approximately 1015distinct stations. Under pessimistic efficiency assumptions, accommodating this population requires at least 107 effective bits of addressing capability.
+
+A 128-bit address space exceeds this requirement by a wide margin, providing enough room not only for unicast addressing but also for multicast, anycast, special-purpose allocations and significant hierarchical structure. The resulting space contains:
+
+\[ 2^{128} \approx 3.4 \times 10^{38} \]
+
+\noindent unique addresses. Even if only a small fraction of this space is used for unicast allocation, the available pool remains effectively unconstrained for any foreseeable future scenario.
+
+To illustrate the magnitude of the space, if IPv6 addresses were uniformly distributed across the Earth's surface, there would be approximately $6.55 \times 10^{20}$ addresses per square metre. This highlights that scarcity is no longer a structural concern in IPv6.
+
+\begin{center}
+\safeimg[width=3.03in,height=1.79in]{media/image48.png}
+\end{center}
+
+\section{Representation of IPv6 addresses}
+
+\subsection{Standard textual notation}
+
+An IPv6 address consists of 128 bits, written in hexadecimal and divided into eight \textbf{hextets}. Each hextet contains 16 bits and is written as a sequence of four hexadecimal digits. Hextets are separated by colons. The generic textual format is:
+
+\[ x : x : x : x : x : x : x : x \]
+
+\noindent where each $x$ denotes a 16-bit hexadecimal value. Examples of fully expanded forms include:
+
+\begin{itemize}
+\item FEDC:0000:0876:45FA:0562:0000:3DAF:BB01
+\item 1080:0000:0000:0007:0200:A00C:3423:A089
+\end{itemize}
+
+This representation exposes the full 128-bit structure of the address. Because such fully expanded forms can be long and repetitive, IPv6 defines two mechanisms to compress the textual representation.
+
+\subsection{Omission of leading zeros}
+
+The first compression mechanism allows the omission of leading zeros within each hextet. For example:
+
+1080:0000:0000:0007:0200:A00C:3423:A089 can be rewritten as:
+
+1080:0:0:7:200:A00C:3423:A089
+
+This rule applies independently to each hextet, and it does not change the number of hextets in the representation.
+
+\subsection{Compression of zero sequences}
+
+The second compression mechanism replaces one contiguous sequence of all-zero hextets with a double colon ::. This rule may be applied only once within an address to avoid ambiguity. Applying it to the previous example yields:
+
+1080::7:200:A00C:3423:A089 as the two consecutive zero hextets following 1080 are compressed into ::.
+
+It is important to note that the double colon may represent any number of consecutive zero hextets, including one, two or more. The restriction to a single occurrence ensures that the total number of hextets represented is always unambiguous.
+
+As another illustration, consider the address:
+
+FEDC:0000:0876:45FA:0562:0000:3DAF:BB01.
+
+The leading and trailing zero hextets may both be compressed, but because the double colon cannot appear twice, only one of the two zero sequences can be replaced.
+
+Thus valid compressions include:
+
+FEDC::0876:45FA:0562:0:3DAF:BB01 or
+
+FEDC:0:0876:45FA:0562::3DAF:BB01, but not a form containing two instances of ::.
+
+\subsection{Interpretation of compressed forms}
+
+When reading or expanding compressed IPv6 addresses, the total number of hextets must always be restored to eight. The double colon indicates how many zero hextets should be inserted. For example, in the address 1080::7:200:A00C:3423:A089, the double colon represents exactly two all-zero hextets, because six hextets are explicitly present. This reconstruction ensures that each textual address uniquely maps to exactly one 128-bit binary value.
+
+\section{Routing and addressing principles}
+
+\subsection{General routing model}
+
+IPv6 preserves the fundamental routing model of IPv4. Hosts are grouped into subnetworks, each identified by a prefix, and routers interconnect these subnetworks to allow communication between devices that do not share a common prefix. As in IPv4, forwarding decisions are made by longest-prefix matching, where the prefix of the destination address identifies the appropriate outgoing interface.
+
+The architectural diagrams typically depict multiple subnetworks interconnected by routers. Each subnetwork consists of hosts sharing a link-level broadcast domain. Direct communication is possible among hosts on the same subnetwork, whereas packets destined for hosts on different subnetworks must be forwarded by one or more routers.
+
+\begin{center}
+\safeimg[width=3.76in,height=2.16in]{media/image49.png}
+\end{center}
+
+\subsection{IPv6 address structure}
+
+An IPv6 address comprises a \textbf{prefix} and an \textbf{interface identifier}. For a prefix of length $n$, the first $n$ bits identify the subnetwork, while the remaining $128 - n$ bits identify an individual interface. A commonly used configuration is $n = 64$, resulting in a 64-bit interface identifier. This division supports stateless address autoconfiguration and simplifies the allocation of subnets within larger address blocks.
+
+\begin{center}
+\safeimg[width=4.12in,height=1.06in]{media/image50.png}
+\end{center}
+
+\subsection{Prefixes}
+
+IPv6 replaces the IPv4 address/netmask pair with a single \textbf{prefix notation}. An address is written as address/N, where $N$ denotes the number of prefix bits. For example:
+
+FEDC:0123:8700::100/40 contains a 40-bit prefix followed by an 88-bit interface identifier. The binary decomposition of a prefix is conceptually identical to an IPv4 network prefix: all addresses sharing the same first $N$ bits belong to the same logical subnetwork. Unlike IPv4, IPv6 does not define address classes. All prefixes are interpreted solely based on their length.
+
+\subsection{Subnetworks, links and on-link determination}
+
+Terminology in IPv6 distinguishes between a \textbf{subnetwork} and a \textbf{link}. A link is a physical or logical network supporting direct communication. IPv6 mandates that each link corresponds to exactly one subnetwork, meaning that all hosts on a link share the same prefix. Consequently:
+
+\begin{itemize}
+\item \textbf{on-link} hosts share the same prefix and can communicate directly;
+\item \textbf{off-link} hosts have different prefixes and require communication via a router.
+\end{itemize}
+
+This one-to-one correspondence between prefix and link simplifies address configuration and neighbor discovery.
+
+\section{Classification of IPv6 addresses}
+
+The IPv6 address space is divided into unicast, multicast and anycast types. The internal organization of these categories defines specific usage semantics and routing behavior.
+
+\begin{center}
+\safeimg[width=5.01944in,height=2.34583in]{media/image14.png}
+\end{center}
+
+\subsection{Multicast addresses}
+
+IPv6 multicast addresses begin with the binary prefix 1111 1111, corresponding to the textual range FF00::/8. This structure parallels the IPv4 multicast space 224.0.0.0/4. The multicast space contains several subcategories:
+
+\begin{itemize}
+\item \textbf{well-known multicast} addresses (FF00::/12), which are reserved for predefined groups, such as those used by routing protocols;
+\item \textbf{transient multicast} addresses (FF10::/12), which are dynamically assigned by applications;
+\item \textbf{solicited-node multicast} addresses (FF02:0:0:0:0:1:FF00::/104), which are structurally tied to unicast addresses and used for neighbor discovery.
+\end{itemize}
+
+The solicited-node address is analogous to the broadcast mechanism used in IPv4 ARP. For an IPv6 unicast address, the last 24 bits are inserted into the solicited-node multicast prefix to produce a group identifier that is unique to a small set of nodes on the local link.
+
+A multicast address contains explicit \textbf{scope} information, represented by a 4-bit scope field within the address. The scope determines how widely a multicast packet may be propagated. Common scope levels include interface-local, link-local, site-local, organization-local and global.
+
+\begin{center}
+\safeimg[width=3.58in,height=1.0in]{media/image51.png}
+\end{center}
+
+\begin{center}
+\safeimg[width=3.06in,height=1.81in]{media/image52.png}
+\end{center}
+
+\subsection{Unicast addresses}
+
+Unicast addresses identify a single interface. categories:
+
+The unicast space includes several categories:
+
+\subsubsection*{Global unicast}
+\addcontentsline{toc}{subsubsection}{Global unicast}
+
+\begin{center}
+\safeimg[width=5.01944in,height=2.34583in]{media/image15.png}
+\end{center}
+
+Global unicast addresses are globally routable and reachable. They fulfil the same role as public IPv4 addresses. The prefix 2000::/3 encompasses most currently assigned global unicast space. These addresses are allocated hierarchically, supporting aggregation at multiple levels. The general structure consists of a global routing prefix, a subnet identifier and a 64-bit interface identifier. Historically, the global routing prefix was assigned by multi-level authorities: a Top-Level
+Authority (large ISPs, 13 bits), a Next-Level Authority (organizations, 32 bits) and a subnet
+level (16 bits), followed by the 64-bit interface identifier. Modern practice delegates larger
+contiguous blocks to providers and organizations to improve aggregation.
+
+\begin{center}
+\safeimg[width=3.3in,height=1.34in]{media/image53.png}
+\end{center}
+
+\begin{center}
+\safeimg[width=3.33in,height=2.06in]{media/image54.png}
+\end{center}
+
+\subsubsection*{Link-local addresses}
+\addcontentsline{toc}{subsubsection}{Link-local addresses}
+
+Link-local addresses enable communication within a single link and are not routable. They follow the prefix FE80::/64. These addresses are essential for autoconfiguration and neighbor discovery and are used even when no router is present. Hosts automatically configure at least one link-local address per interface.
+
+\subsubsection*{Site-local addresses}
+\addcontentsline{toc}{subsubsection}{Site-local addresses}
+
+Site-local addresses were originally intended for communication within an organization but were later deprecated due to ambiguity regarding site boundaries. They occupied the range FEC0::/10 and are no longer recommended for use.
+
+\subsubsection*{Unique local addresses}
+\addcontentsline{toc}{subsubsection}{Unique local addresses}
+
+Unique local addresses (ULAs) provide private, non-globally-routable addressing. They reside in FC00::/7. The most common form is FD00::/8, where the \textbf{local flag} is set to one. ULAs consist of a 40-bit randomly generated identifier, a 16-bit subnet ID and a 64-bit interface identifier. They are intended for private networks that do not require global connectivity.
+
+\begin{center}
+\safeimg[width=3.16in,height=0.49in]{media/image55.png}
+\end{center}
+
+\subsubsection*{IPv4-embedded addresses}
+\addcontentsline{toc}{subsubsection}{IPv4-embedded addresses}
+
+IPv4-embedded IPv6 addresses carry an IPv4 address in the least significant 32 bits. They facilitate coexistence and transition mechanisms. A well-known example is the IPv4-mapped IPv6 address format:
+
+::ffff:20.10.4.3, which represents the IPv4 address 20.10.4.3. The top 80 bits are zero, followed by FFFF, and finally the embedded IPv4 value.
+
+\begin{center}
+\safeimg[width=3.2in,height=1.09in]{media/image56.png}
+\end{center}
+
+\subsubsection*{Loopback address}
+\addcontentsline{toc}{subsubsection}{Loopback address}
+
+The loopback address ::1 corresponds to the IPv4 loopback 127.0.0.1. It cannot be assigned to a physical interface. Packets addressed to ::1 must never leave the originating device.
+
+\subsubsection*{Unspecified address}
+\addcontentsline{toc}{subsubsection}{Unspecified address}
+
+The unspecified address :: consists entirely of zeros. It is used only as a source address to indicate the absence of a specific address, most commonly during duplicate address detection in ICMPv6. It must never appear as a destination address and cannot be assigned to an interface.
+
+\subsection{Anycast addresses}
+
+An anycast address may be assigned to multiple interfaces, typically on distinct devices. A packet sent to an anycast address is delivered to the nearest interface, where nearness is defined by the routing topology. Anycast was originally motivated by distributed services such as DNS, enabling selection of a topologically close server instance. Although conceptually simple, anycast requires careful routing configuration to ensure predictable forwarding and is still considered experimental in several deployment scenarios.
+
+\section{Modifications to protocol architecture}
+
+\subsection{Integration of auxiliary protocols}
+
+Several IPv4 protocols were restructured or integrated as part of the IPv6 architecture. Notably:
+
+\begin{itemize}
+\item \textbf{ARP} functionality is incorporated into ICMPv6, primarily through neighbor solicitation and neighbor advertisement messages.
+\item \textbf{IGMP} functionality for managing multicast group membership is also provided by ICMPv6 mechanisms.
+\end{itemize}
+
+Thus, ICMPv6 subsumes multiple roles that in IPv4 were distributed across separate protocols.
+
+\subsection{Protocols preserved with upgrades}
+
+A number of higher-layer and routing protocols are upgraded to support IPv6 but retain their essential functionality. Examples include:
+
+\begin{itemize}
+\item DNS with AAAA resource records for IPv6 addresses;
+\item routing protocols such as RIPng and OSPFv3;
+\item inter-domain routing via BGP, extended to advertise IPv6 prefixes;
+\item transport protocols TCP and UDP, which operate independently of the underlying IP version.
+\end{itemize}
+
+The socket interface is preserved with extensions that accommodate the IPv6 address structure.
+
+\section{Transition from IPv4 to IPv6}
+
+\subsection{Objectives of the transition}
+
+The transition from IPv4 to IPv6 was designed to be incremental, seamless and smooth. These objectives reflect the requirement that existing IPv4 infrastructures continue to operate without disruption while IPv6 is gradually introduced. Because IPv6 is not backward compatible with IPv4 at the packet level, dedicated transition mechanisms are required to sustain connectivity across heterogeneous environments.
+
+\subsection{Fundamental transition strategies}
+
+Three families of mechanisms enable interoperability between IPv4 and IPv6 networks:
+
+\begin{itemize}
+\item the \textbf{dual-stack} approach, in which hosts and routers implement both protocol versions simultaneously;
+\item \textbf{translation} mechanisms, which rewrite packets so that IPv6-only devices can communicate with IPv4-only devices;
+\item \textbf{tunneling}, which encapsulates packets of one protocol version within those of the other to traverse incompatible networks.
+\end{itemize}
+
+These approaches may coexist and can be deployed progressively according to operational requirements.
+
+\subsection{Dual-stack operation}
+
+In a dual-stack configuration, a host or router runs both IPv4 and IPv6. Each layer 3 protocol is invoked as needed: if an application uses IPv6, packets are generated and processed in IPv6; if IPv4 is used, communication proceeds as in a purely IPv4 environment. This model requires complete duplication of higher-level network components, including routing protocols, routing tables and access control lists.
+
+In other words, two instances of layer 3 run at the same time on the device, one
+for IPv4 and one for IPv6, so that the device can communicate using both kinds of
+addresses. If a device cannot understand an IPv6 packet, it simply discards it
+and uses IPv4 when possible.
+
+The gradual removal of IPv4 functionality becomes feasible once all hosts within an administrative domain support IPv6. However, dual-stack operation has intrinsic limitations: it does not reduce the demand for IPv4 addresses, because each host must still possess an IPv4 address to participate in IPv4 communication. Moreover, applications may need explicit logic to choose between IPv4 and IPv6, complicating development and deployment.
+
+\begin{center}
+\safeimg[width=1.6in,height=2.64in]{media/image57.png}
+\end{center}
+
+\begin{center}
+\safeimg[width=1.6in,height=1.17in]{media/image58.png}
+\end{center}
+
+\subsection{Need for translation mechanisms}
+
+In real deployments, not all hosts will support dual-stack operation. Several coexistence scenarios must therefore be addressed:
+
+\begin{itemize}
+\item IPv6-only hosts communicating across an IPv4-only network;
+\item IPv4-only hosts communicating across an IPv6-only network;
+\item IPv6-only hosts communicating with IPv4-only hosts.
+\end{itemize}
+
+These cases require one or more \textbf{translation mechanisms}. Address translation cannot be trivially symmetric because the IPv6 address space is vastly larger than the IPv4 space, making it difficult or impossible to define a consistent mapping from
+
+IPv6 to IPv4. Consequently, translation mechanisms often target specific communication directions or deployment models. In general, translating IPv4-to-IPv6 is simpler than translating IPv6-to-IPv4, due to the address compression inherent in the latter.
+
+\subsection{Tunneling mechanisms}
+
+When IPv6 packets must traverse an IPv4-only network, tunneling provides an operational solution. The IPv6 packet becomes the payload of an IPv4 packet, thereby emulating a direct IPv6 link between the tunnel endpoints. Both hosts and routers can serve as tunnel endpoints.
+
+Several tunneling mechanisms exist:
+
+\begin{itemize}
+\item \textbf{GRE} (Generic Routing Encapsulation), a flexible encapsulation protocol;
+\item \textbf{IPv6-in-IPv4} encapsulation using protocol number 41;
+\item automatic tunneling systems, including IPv4-compatible addresses, 6over4, 6to4, tunnel brokers, ISATAP and Teredo.
+\end{itemize}
+
+Tunnels may be manually configured or automatically established based on predefined address structures or discovery mechanisms.
+
+\begin{center}
+\safeimg[width=4.03in,height=0.91in]{media/image59.png}
+\end{center}
+
+\section{Phases of IPv6 deployment}
+
+\subsection{Isolated IPv6 networks}
+
+The initial phase consists of independent IPv6 networks, or \emph{IPv6 islands}, separated by an IPv4-only infrastructure. Connectivity between these islands is achieved by manually configured tunnels. Devices within each island may be dual stack or IPv6-only, but inter-island communication requires tunneling.
+
+\begin{center}
+\safeimg[width=4.08in,height=2.48in]{media/image60.png}
+\end{center}
+
+\subsection{Expansion of IPv6 islands}
+
+As deployment progresses, IPv6 islands expand in size and number. Dual-stack routers and translating devices begin to appear at island boundaries. These devices allow IPv6-only hosts to communicate with the broader network, although the underlying infrastructure may still contain substantial IPv4 components.
+
+\begin{center}
+\safeimg[width=4.18in,height=2.38in]{media/image61.png}
+\end{center}
+
+\subsection{Native IPv6 connectivity}
+
+In the next phase, IPv6 becomes the dominant routing protocol. IPv4 connectivity persists but is increasingly confined to specific segments. Dual-stack routers remain necessary at perimeter regions where IPv4 and IPv6 interoperate, but most internal traffic flows natively over IPv6.
+
+\begin{center}
+\safeimg[width=4.18in,height=2.38in]{media/image62.png}
+\end{center}
+
+\subsection{IPv6 dominance and residual IPv4 support}
+
+Ultimately, IPv6 becomes the primary protocol, and IPv4 traffic is carried only when required. At this stage, IPv4 often traverses IPv6 networks via tunneling. IPv4 support remains solely to ensure connectivity with legacy devices and networks, while the operational core of the network is entirely IPv6-based.
+
+\begin{center}
+\safeimg[width=4.05in,height=2.38in]{media/image63.png}
+\end{center}
+
+\section{IPv6 packet header structure}
+
+\subsection{Comparison with the IPv4 header}
+
+The IPv4 header includes several fields that were removed or redesigned in IPv6. The IPv4 header contains variable-length options, a header checksum, fragmentation-related fields and a header length indicator. Many of these fields complicate router processing, and several are redundant when combined with modern link-layer checksums and transport-layer integrity checks.
+
+\begin{center}
+\safeimg[width=4.37in,height=2.12in]{media/image64.png}
+\end{center}
+
+\subsection{Fixed-length main header}
+
+The IPv6 main header has a fixed size of 40 bytes. It includes the following fields:
+
+\begin{itemize}
+\item \textbf{Version}: indicates protocol version 6.
+\item \textbf{Traffic class}: controls differentiated handling of packets by routers.
+\item \textbf{Flow label}: identifies packets belonging to the same data flow to facilitate special treatment or expedited forwarding.
+\item \textbf{Payload length}: specifies the length of the payload following the main header.
+\item \textbf{Next header}: identifies the type of the header that follows the main header.
+\item \textbf{Hop limit}: corresponds to the IPv4 time-to-live value.
+\item \textbf{Source address}: the 128-bit IPv6 address of the sender.
+\item \textbf{Destination address}: the 128-bit IPv6 address of the receiver.
+\end{itemize}
+
+The fixed-length structure improves processing predictability and avoids repeated parsing for variable header elements.
+
+\begin{center}
+\safeimg[width=5.0in,height=1.95in]{media/image65.png}
+\end{center}
+
+\subsection{Removed IPv4 header fields}
+
+Several IPv4 fields were deliberately eliminated in IPv6:
+
+\subsubsection*{Header checksum}
+\addcontentsline{toc}{subsubsection}{Header checksum}
+
+IPv6 omits the header checksum. Link-layer technologies typically include their own error detection, and transport protocols such as TCP and UDP include checksums that cover their headers and payloads. Because each IPv4 router recomputes the header checksum, eliminating it in IPv6 reduces processing overhead. Notably, the UDP checksum becomes mandatory in IPv6 to ensure integrity.
+
+\subsubsection*{Fragmentation fields}
+\addcontentsline{toc}{subsubsection}{Fragmentation fields}
+
+IPv6 routers do not fragment packets. If a packet exceeds the maximum transmission unit (MTU) of a link, the router discards it and returns an ICMPv6 \emph{Packet Too Big} message. Fragmentation is performed only by the source and only by including a dedicated fragmentation extension header. This model simplifies router logic and prevents excessive fragmentation at intermediate nodes.
+
+\subsubsection*{Header length}
+\addcontentsline{toc}{subsubsection}{Header length}
+
+IPv6 uses a fixed-length header, eliminating the need for a header-length field.
+
+\section{Extension headers and header chaining}
+
+\subsection{General structure of extension headers}
+
+Extension headers supplement the main header to provide optional functionality. They are indicated by the \textbf{Next header} field, which serves a role similar to that of the IPv4 protocol field. If additional headers are included, each extension header also contains its own next-header indicator, forming a chain leading ultimately to the transport-layer header.
+
+The numerical values for next-header identifiers reuse IPv4 protocol numbers where feasible. Typical values include:
+
+\begin{itemize}
+\item 0: hop-by-hop options;
+\item 6: TCP;
+\item 17: UDP;
+\item 43: routing extension;
+\item 44: fragmentation;
+\item 50: encapsulating security payload (ESP);
+\item 51: authentication header (AH);
+\item 60: destination options;
+\item 59: no next header.
+\end{itemize}
+
+Each extension header begins with a next-header field, a header-length field and extension-specific data.
+
+\begin{center}
+\safeimg[width=4.58in,height=1.85in]{media/image66.png}
+\end{center}
+
+\subsection{Header chaining mechanism}
+
+The extension-header architecture permits multiple headers to be linked in sequence. For instance, a packet may contain a hop-by-hop extension header followed by an authentication header, a routing header and finally a TCP header and payload. The chain is traversed in order, with each header indicating the type of the next.
+
+\begin{center}
+\safeimg[width=5.0in,height=1.24in]{media/image67.png}
+\end{center}
+
+\section{Selected extension headers}
+
+\subsection{Hop-by-hop options header}
+
+The hop-by-hop header carries information that must be processed by every router along the packet's path. Because such processing is expensive, this header must appear immediately after the main IPv6 header. It contains a series of type-length-value (TLV) formatted options, each consisting of an option type, an option length and the option data.
+
+The jumbogram option specifies a jumbo payload length, enabling very large data transfers without fragmentation, provided all intervening routers support this mechanism.
+
+\begin{center}
+\safeimg[width=4.43in,height=1.38in]{media/image68.png}
+\end{center}
+
+\begin{center}
+\safeimg[width=5.0in,height=1.83in]{media/image69.png}
+\end{center}
+
+\subsection{Routing extension header}
+
+The routing header allows the source to specify a sequence of intermediate nodes to be visited before reaching the destination. This mechanism resembles IPv4 loose or strict source routing but is redesigned for IPv6 with explicit support for mobility.
+
+The routing header includes:
+
+\begin{itemize}
+\item a next-header field;
+\item a header-length field;
+\item a routing type;
+\item a segments-left counter indicating how many intermediate nodes remain;
+\item a sequence of intermediate addresses.
+\end{itemize}
+
+\begin{center}
+\safeimg[width=2.93in,height=1.1in]{media/image70.png}
+\end{center}
+
+\begin{center}
+\safeimg[width=3.83in,height=1.57in]{media/image71.png}
+\end{center}
+
+\subsection{Fragment extension header}
+
+Fragmentation in IPv6 occurs only at the source. When a source determines that a packet exceeds the path MTU, it must fragment the packet using a fragmentation header. Each fragment carries:
+
+\begin{itemize}
+\item an identification value shared across all fragments;
+\item a fragment offset;
+\item a flag indicating whether additional fragments follow.
+\end{itemize}
+
+The receiving node reassembles all fragments into the original packet. Intermediate routers never perform fragmentation, eliminating the complexity and inefficiency of router-based fragmentation found in IPv4.
+
+\subsection{IPsec-related extension headers}
+
+IPv6 integrates support for the security architecture known as IPsec. Two extension headers provide cryptographic functions:
+
+\subsubsection*{Authentication header (AH)}
+\addcontentsline{toc}{subsubsection}{Authentication header (AH)}
+
+AH ensures the authenticity and integrity of a packet. It protects most fields in the main header and all fields in higher-layer headers and payloads, excluding those that may legitimately change en route.
+
+\subsubsection*{Encapsulating security payload (ESP)}
+\addcontentsline{toc}{subsubsection}{Encapsulating security payload (ESP)}
+
+ESP provides confidentiality in addition to integrity and authenticity. The payload is encrypted, and optional authentication information may also be included.
+
+These security headers may appear alone or in conjunction with other extension headers depending on the desired level of protection.
+
+\section{Interfacing IPv6 with the lower layer}
+
+\subsection{Encapsulation of IPv6 packets}
+
+IPv6 operates above a variety of layer 2 technologies, each of which encapsulates IPv6 packets within its own framing structure. On Ethernet networks, IPv6 is identified by the EtherType value 86DD. Treating IPv6 as a distinct layer 3 protocol allows IPv4 and IPv6 to coexist on the same physical infrastructure without interference. This coexistence is an essential enabler of dual-stack operation, in which devices can process both IPv4 and IPv6 traffic independently.
+
+IPv6 is not an entirely new protocol: its forwarding and routing principles are
+almost the same as those of IPv4. The EtherType value 86DD allows the receiving
+device to distinguish IPv6 packets from IPv4 packets.
+
+\subsection{Mapping IPv6 addresses to link-layer identifiers}
+
+When an IPv6 packet is sent on a link-layer network, it must be encapsulated with an appropriate destination MAC address. The method used to determine the MAC address depends on whether the IPv6 destination address is multicast or unicast.
+
+\subsubsection*{Multicast address mapping}
+\addcontentsline{toc}{subsubsection}{Multicast address mapping}
+
+IPv6 multicast transmission is built on top of Ethernet multicast. Unlike Ethernet broadcast frames, Ethernet multicast frames can be filtered by network interface controllers, reducing unnecessary processing by hosts that are not members of a multicast group.
+
+IPv6 defines an algorithmic mapping between multicast IPv6 addresses and Ethernet multicast addresses. Specifically, the reserved Ethernet multicast prefix 33-33 identifies frames carrying IPv6 multicast packets. The lower 32 bits of the IPv6 multicast address are copied directly into the lower 32 bits of the Ethernet multicast address. The mapping can be written as:
+
+33-33-xx-xx-xx-xx, where xx-xx-xx-xx corresponds to the least significant 32 bits of the IPv6 multicast address. For example, an IPv6 multicast address such as:
+
+FF0C::89:AABB:CCDD is mapped onto the Ethernet address:
+
+33:33:AA:BB:CC:DD.
+
+\begin{center}
+\safeimg[width=4.33in,height=0.92in]{media/image72.png}
+\end{center}
+
+\subsubsection*{Unicast address mapping and neighbor discovery}
+\addcontentsline{toc}{subsubsection}{Unicast address mapping and neighbor discovery}
+
+Unlike multicast mapping, unicast mapping cannot rely solely on address manipulation. Instead, IPv6 uses a protocol-based approach known as \textbf{neighbor discovery}, which replaces the IPv4 address resolution protocol (ARP). Neighbor discovery operates entirely within ICMPv6 and relies on multicast rather than broadcast.
+
+A key element of neighbor discovery is the \textbf{solicited-node multicast address}, automatically generated for every unicast address configured on an interface. The solicited-node address is formed by appending the least significant 24 bits of the unicast address to the prefix FF02::1:FF00:0/104. Because only the final 24 bits vary, each solicited-node multicast group is small, usually consisting of a single host.
+
+Since the solicited-node address depends only on the last 24 bits of the unicast
+address, two hosts of the same LAN could in principle share it, but this is
+extremely unlikely. Even in that case, the host that is not the target would
+simply ignore the solicitation.
+
+This design ensures that neighbor-solicitation messages, used for address resolution, are delivered only to the host whose MAC address is being queried, thereby reducing the overhead imposed on other devices.
+
+\begin{center}
+\safeimg[width=3.67in,height=1.13in]{media/image73.png}
+\end{center}
+
+\subsection{Neighbor discovery and address resolution}
+
+Neighbor discovery integrates several IPv4 functions, including ARP, router discovery and reachability detection. For address resolution, the following steps occur:
+
+\begin{enumerate}
+\item The requester constructs an ICMPv6 \textbf{neighbor solicitation} message, targeting the solicited-node multicast address derived from the target IPv6 address.
+\item The message is encapsulated using the corresponding multicast MAC address. The solicited-node address FF02::1:FF00:100 maps to the MAC address 33-33-FF-00-01-00.
+\item The host owning the target IPv6 address receives the solicitation and responds with an ICMPv6 \textbf{neighbor advertisement}. This advertisement is sent to the unicast address of the requester and contains the target's MAC address.
+\item The requester stores the resulting IPv6-to-MAC mapping in its neighbor cache, analogous to the ARP cache in IPv4.
+\end{enumerate}
+
+Neighbor discovery not only replaces ARP but also avoids broadcast mechanisms entirely, thereby improving efficiency and scalability in IPv6 networks.
+
+\begin{center}
+\safeimg[width=4.17in,height=1.75in]{media/image74.png}
+\end{center}
+
+\section{ICMPv6}
+
+\subsection{Functions and purpose}
+
+ICMPv6 is an integral component of IPv6, providing control, diagnostic and management capabilities essential for the correct operation of the protocol suite. It subsumes several functionalities that were implemented as separate protocols in IPv4. In particular, ICMPv6 incorporates:
+
+\begin{itemize}
+\item diagnostics;
+\item neighbor discovery;
+\item multicast group management;
+\item error notification mechanisms.
+\end{itemize}
+
+Features covered by ICMPv4, ARP and IGMP are consolidated into a unified architecture. ICMPv6 thus serves as the foundation for core IPv6 mechanisms such as router discovery, address resolution, duplicate address detection and multicast listener management.
+
+\subsection{Message format}
+
+All ICMPv6 messages are encapsulated in IPv6 packets. The next-header value for ICMPv6 is 58. Messages include the following general structure:
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Type} & \textbf{Code} & \textbf{Checksum}\\
+\hline
+\multicolumn{3}{|c|}{Message body}\\
+\hline
+\end{tabular}
+\end{center}
+
+Messages may be up to 576 bytes in length. The \textbf{type} identifies the general category of the message, while the \textbf{code} provides additional detail about the specific condition or operation.
+
+ICMPv6 types below 128 represent \textbf{error messages}, while types equal to or greater than 128 correspond to \textbf{informational messages}.
+
+The checksum is an error-control mechanism: it does not guarantee the integrity
+of the message.
+
+\begin{center}
+\safeimg[width=3.73in,height=2.97in]{media/image75.png}
+\end{center}
+
+\section{ICMPv6 error messages}
+
+\begin{center}
+\safeimg[width=3.18in,height=1.14in]{media/image76.png}
+\end{center}
+
+\subsection{Destination unreachable}
+
+A destination-unreachable message (type 1) is generated when a node cannot deliver a packet. The code field distinguishes the specific reason, for example:
+
+\begin{itemize}
+\item no route to the destination;
+\item communication with the destination not permitted;
+\item incorrect scope;
+\item port unreachable;
+\item address unreachable.
+\end{itemize}
+
+\subsection{Packet too big}
+
+A packet-too-big message (type 2) is issued by a router when it receives a packet that exceeds the MTU of the next hop. Unlike IPv4, IPv6 routers do not fragment packets. Instead, the router discards the oversized packet and sends this message to inform the source of the maximum payload it can forward. This behavior is central to path MTU discovery.
+
+The MTU (Maximum Transmission Unit) is the maximum amount of data that the data
+link layer can accept in a single frame. Since an IPv6 packet cannot be
+fragmented by routers, a packet larger than the MTU is dropped.
+
+\subsection{Time exceeded}
+
+A time-exceeded message (type 3) is generated when a router receives a packet whose hop limit has reached zero. As in IPv4, this mechanism prevents packets from circulating indefinitely due to routing loops.
+
+\subsection{Parameter problem}
+
+A parameter-problem message (type 4) indicates that a node found an error in an IPv6 header or extension header. Examples include an invalid next-header value or malformed fields. The message body includes the pointer to the problematic field and part of the offending packet for diagnostic purposes.
+
+\section{ICMPv6 informational messages}
+
+\subsection{Echo request and echo reply}
+
+Echo-request (type 128) and echo-reply (type 129) messages are used for diagnostic testing, most notably by the ping utility. They include fields for an identifier and sequence number to enable matching of replies with requests.
+
+\begin{center}
+\safeimg[width=3.24in,height=1.14in]{media/image77.png}
+\end{center}
+
+\section{Neighbor discovery messages}
+
+Neighbor discovery relies on several ICMPv6 message types.
+
+\subsection{Neighbor solicitation}
+
+Neighbor-solicitation messages (type 135) request link-layer address resolution and also verify the reachability of neighbors. The message identifies the target IPv6 address and may include link-layer source information in an options field.
+
+\begin{center}
+\safeimg[width=3.68in,height=1.97in]{media/image78.png}
+\end{center}
+
+\subsection{Neighbor advertisement}
+
+Neighbor-advertisement messages (type 136) are sent in response to neighbor
+solicitations or to announce changes in link-layer addresses. Each message
+carries three flags:
+\begin{itemize}
+	\item \textbf{R} (router): set to 1 when the advertisement is sent by a router
+	(for example the default gateway);
+	\item \textbf{S} (solicited): set to 1 when the advertisement is sent in
+	response to a neighbor solicitation;
+	\item \textbf{O} (override): set to 1 when the link-layer address carried in
+	the message can overwrite the cached one, even if an entry for the target
+	already exists in the neighbor cache with a different MAC address.
+\end{itemize}
+
+\begin{center}
+\safeimg[width=4.56in,height=2.02in]{media/image79.png}
+\end{center}
+
+\section{Multicast listener management}
+
+ICMPv6 provides mechanisms for discovering and maintaining multicast group membership. These functions replace IGMP in IPv6.
+
+\begin{center}
+\safeimg[width=4.14in,height=1.65in]{media/image80.png}
+\end{center}
+
+\subsection{Multicast listener queries}
+
+Routers send multicast-listener-query messages (type 130) to determine which multicast groups are active on a link. Queries may be general or may target specific group addresses.
+
+\begin{center}
+\safeimg[width=3.24in,height=0.97in]{media/image81.png}
+\end{center}
+
+\subsection{Multicast listener reports}
+
+Listeners respond with multicast-listener-report messages (type 131), indicating the multicast groups they wish to receive. These reports are sent to the all-routers multicast address. A listener sends a multicast-listener-done message (type 132) when it no longer wishes to receive packets from a specific group.
+
+The procedure can be summarized as follows. First, the router sends a multicast
+listener query, which is carried in an ordinary IPv6 packet. Then, every
+interested host answers with a multicast listener report that carries its
+subscription to a group. As long as at least one interested host exists for a
+group on the link, the router keeps forwarding the traffic of that group.
+
+\section{ICMPv6 redirect messages}
+
+Routers use redirect messages (type 137) to inform hosts of a better first-hop for a particular destination. The redirect message indicates:
+
+\begin{itemize}
+\item the destination address;
+\item the preferred next-hop address;
+\item information from the original packet to assist the host in updating its routing information.
+\end{itemize}
+
+Redirects apply only to on-link destinations and serve to optimize routing choices in simple topologies.
+
+\begin{center}
+\safeimg[width=3.68in,height=2.53in]{media/image82.png}
+\end{center}
+
+\begin{center}
+\safeimg[width=3.68in,height=1.13in]{media/image83.png}
+\end{center}
+
+\section{Device configuration in IPv6}
+
+So far we have seen how IPv6 addresses are structured, how they are mapped onto link-layer addresses and how ICMPv6 supports neighbor discovery, a function that in IPv4 was handled by ARP and is now part of ICMPv6. A device that has to communicate over the Internet, however, needs a \emph{complete} configuration, which is more than an address and a prefix length (in IPv4, an address and a netmask). This section describes which information is needed and how a host can obtain it.
+
+\subsection{Required configuration information}
+
+To participate in an IPv6 network, a device requires several pieces of
+configuration information. The essential parameters include:
+
+\begin{itemize}
+	\item an address prefix and its prefix length;
+	\item an interface identifier, which typically constitutes the lower
+	64 bits of an IPv6 unicast address;
+	\item the address of a \textbf{default gateway}, i.e., the router to which
+	the host sends packets whose destinations are not directly reachable
+	on its local link. Without a default gateway, the host can communicate
+	with devices on the local network but cannot normally reach external
+	destinations;
+	\item the address of at least one \textbf{DNS server}, which resolves
+	domain names into IP addresses. Although DNS mappings may be cached
+	locally, a DNS server is still needed when a name is not cached or
+	when a cached entry expires;
+	\item link parameters such as the \textbf{maximum transmission unit
+		(MTU)}, which specifies the maximum packet size supported by the link.
+	Knowing the MTU helps the host avoid sending packets that exceed the
+	link's size limit.
+\end{itemize}
+
+The address and prefix length alone are therefore insufficient for
+complete network connectivity. Additional information may be required
+depending on the network environment and its administrative policies.
+
+
+\subsection{Configuration models}
+
+In IPv4, two main approaches are available. The first is
+\textbf{manual configuration}, in which an administrator explicitly
+enters the IP address, netmask, default gateway, DNS server and other
+parameters. The second is \textbf{automatic configuration through
+	DHCP} (Dynamic Host Configuration Protocol). DHCP makes the host
+plug-and-play: the host discovers available DHCP servers and obtains
+a complete configuration without requiring the user to enter each
+parameter manually.
+
+IPv6 provides four configuration techniques:
+
+\begin{itemize}
+	\item \textbf{Manual configuration}: the user or administrator
+	explicitly configures the device parameters.
+	\item \textbf{Stateful configuration}: DHCPv6 provides the IPv6 address
+	and the other configuration parameters.
+	\item \textbf{Stateless configuration}: the host generates its own
+	interface identifier, obtains the address prefix and other available
+	configuration information from router advertisements, and constructs
+	its IPv6 address.
+	\item \textbf{Hybrid configuration (stateless DHCPv6)}: the host
+	generates its interface identifier and obtains the prefix from a
+	router, while DHCPv6 supplies additional configuration information,
+	such as the DNS server address and MTU.
+\end{itemize}
+
+In stateless and hybrid configuration, the interface identifier is
+generated by the host itself. The difference between the two modes
+concerns how the remaining configuration information is obtained:
+from the router in stateless configuration, and from DHCPv6 in the
+hybrid mode.
+
+\subsubsection*{Manual configuration}
+\addcontentsline{toc}{subsubsection}{Manual configuration}
+
+All parameters are explicitly defined by an administrator. This mode is typically used in infrastructure devices such as routers or servers requiring predictable and stable addresses.
+
+\subsubsection*{Stateful configuration}
+\addcontentsline{toc}{subsubsection}{Stateful configuration}
+
+In a stateful configuration model, a DHCPv6 server provides all necessary information, including IPv6 addresses and additional configuration parameters. The server maintains state and tracks address assignments.
+
+\subsubsection*{Stateless configuration}
+\addcontentsline{toc}{subsubsection}{Stateless configuration}
+
+Stateless autoconfiguration enables a host to construct its own addresses by combining a router-advertised prefix with a locally generated interface identifier. Routers disseminate configuration parameters using ICMPv6 router-advertisement messages, enabling hosts to configure basic connectivity without relying on DHCP.
+
+ In this model almost everything comes from the router, while the interface identifier is autogenerated by the host.
+
+\subsubsection*{Hybrid configuration}
+\addcontentsline{toc}{subsubsection}{Hybrid configuration}
+
+A hybrid mode, often called \textbf{stateless DHCP}, combines stateless address autoconfiguration with DHCPv6 used only for non-address-related information. Addresses are constructed from router-advertised prefixes, while configuration elements such as DNS server addresses are obtained through DHCPv6.
+
+ The interface identifier is still generated by the host.
+
+In this configuration, the information other than the address (for example the DNS server) is obtained through DHCPv6, while the prefix comes from the router.
+
+\section{Interface identifiers}
+
+\subsection{Sources of interface identifiers}
+
+The interface identifier can be obtained in three main ways,
+depending on the configuration technique:
+\begin{itemize}
+	\item \textbf{Manual configuration}: the user or administrator
+	specifies the interface identifier.
+	\item \textbf{Stateful configuration}: the identifier is provided
+	through DHCPv6.
+	\item \textbf{Stateless and hybrid configuration}: the host generates
+	the identifier automatically and combines it with the address prefix
+	obtained from a router.
+\end{itemize}
+
+Two automatic generation techniques are considered here:
+the \textbf{EUI-48 to EUI-64 mapping}, which derives a 64-bit
+identifier from a 48-bit MAC address, and the \textbf{privacy-aware
+	technique}, which generates an identifier designed to reduce
+traceability across different networks.
+
+
+\subsection{EUI-48 to EUI-64 conversion}
+
+The interface identifier is typically 64 bits long, whereas a MAC
+address (EUI-48) contains only 48 bits. Therefore, two bytes must be
+inserted to obtain a 64-bit identifier.
+
+A MAC address consists of two main parts. The first three bytes form
+the \textbf{Organizationally Unique Identifier (OUI)}, which identifies
+the manufacturer. The remaining bytes are assigned by the manufacturer
+to distinguish individual interfaces.
+
+
+\begin{center}
+	\safeimg[width=4.04in,height=2.21in]{media/image84.png}
+\end{center}
+
+\pagebreak
+The conversion proceeds as follows:
+
+\begin{enumerate}
+	\item Split the 48-bit MAC address between the OUI and the
+	manufacturer-assigned part.
+	\item Insert the two bytes \texttt{FF} and \texttt{FE} between these
+	parts, obtaining a 64-bit sequence.
+	\item Invert the seventh bit of the first byte, known as the
+	\textbf{universal/local bit}.
+\end{enumerate}
+
+In the original MAC address, this bit is 0 for a universally
+administered address and 1 for a locally administered address. In
+the resulting interface identifier, the corresponding bit has the
+opposite meaning: 1 indicates universal scope, whereas 0 indicates
+local scope. The bit must therefore be inverted.
+
+The universal/local bit does not provide a security guarantee:
+an attacker can manually configure a MAC address, including its
+seventh bit. In virtual environments, such as VirtualBox, MAC
+addresses are often locally administered and the bit is set to 1.
+
+The purpose of inverting the bit is also to make manually configured
+local identifiers easier to write. With the local value represented
+by 0, leading zero bits can often be omitted when writing an IPv6
+address in compressed notation.
+
+The values \texttt{FF} and \texttt{FE} were selected to fill the
+16-bit gap between the original 48-bit address and the 64-bit
+identifier. Their selection is a convention of this mapping.
+
+\section{Privacy considerations}
+
+\subsection{Traceability concerns}
+
+A possible drawback of the EUI-48 to EUI-64 mapping is
+\textbf{traceability}. Since the interface identifier is derived
+from the MAC address, the same device may use the same 64-bit
+identifier on different networks, even when the network prefixes
+change.
+
+An observer may therefore correlate IPv6 addresses used on different
+networks and infer that they belong to the same device or user.
+This can facilitate tracking over time. To mitigate this privacy
+problem, RFC 4941 introduced privacy extensions for stateless address
+autoconfiguration in IPv6.
+
+\subsection{Privacy extension algorithm}
+
+The privacy extension algorithm generates a pseudorandom
+64-bit interface identifier instead of directly exposing the
+MAC-derived identifier.
+
+The procedure described in the lecture is as follows:
+
+\begin{enumerate}
+	\item Generate the EUI-64 identifier from the MAC address using
+	the mapping described above.
+	\item Place a 64-bit random value before this identifier, forming
+	a 128-bit input.
+	\item Apply a hash function with a 128-bit output, such as MD5,
+	to the input. The hash function produces a fixed-length digest.
+	\item Select the 64 most significant bits of the digest.
+	\item Apply a bit mask that sets the seventh bit to 0. This marks
+	the resulting identifier as locally scoped, because the hash
+	output does not guarantee global uniqueness.
+	\item Use the resulting 64-bit value as the interface identifier
+	and combine it with the IPv6 address prefix.
+\end{enumerate}
+
+
+\begin{center}
+	\safeimg[width=4.92in,height=2.57in]{media/image85.png}
+\end{center}
+
+When generating a subsequent identifier, the previously stored value
+may be reused as the input's random component. This allows the
+algorithm to generate a different pseudorandom result without
+requiring a completely new random seed each time.
+
+The use of a hash function makes the result difficult to predict
+from the input, while its fixed-length output is convenient for
+constructing the interface identifier. The technique requires
+additional computation compared with the direct EUI-64 mapping,
+but the lecture notes that hash functions are sufficiently fast for
+this purpose.
+
+
+\section{Address usage and selection}
+
+A host may maintain multiple IPv6 addresses simultaneously. Typically, these include:
+
+\begin{itemize}
+\item a stable address derived from a MAC-based identifier;
+\item one or more temporary addresses derived from privacy extensions.
+\end{itemize}
+
+Both types of addresses may be used to initiate or accept connections. The operating system or application may select among available addresses according to preferences or policies.
+
+
+A host may maintain multiple IPv6 addresses simultaneously, including
+addresses with stable interface identifiers and addresses generated
+using privacy extensions.
+
+The MAC-based technique is useful when a stable identifier is
+appropriate and traceability is not a major concern. Privacy-aware
+identifiers are preferable when reducing the possibility of tracking
+a device across different networks is important.
+
+The operating system or application may select which address to use
+according to the destination, application requirements and local
+configuration policies. For example, a host may use a stable address
+for communication within a trusted local network and a privacy-aware
+address for connections to destinations on the wider Internet.
+Applications may also impose requirements on the type of address
+accepted for communication.
+
+
+
+
+\section{Prefix acquisition}
+
+\subsection{Sources of prefixes}
+An IPv6 address prefix can be obtained through different mechanisms,
+depending on the configuration technique:
+
+\begin{itemize}
+	\item \textbf{Manual configuration}: the prefix is entered by the
+	user or administrator.
+	\item \textbf{Stateful configuration}: the prefix and address
+	configuration are obtained through DHCPv6.
+	\item \textbf{Link-local address generation}: the host automatically
+	uses the link-local prefix \texttt{FE80::/10}. This prefix is
+	reserved for communication on the local IPv6 link.
+	\item \textbf{Router advertisements}: in stateless and hybrid
+	configuration, the host normally obtains its global unicast prefix
+	from a router.
+\end{itemize}
+
+In stateless configuration, the router provides the prefix and the
+other available configuration information through router
+advertisements. In hybrid configuration, the router provides the
+prefix, while DHCPv6 supplies additional parameters.
+
+The next step is therefore to understand how the host discovers
+routers and obtains their advertised configuration.
+
+\section{Router and prefix discovery}
+
+\begin{center}
+\safeimg[width=3.68in,height=0.53in]{media/image86.png}
+\end{center}
+
+\subsection{Router solicitation}
+Router discovery is part of ICMPv6. A host can send a
+\textbf{Router Solicitation (RS)} message to request configuration
+information from routers on the local link.
+
+The message is sent to the all-routers multicast address
+\texttt{FF02::2}. Routers receiving the solicitation can respond
+with a \textbf{Router Advertisement (RA)}, containing information
+about the configuration they offer.
+
+A host does not always need to send a solicitation before receiving
+configuration information. Routers may also send unsolicited Router
+Advertisements periodically, allowing a newly connected host to
+discover a router without explicitly requesting one.
+
+
+\begin{center}
+\safeimg[width=3.67in,height=1.09in]{media/image87.png}
+\end{center}
+
+\subsection{Router advertisement}
+
+A router sends a \textbf{Router Advertisement (RA)} either in response
+to a Router Solicitation or periodically without a solicitation.
+The message contains configuration parameters and flags that allow
+the host to determine how it should configure its IPv6 interface.
+
+Important fields include:
+
+\begin{itemize}
+	\item \textbf{Router lifetime}: the period during which the host
+	should consider the advertising router valid as a default gateway.
+	When the lifetime expires, the host must reconsider the router's
+	validity.
+	\item \textbf{Current hop limit}: the recommended hop-limit value
+	for outgoing IPv6 packets.
+	\item \textbf{Reachable time}: the time value used in neighbor
+	reachability determination.
+	\item \textbf{Retransmission timer}: the interval used when
+	retransmitting a message for which no response has been received.
+	\item \textbf{Managed address configuration flag (M)}: when set to
+	1, it indicates that addresses are to be obtained through DHCPv6.
+	This corresponds to stateful configuration.
+	\item \textbf{Other configuration flag (O)}: when set to 1, it
+	indicates that additional configuration parameters are available
+	through DHCPv6. When the prefix is supplied by the router, this
+	distinguishes hybrid configuration from stateless configuration.
+\end{itemize}
+
+The address prefix, DNS server information, MTU and other parameters
+may be carried in the RA's options. Many ICMPv6 messages use options
+to carry information whose structure depends on the specific message.
+
+The flags identify the automatic configuration procedure:
+
+\begin{itemize}
+	\item $M=1$: stateful configuration through DHCPv6;
+	\item $M=0$ and $O=0$: stateless configuration;
+	\item $M=0$ and $O=1$: hybrid configuration, also called stateless
+	DHCPv6.
+\end{itemize}
+
+\begin{center}
+\safeimg[width=3.69in,height=1.52in]{media/image88.png}
+\end{center}
+
+\subsection{Prefix information option}
+
+The \textbf{Prefix Information Option} carries the IPv6 address
+prefix and information about how long the prefix can be used.
+
+\begin{center}
+	\safeimg[width=3.77in,height=2.05in]{media/image89.png}
+\end{center}
+
+
+Its important fields include:
+
+\begin{itemize}
+	\item \textbf{Prefix}: the advertised IPv6 prefix.
+	\item \textbf{Prefix length}: the number of significant bits
+	belonging to the prefix.
+	\item \textbf{Valid lifetime}: the time for which the prefix
+	remains valid. After this lifetime expires, the address must no
+	longer be considered valid.
+	\item \textbf{Preferred lifetime}: the time during which the address
+	is preferred for use. This lifetime may be shorter than the valid
+	lifetime, allowing an address to become deprecated before it
+	becomes invalid.
+	\item \textbf{L flag}: indicates whether the prefix identifies
+	on-link destinations.
+	\item \textbf{A flag}: indicates whether the prefix can be used for
+	autonomous address configuration.
+\end{itemize}
+
+The lecture discusses the prefix and its lifetimes in detail.
+The L and A flags are visible on the slide, but their meaning was
+not explained in detail during the lecture.
+
+
+\subsection{MTU and link-layer address options}
+
+The Router Advertisement may include additional options beyond the
+prefix information.
+
+The \textbf{MTU Option} advertises the maximum transmission unit
+for the link. This allows hosts to configure their interfaces
+according to the link's MTU.
+
+\begin{center}
+	\safeimg[width=3.68in,height=0.53in]{media/image90.png}
+\end{center}
+
+
+The \textbf{Link-Layer Address Option} can carry the router's
+link-layer address directly in the advertisement. The same type
+of option is also used in Neighbor Advertisement messages to
+communicate link-layer address information explicitly.
+
+\begin{center}
+\safeimg[width=3.68in,height=0.53in]{media/image91.png}
+\end{center}
+
+\section{Duplicate address detection}
+
+Before assigning an address, a host performs duplicate address detection. The host sends a neighbor-solicitation message targeting the solicited-node multicast address corresponding to the address being tested. If no neighbor advertisement is received within a timeout (typically one second), the address is deemed unique.
+
+\section{Stateless configuration procedures}
+
+\subsection{Basic stateless configuration}
+
+The basic stateless autoconfiguration process includes the following steps:
+
+\begin{enumerate}
+\item generation of a link-local address;
+\item duplicate address detection on the link-local address;
+\item subscription to the solicited-node multicast address;
+\item configuration of the corresponding multicast MAC filter;
+\item transmission of an ICMP multicast-listener report to signal membership. These steps enable full on-link communication.
+\end{enumerate}
+
+\subsection{Stateless configuration with router guidance}
+
+When routers are present, additional steps occur:
+
+\begin{enumerate}
+\item optional transmission of a router solicitation;
+\item reception of router advertisements containing prefixes;
+\item construction of one or more global or site-local addresses using advertised prefixes;
+\item duplicate address detection for each newly created address;
+\item multicast configuration as described above.
+\end{enumerate}
+
+\subsection{Renumbering}
+
+Routers may send updated advertisements at any time. Addresses transition between \textbf{preferred} and \textbf{deprecated} states based on lifetime values. Deprecated addresses may continue to be used for established connections but are not selected for new ones. This mechanism simplifies network renumbering, for example when switching between providers.
+
+\section{Stateful DHCPv6 configuration}
+
+In stateful mode, indicated by the \textbf{M} flag in router advertisements, hosts use DHCPv6 to obtain addresses and configuration parameters. DHCPv6 operates using a client/server model and includes the following message types:
+
+\begin{itemize}
+\item solicit (sent to FF02::1:2);
+\item advertise;
+\item request (sent to FF02::1:2);
+\item reply;
+\item release;
+\item reconfigure.
+\end{itemize}
+
+\section{Stateless DHCPv6}
+
+When the \textbf{M} flag is zero and the \textbf{O} flag is one, hosts form their own IPv6 addresses from router-advertised prefixes but obtain supplementary configuration, such as DNS server addresses, via DHCPv6. This hybrid model reduces administrative overhead while maintaining sufficient control over key network parameters.
+

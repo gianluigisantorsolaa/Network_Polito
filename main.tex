@@ -1,0 +1,137 @@
+\documentclass[11pt,a4paper,openany]{report}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\IfFileExists{lmodern.sty}{\usepackage{lmodern}}{}
+\usepackage{textcomp}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+
+\usepackage{booktabs,array}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\IfFileExists{microtype.sty}{\usepackage[expansion=false]{microtype}}{}
+\usepackage[hidelinks,pdfcreator={LaTeX}]{hyperref}
+
+
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\setlist{itemsep=2pt,topsep=3pt,parsep=0pt}
+\raggedbottom
+
+% images: show a placeholder box if the file is not found
+\newcommand{\safeimg}[2][]{%
+  \IfFileExists{#2}{\includegraphics[#1,keepaspectratio]{#2}}{%
+    \fbox{\parbox{0.8\linewidth}{\centering\small\vspace{1.5em}[missing image: \detokenize{#2}]\vspace{1.5em}}}}}
+
+\DefineVerbatimEnvironment{codeblock}{Verbatim}{fontsize=\small,frame=single,framesep=3mm,rulecolor=\color{black!40}}
+
+\newtcolorbox{notebox}[1][]{colback=gray!6,colframe=gray!50,boxrule=0.4pt,arc=1pt,left=8pt,right=8pt,top=6pt,bottom=6pt,#1}
+
+% =====================================================================
+% HOW TO COMPILE ONLY SOME CHAPTERS
+% Uncomment ONE \includeonly line below (or write your own list).
+% Chapter numbers, table of contents and page numbers of the omitted
+% chapters are preserved (read from the .aux files), so compile the
+% full document at least once first.
+% =====================================================================
+%\includeonly{chapters/01_ipv4,chapters/02_routing,chapters/03_ipv6,chapters/04_lans_vlans,chapters/05_qos}
+%\includeonly{chapters/06_cloud,chapters/07_virtualization,chapters/08_containers,chapters/09_network_softwarization}
+%\includeonly{chapters/06_cloud}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\pagestyle{empty}
+\begin{center}
+\safeimg[width=0.95\linewidth]{media/image1.png}
+
+\vspace{2em}
+{\Large Master's Degree in Cybersecurity\par}
+\vspace{1em}
+{\Large Lecture Notes of\par}
+{\LARGE\bfseries Computer networks and cloud technologies\par}
+\vspace{0.5em}
+(01NXIWR)
+
+\vspace{3em}
+{\large Author:\par}
+{\large\bfseries Andrea Amante\par}
+\vspace{1em}
+{\large Professor: Daniele Bringhenti\par}
+\vspace{3em}
+Academic Year: 2026/27
+\end{center}
+\vfill
+\begin{flushright}
+	{\footnotesize\itshape Edited by Gianluigi Santorsola}
+\end{flushright}
+\clearpage
+
+\begin{notebox}
+\textbf{Notice for the reader}\par
+These notes have been prepared solely as a \textbf{personal study aid} for students enrolled in the relevant course. The content is entirely based on the official lecture slides and oral explanations provided by the course professor, as well as on material discussed during lectures.
+
+All images, diagrams, figures, charts, and schematic representations included in these notes are not original and \textbf{remain the intellectual property of their respective authors}. Such materials have been taken from the official slides provided by the professor and/or publicly available sources on the internet and are \textbf{used exclusively for educational purposes}. \textbf{No claim of ownership} is made over any third-party material.
+
+The notes were written with the assistance of artificial intelligence tools. While \textbf{care has been taken} to ensure accuracy and coherence, errors, omissions, or imprecisions may be present. Consequently, the author does not guarantee the completeness, correctness, or reliability of the information contained herein.
+
+These notes \textbf{must not be considered an official resource} and must not be used as the sole source of knowledge for exam preparation or for understanding the course content. They are \textbf{intended only as a supplementary support tool} and \textbf{do not replace attendance at lectures}, official course materials, textbooks, or other resources recommended by the professor.
+
+The author assumes \textbf{no responsibility} or liability for academic performance, examination results, grades, or any consequences arising from the use or misuse of these notes.
+\end{notebox}
+
+\begin{notebox}
+\textbf{Disclaimer}\par
+By using this material, the reader acknowledges and accepts that it is provided for support purposes only and that ultimate responsibility for learning outcomes remains with the student.
+\end{notebox}
+
+\begin{notebox}
+	\textbf{Edited Version Notice}\par
+	This is an edited version of the original notes. Most of its content has been revised and integrated with the notes taken from the oral explanations given by the professors during the lectures, in addition to the official slides. Since these integrations were written from lecture notes, errors, omissions, or imprecisions may be present, and the content should always be checked against the official course material.
+\end{notebox}
+
+\begin{notebox}
+\textbf{Contribution Notice}\par
+These notes were prepared with the \textbf{maximum possible effort and attention to detail}. However, the exam was taken before the notes were fully completed and thoroughly revised. As a result, \textbf{some images may be missing}, certain explanations may require refinement, and a few sections may need further review or clarification.
+\end{notebox}
+
+\begin{notebox}
+Readers are encouraged to \textbf{actively contribute} to the improvement of this material. If you identify inaccuracies, missing content, unclear explanations, or possible enhancements, please consider supporting the project by \textbf{submitting pull requests}, proposing revisions, or committing improvements. Constructive collaboration will help increase the quality, completeness, and reliability of these notes for everyone.
+\end{notebox}
+\clearpage
+\pagenumbering{arabic}
+\hypersetup{pageanchor=true}
+
+% ---------------------- Table of contents ----------------------------
+\setcounter{tocdepth}{2}% 3 = also unnumbered sub-subsections (about 16 pages)
+\tableofcontents
+\clearpage
+
+
+
+
+% ---------------------- Part I: Computer Networks --------------------
+\part{Computer Network}
+
+\include{chapters/01_ipv4}
+\include{chapters/02_routing}
+\include{chapters/03_ipv6}
+\include{chapters/04_lans_vlans}
+\include{chapters/05_qos}
+
+% ---------------------- Part II: Cloud Technologies ------------------
+% (the \part{Cloud Technologies} heading is at the top of 06_cloud.tex)
+\include{chapters/06_cloud}
+\include{chapters/07_virtualization}
+\include{chapters/08_containers}
+\include{chapters/09_network_softwarization}
+
+\end{document}

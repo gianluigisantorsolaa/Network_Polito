@@ -1,0 +1,681 @@
+\chapter{Routing}
+
+\section{Introduction and taxonomy}
+
+Routing is the set of mechanisms that determine a path for packets in a network. Forwarding is the process that moves packets hop by hop through the network. Although conceptually distinct, the two operations are closely related. Routing produces the information that is later used by forwarding, while forwarding applies routing decisions to individual packets.
+
+Routing is a proactive activity that constructs knowledge about reachable destinations and determines optimal routes based on topology information, link metrics, or policy constraints. Forwarding is performed on the fly for each packet and relies on the routing or forwarding table that was previously created.
+
+\subsection{Routing and forwarding}
+
+Routing (in the proactive sense) produces a routing table that states, for each destination, the cost of reaching it and the corresponding next hop.
+
+\begin{center}
+	\safeimg[width=3.4in,height=2.1in]{media/image27.png}
+\end{center}
+
+Forwarding uses the routing table to decide how to process each packet. The forwarding phase includes the following steps:
+
+\begin{enumerate}
+\item routing on the fly, if required to select the output interface;
+\item selection of the output port and possibly the next hop;
+\item switching, which transfers the packet to the selected output port;
+\item transmission on the outgoing link.
+\end{enumerate}
+
+On-the-fly routing algorithms fall into three major categories:
+
+\begin{itemize}
+\item routing based on network addresses;
+\item label swapping, which includes multiprotocol label switching (MPLS);
+\item source routing, where the entire path is encoded at the packet origin. Architectures may adopt one or more of these approaches concurrently.
+\end{itemize}
+Source routing is useful when a packet must follow a path that is known in
+advance, for example to traverse specific infrastructure such as firewalls or
+antivirus appliances. Since the path is encoded by the node that generates the
+traffic, the choice of the path depends on who generates that traffic. Label
+swapping, instead, selects the path by classifying the traffic according to
+elements such as the IP addresses, the port numbers or the protocol in use.
+
+\section{Classification of proactive routing algorithms}
+
+Proactive routing algorithms can be divided into non-adaptive (static) and adaptive (dynamic) algorithms. With a static algorithm, a fault in the network cannot be bypassed
+automatically, because the forwarding paths of the routers do not change. With
+a dynamic algorithm, the routing system detects the fault and selects another
+path, usually the best one still available.
+
+\begin{center}
+\safeimg[width=4.72361in,height=2.22222in]{media/image8.png}
+\end{center}
+
+\subsection{Non-adaptive algorithms}
+
+Non-adaptive algorithms do not modify the routing tables in response to topology changes. Major examples include:
+
+\begin{itemize}
+\item fixed directory routing, where an administrator configures all routing information manually;
+\item static routing, which behaves identically from the protocol perspective but may be updated occasionally by manual intervention;
+\item selective flooding and related mechanisms, which forward packets through multiple outgoing links without computing optimality.
+\end{itemize}
+
+Fixed directory routing provides complete administrative control but is error prone and unable to adapt to topology changes. Load balancing across backup routes must also be configured manually. Static approaches work only in small or very stable topologies.
+
+\begin{center}
+	\safeimg[width=3.42361in,height=2.26111in]{media/image28.png}
+\end{center}
+
+In plain \emph{flooding}, a router forwards every received packet on \emph{all}
+its interfaces. \emph{Selective flooding} avoids sending the packet back on the
+interface from which it was received, which prevents the packet from
+immediately looping back. Neither mechanism computes an optimal route.
+
+The simplest form of manual configuration consists in setting the routing table
+of each router by hand. If a failure occurs, for instance when a node
+disconnects, the tables are not updated automatically: the administrator must
+modify them again for the network to work correctly.
+\subsection{Adaptive algorithms}
+
+Adaptive algorithms modify routing decisions based on network conditions. They can be categorized as follows:
+
+\begin{itemize}
+\item centralized routing;
+\item isolated routing;
+\item distributed routing, which includes distance vector and link state algorithms.
+\end{itemize}
+
+\subsubsection*{Centralized routing}
+\addcontentsline{toc}{subsubsection}{Centralized routing}
+
+Centralized routing relies on a routing control center that collects information from all nodes and distributes routing tables. This approach simplifies troubleshooting and allows global optimization, but the controller becomes a bottleneck and a single point of failure. It is not suitable for highly dynamic networks, and the area surrounding the controller may experience heavy traffic loads.
+
+All decisions are computed by a single device. The routing control center
+first collects the information about all routers, then computes the routing
+tables and sends them to every router of the network. More than one control
+center can be deployed, in order to avoid a single point of failure or to
+reduce the bottleneck.
+
+\subsubsection*{Isolated routing}
+\addcontentsline{toc}{subsubsection}{Isolated routing}
+
+Isolated routing requires each node to operate independently and without exchanging routing information. An example is backward learning, used in IEEE 802.1D bridges. These nodes make decisions exclusively based on locally observed traffic.
+
+\subsubsection*{Distributed routing}
+\addcontentsline{toc}{subsubsection}{Distributed routing}
+
+Distributed routing allows routers to cooperate by exchanging connectivity information. Each router independently derives its own table, but the distributed information ensures that all routing tables are coherent. Distributed routing combines the advantages of isolated and centralized schemes.
+
+Two major distributed algorithms are used: distance vector and link state.
+
+\section{Distance vector routing}
+
+Distance vector routing requires each router to maintain a vector containing all known destinations, along with the distance to each destination. A router announces its vector to neighbors, receives distance vectors from neighbors, and updates its routing table accordingly. Let router $i$ maintain a table of distances $D_i(d)$ to each destination $d$. When receiving from neighbor $j$ a distance vector $D_j(d)$, router $i$ computes:
+
+\[ D_i(d) = \min_{j \in N(i)} \bigl\{ c(i,j) + D_j(d) \bigr\}, \]
+
+\noindent where $c(i,j)$ is the cost of the link from $i$ to $j$. This is the Bellman--Ford algorithm. Distance vector routing uses iterative exchanges. Convergence occurs when all routers stabilize their vectors and no updates change the computed distances.
+
+\begin{center}
+\safeimg[width=4.72361in,height=1.59305in]{media/image9.png}
+\end{center}
+
+\subsection{Cold start example}
+
+Consider a network where each node initially advertises only its local presence. At time zero, each router announces a distance vector containing itself with distance 0. Neighbors incorporate this information and generate updated vectors. All routers then periodically exchange vectors until the network converges.
+
+\begin{center}
+	\safeimg[width=4.42361in,height=3.26111in]{media/image29.png}
+\end{center}
+
+
+Intermediate routing tables show the progressive acquisition of multi-hop knowledge. For example, a router receives from a neighbor the information that another node is reachable in two hops, computes the new cost, and advertises this to its own neighbors. Propagation continues until all shortest paths have been learned.
+
+When a fault occurs, distance vector routing reacts by running the algorithm
+again: every router recomputes its table from the updated distance vectors
+received from its neighbors. The \emph{transit period} is the interval during
+which routers are still exchanging information and the tables are not yet
+consistent. It must be as short as possible, so that the network becomes usable
+again as soon as possible.
+\subsection{Convergence Problems}
+
+Distance vector algorithms suffer from several well-known convergence issues:
+
+\begin{itemize}
+	\item \textbf{Black Holes:} Temporary incorrect routes where traffic is misrouted or dropped before the network converges.
+	\item \textbf{Count-to-Infinity Problem:} Occurs when a link fails and routers increment path metrics indefinitely while searching for an alternative route.
+	\item \textbf{Bouncing Effect (Routing Loops):} A phenomenon where routing updates bounce back and forth between neighboring routers, causing a loop.
+\end{itemize}
+
+\subsubsection{The Count-to-Infinity Mechanism}
+
+\begin{center}
+	\safeimg[width=3.42361in,height=2.26111in]{media/image30.png}
+\end{center}
+
+In Distance Vector routing protocols, nodes lack visibility into the global network topology and only track the cost to reach destinations through their immediate neighbors. When a link fails—such as the link between nodes A and B—node B loses its direct path to node A. However, node B observes that node C is advertising a route to A with a cost of $2$. Since B has no way of knowing that C's route originally traversed B itself, it incorrectly assumes C possesses an alternative path. Consequently, B updates its routing table entry for destination A to a cost of $3$ via node C and advertises this update.
+
+\begin{center}
+	\safeimg[width=3.42361in,height=2.26111in]{media/image31.png}
+\end{center}
+
+Upon receiving the new vector, node C recalculates its cost to $4$ and sends it back to B. This triggers a bouncing effect where the distance vector is passed back and forth between routers B and C. At every exchange, the advertised cost increases until it reaches the protocol's value for infinity (or maximum hop count). Because routers store only path costs and no topology information, they cannot detect that destination A has become unreachable.
+\section{Mitigation mechanisms}
+
+Several partial solutions address instabilities in distance vector routing.
+
+\subsection{Split Horizon}
+
+Split horizon is a mechanism designed to prevent two-node routing loops by enforcing a simple rule: \textbf{a router never advertises a route back out the interface (or to the neighbor) from which it was learned}.
+
+\begin{center}
+	\safeimg[width=4.42361in,height=3.26111in]{media/image32.png}
+\end{center}
+
+\subsubsection*{How it Works}
+As shown in the diagram, when the link between nodes $A$ and $B$ fails, node $B$ invalidates its route to $A$. Node $C$ knows how to reach $A$ via node $B$. Under standard Split Horizon:
+\begin{itemize}
+	\item \textbf{Towards $B$ (Interface $C1$):} Node $C$ suppresses the entry for destination $A$ because $B$ is the next hop for $A$. Thus, $\text{DV}(C \to C1)$ contains only entries for $C$ and $D$. This prevents node $B$ from picking up a stale route to $A$ back through $C$.
+	\item \textbf{Towards $D$ (Interface $C2$):} Node $C$ advertises its full distance vector, including destination $A$ with a cost of $2$.
+\end{itemize}
+
+\subsubsection*{Formal Definition}
+Formally, let router $i$ store the next-hop neighbor $n_i(d)$ for each destination $d$. When router $i$ sends its Distance Vector to neighbor $j$, it omits any destination $d$ for which:
+\[
+n_i(d) = j
+\]
+Implementations typically rely on route expiration timers to automatically remove stale reachability information.
+
+\subsubsection*{Limitations}
+While Split Horizon completely eliminates two-node routing loops and accelerates convergence in linear topologies, \textbf{it does not prevent multi-hop loops} (involving three or more routers) in arbitrary mesh topologies.
+
+\begin{figure}[htbp]
+	\centering
+	% Prima immagine (in alto)
+	\safeimg[width=0.50\textwidth]{media/image33.png}
+	\label{fig:image33}
+	
+	\vspace{0.005cm} % Separatore verticale tra le due immagini
+	
+	% Seconda immagine (in basso)
+	\safeimg[width=0.50\textwidth]{media/image34.png}
+	\label{fig:image_seconda}
+\end{figure}
+
+\subsection{Path hold down}
+
+When a link fails, a router may treat destinations reachable through that link as unreachable for a predefined hold-down period. During this period, the router refrains from accepting alternative routes that would increase the metric. This avoids reacting to temporary inconsistencies.
+
+
+\begin{center}
+	\safeimg[width=3.42361in,height=2.26111in]{media/image35.png}
+\end{center}
+
+
+However, path hold down increases convergence time. It may also suppress legitimate cost increases, because routers ignore advertisements that indicate higher but valid costs.
+
+\subsection{Route poisoning}
+
+Instead of silently omitting a failed route, a router may announce the route with infinite distance. Let the infinite cost be denoted by $\infty$. When a route becomes invalid, the router advertises $D(d)$ = $\infty$. This speeds convergence by ensuring that neighbors immediately discard the route. Route poisoning may complement or replace path hold down.
+
+\begin{figure}[htbp]
+	\centering
+	\safeimg[width=3.42361in,height=2.26111in]{media/image35.png}
+	\caption{Split horizon with poisoned reverse}
+	\label{fig:split_horizon_poisoned}
+\end{figure}
+
+Split horizon with poisoned reverse strengthens the idea. When router $i$ sends to neighbor $j$ a distance vector, any destination whose next hop is $j$ is advertised with cost $\infty$. Although this provides practical benefits, it has no theoretical guarantees beyond standard split horizon.
+
+\section{Assessment of distance vector algorithms}
+
+Distance vector protocols are simple to implement, with minimal configuration requirements. However, they suffer from several shortcomings:
+
+\begin{itemize}
+\item worst case convergence time grows quadratically or cubically with network size (from $O(n^2)$ to $O(n^3)$);
+\item convergence speed is dictated by the slowest routers and links;
+\item configuration and tuning can be complex;
+\item routing traffic and storage requirements are significant;
+\item suitability is limited to small or moderately sized networks.
+\end{itemize}
+
+Routers do not learn the topology and cannot distinguish loops from valid alternative paths. This is the fundamental limitation of distance vector routing.
+
+\section{Path vector routing}
+
+Path vector routing extends distance vector routing by attaching the explicit path used to reach each destination. Each advertisement contains, for every reachable destination $d$, both the total cost and the ordered list of nodes forming the route. This eliminates the possibility of routing loops because a router can inspect the received path and discard any advertisement that already includes itself.
+
+\begin{center}
+	\safeimg[width=4.42361in,height=3.26111in]{media/image37.png}
+\end{center}
+
+
+Let router $i$ receive from neighbor $j$ a path vector entry of the form
+
+\[ (d, C_j(d), [j, \dots]), \]
+
+\noindent where $C_j(d)$ is the announced cost from $j$ to destination $d$ and $[j, \dots]$ indicates the path. Router $i$ accepts this entry only if $i \notin [j, \dots]$.
+
+If accepted, router $i$ constructs the new path
+
+\[ [i, j, \dots] \]
+
+\noindent and computes the cost
+
+\[ C_i(d) = c(i,j) + C_j(d). \]
+
+The routing table is then updated by comparing the new cost with the existing entries.
+
+Because each path vector includes the visited nodes, routers can recognize and avoid cycles. This eliminates count-to-infinity behaviour and provides deterministic convergence.
+
+\section{Link state routing}
+
+Link state routing overcomes the fundamental limitations of distance vector routing by providing all routers with identical knowledge of the network topology. Each router generates link state advertisements (LSAs) describing the cost and status of its adjacent links. These LSAs are flooded to all other routers using a controlled mechanism known as selective flooding.
+
+\begin{center}
+	\safeimg[width=2.62361in,height=1.56111in]{media/image38.png}
+\end{center}
+
+Each router stores received LSAs in a link state database. Once the database represents the full topology, the router computes shortest paths using a graph algorithm.
+
+\subsection{Link state information}
+
+A link state entry contains:
+
+\begin{itemize}
+\item the identity of the originating router;
+\item all neighbors of the router;
+\item the cost associated with each outgoing link.
+\end{itemize}
+
+\begin{center}
+	\safeimg[width=2.62361in,height=1.56111in]{media/image39.png}
+\end{center}
+
+
+Assuming the network is represented as a directed graph $G = (V, E)$ with link costs $c(u,v)$, each router has access to the complete set of edges adjacent to every node.
+
+
+\subsection{Properties of link state routing}
+
+Link state routing offers several advantages:
+
+\begin{itemize}
+\item rapid convergence, because LSAs spread quickly to all nodes;
+\item low routing traffic and limited storage requirements, since LSAs contain only local information;
+\item minimal intermediate processing, as routers do not merge vectors but only store LSAs;
+\item rare formation of routing loops, because every router uses an identical topology database;
+\item straightforward troubleshooting and predictable behaviour.
+\end{itemize}
+
+However, link state protocols have notable shortcomings:
+
+\begin{itemize}
+\item relatively high implementation complexity;
+\item the need to manage selective flooding efficiently;
+\item historically long development time for the first operational protocols;
+\item complex configuration requirements in large deployments.
+\end{itemize}
+
+\subsection{Generation of link state advertisements}
+
+In principle, LSAs are generated only when the topology changes. In actual protocols, LSAs are also generated periodically to increase reliability and ensure that routers eventually refresh their databases even if some LSAs are lost.
+
+
+
+
+\section{Hierarchical routing}
+
+In large networks, maintaining complete topology information at every router becomes impractical. Hierarchical routing reduces storage and computational overhead by dividing the network into domains, zones, or areas. Within each area, routers maintain detailed knowledge of the local topology. Outside the area, routers possess only high level or aggregated routing information.
+
+\begin{center}
+\safeimg[width=3.83889in,height=2.47639in]{media/image10.png}
+\end{center}
+
+Hierarchical routing can be applied recursively. For instance, multiple areas may be grouped into regions, and regions may be further aggregated under higher level administrative structures.
+
+\subsection{Strictly hierarchical routing}
+
+Strictly hierarchical routing restricts routers to absolute local visibility. A router in area $A$ knows nothing about the internal structure of area $B$. If a packet's destination does not belong to the local area, the router forwards it to an edge router responsible for communication with other areas.
+
+Advantages include:
+
+\begin{itemize}
+\item maximum scalability, because detailed information is confined inside each area;
+\item minimal inter-area routing traffic.
+\end{itemize}
+
+However, strictly hierarchical routing has limitations:
+
+\begin{itemize}
+\item suboptimal routing paths, because intermediate areas may force detours;
+\item loss of connectivity when faults occur at higher levels of the hierarchy;
+\item dependence on rigid addressing schemes, since addresses must reflect the hierarchy.
+\end{itemize}
+
+\subsection{Loosely hierarchical routing}
+
+Loosely hierarchical routing relaxes the constraints of strict hierarchies. Routers maintain limited but nonzero visibility of external areas. They may store aggregated routes, high level prefixes, or selected foreign entries.
+
+\begin{center}
+\safeimg[width=2.95278in,height=1.56805in]{media/image11.png}
+\end{center}
+
+Characteristics include:
+
+\begin{itemize}
+\item improved path optimality;
+\item reduced scalability compared to strict hierarchies, because more information must be exchanged;
+\item absence of strict hierarchical addressing requirements, making it compatible with IPv4 deployment models where hosts within an area do not share a rigidly defined prefix.
+\end{itemize}
+
+Loosely hierarchical designs allow efficient routing while avoiding excessive memory and processing overhead.
+
+\section{Internet routing architecture}
+
+\subsection{Routing protocols}
+ 
+A routing protocol defines how routers exchange information in order to determine the best routes to every destination in a network. The protocol is based on an underlying routing algorithm but also specifies the practical mechanisms required for operational deployment.
+
+\begin{center}
+	\safeimg[width=2.72361in,height=1.46111in]{media/image41.png}
+\end{center}
+
+
+Routing protocols define:
+
+\begin{itemize}
+\item the metrics used to evaluate paths;
+\item the encoding of routing information in messages;
+\item the timing rules governing periodic and event driven updates;
+\item configurable parameters controlling protocol behaviour.
+\end{itemize}
+
+Routing protocols operate at layer 3 or layer 4: some are carried directly over
+IP (for example OSPF), while others rely on a transport protocol (for example
+RIP over UDP and BGP over TCP).
+
+A group of routers that run the same routing protocol and form a connected part of the network constitute a \emph{routing domain}. Routing information is exchanged only within the domain, except when explicitly redistributed.
+
+\subsection{Redistribution between routing domains}
+
+A router may participate in multiple routing domains, running different routing protocols on different interfaces. Such a router can redistribute routing information learned in one domain into another. Redistribution provides interoperation between heterogeneous routing environments and enables transitions between protocols.
+
+Redistribution is governed by policies defined by the network administrator. Typical components of redistribution policies include:
+
+\begin{itemize}
+\item filters specifying which routes are advertised;
+\item metric conversion rules, because metrics differ across protocols;
+\item source priority, determining which protocol provides preferred information when multiple sources exist.
+\end{itemize}
+
+Careful design is required to prevent routing loops, metric inconsistencies, or unintended traffic flows.
+
+\section{Autonomous systems}
+
+An autonomous system (AS) is a collection of IP subnets and routers organized under a single administrative entity. Subnets are grouped based on either topology or organizational structure, such as the internal network of an Internet service provider. Within an AS, addressing and routing are tightly coordinated.
+
+In practice, the autonomous system is the element through which an Internet
+service provider offers connectivity to another provider. Only a limited amount
+of routing information is exchanged between autonomous systems.
+
+Autonomous systems support:
+
+\begin{itemize}
+\item independent internal routing decisions;
+\item controlled exchange of routing information at AS boundaries;
+\item selective propagation of internal information to external peers;
+\item administrative control over policies applied to external connectivity.
+\end{itemize}
+
+\begin{center}
+\safeimg[width=4.72361in,height=3.51806in]{media/image12.png}
+\end{center}
+
+ASs enhance scalability by avoiding global propagation of detailed internal routes. External routing decisions are negotiated between ASs and reflect commercial or administrative relationships rather than purely shortest path metrics.
+
+\subsection{AS identification}
+
+Each autonomous system is assigned a unique 16 bit number known as an AS number (ASN). ASNs are assigned by the Internet Assigned Numbers Authority. The range
+
+64512 to 65534 is reserved for private use.
+
+ASNs provide controlled exchange of routing information. They allow routers to recognize the administrative origin of advertisements and apply policies accordingly.
+
+\section{Exterior and interior routing}
+
+Two operational modes exist for routing protocols within and across ASs:
+
+\begin{itemize}
+\item \emph{Interior Gateway Protocols} (IGPs), used inside an AS;
+\item \emph{Exterior Gateway Protocols} (EGPs), used to exchange routing information across AS boundaries.
+\end{itemize}
+
+\begin{center}
+\safeimg[width=4.72361in,height=2.50972in]{media/image13.png}
+\end{center}
+
+An AS may contain multiple internal routing domains running different IGPs such as OSPF or IS-IS. Communication with external ASs is typically performed using the Border Gateway Protocol. 
+
+Routers located at the edges of an AS that exchange routing information with other ASs are known as \emph{border gateways}. They run an exterior gateway protocol on their external interfaces and one or more interior gateway protocols on internal interfaces.
+
+Routers inside an AS can therefore be of two kinds. \emph{Interior gateways}
+(internal routers) exchange routing information only inside their own AS.
+\emph{Border gateways} exchange information both inside and outside the AS, and
+they can hide part of the internal information of their AS from the outside.
+
+Two operation modes of BGP are distinguished according to the position of the peering routers:
+\begin{itemize}
+	\item \textbf{eBGP} (external BGP): sessions between border gateways belonging to
+	\emph{different} ASs, used to exchange reachability information across AS boundaries;
+	\item \textbf{iBGP} (internal BGP): sessions between routers of the \emph{same} AS, used to
+	distribute internally the routes learned from other ASs.
+\end{itemize}
+
+\begin{center}
+	\safeimg[width=3.83889in,height=2.47639in]{media/image42.png}
+\end{center}
+
+Interior gateways exchange routing information only inside their AS, while border gateways
+also communicate with other ASs and can hide part of the internal information of their AS.
+
+\subsection{Administrative aspects}
+
+Since routing advertisements directly influence traffic flows, the configuration of exterior routing has significant administrative impact. External routing information determines reachable destinations and the preferred paths for inter-AS communication.
+
+Policies reflect contractual agreements among ASs. These agreements may enforce traffic direction, filtering rules, or priority constraints that override shortest path considerations. As a result, exterior routing does not necessarily select paths with minimal hop count or minimal metric.
+
+Inside an AS, the goal is the optimal path according to the internal metrics.
+Between ASs, the preferred path depends on the contracts established with the
+other ASs, so it is chosen on commercial and geographical grounds. The best path
+is therefore not always the shortest one, but the one that satisfies as many
+inter-AS policies as possible.
+
+\section{Scalability and route aggregation}
+
+Interdomain routing must operate at Internet scale. To reduce the size of routing tables and limit the volume of exchanged information, route aggregation is used. Aggregation combines multiple contiguous prefixes into a single advertisement. For example, the two prefixes 195.1.2.0/24 and 195.1.3.0/24 can be aggregated as 195.1.2.0/23.
+
+Aggregation reduces the number of entries in routing tables and improves scalability, although it may reduce routing granularity and influence traffic engineering.
+
+Interdomain connectivity follows a hierarchical structure that emerges from economic and organizational relationships. Three main categories of Internet service providers exist:
+
+\begin{center}
+	\safeimg[width=3.83889in,height=2.47639in]{media/image43.png}
+\end{center}
+
+\begin{itemize}
+\item \emph{Tier 1 providers}, which maintain global reachability without paying transit to any other network;
+\item \emph{Tier 2 providers}, which may peer with other networks but purchase partial transit;
+\item \emph{Tier 3 providers}, typically access providers purchasing full transit.
+\end{itemize}
+
+Tier~1 and Tier~3 networks are not directly connected: Tier~3 traffic reaches
+Tier~1 through a Tier~2 provider. As an example, a Tier~3 network typically has
+the size of a large organization, such as a university, while commercial ISPs
+such as Fastweb or TIM are Tier~2 providers. Reaching a server in another
+continent requires an organization able to span multiple countries.
+
+Connectivity relationships include:
+
+\begin{itemize}
+\item \emph{client provider relationships}, where the client pays the provider for reachability;
+\item \emph{private peering}, where two ASs exchange traffic directly for mutual benefit.
+\end{itemize}
+
+\section{Internet exchange points}
+
+A neutral access point or Internet exchange point is a local area network to which routers from multiple autonomous systems connect. At an IXP, pairs of routers can exchange routing information directly. These connections often use the Border Gateway Protocol.
+
+IXPs reduce the need for traffic to traverse third party networks, improving performance and reducing cost. They also support large scale interconnection by enabling ASs to form bilateral or multilateral peering agreements.
+
+Many ISPs can install their own equipment at the same site, so that
+interconnection relies on a shared infrastructure instead of a separate
+point-to-point link between every pair of ISPs. The operator of the exchange
+point charges a fee to the ISPs that operate inside it. A further advantage is
+flexibility: changing ISP is easy from the physical point of view, since it is
+enough to connect to the equipment where the new ISP is present.
+
+\section{Summary of routing protocols}
+
+Routing protocols are broadly divided into two categories: interior gateway protocols and exterior gateway protocols. Interior gateway protocols operate within a single routing domain or autonomous system, while exterior gateway protocols manage routing between autonomous systems.
+
+\subsection{Interior and exterior gateway protocols}
+
+Interior gateway protocols perform intra-domain routing. Their main functions are:
+
+\begin{itemize}
+\item the distribution of detailed topological information;
+\item the computation of routes based on this topological information;
+\item the selection of the best route according to a metric defined by the protocol.
+\end{itemize}
+
+Exterior gateway protocols perform inter-domain routing. Their functions differ conceptually from those of interior protocols:
+
+\begin{itemize}
+\item the distribution of autonomous system level information;
+\item the dissemination of administrative costs or policy constraints;
+\item decision making based on policies negotiated between autonomous systems;
+\item the selection of preferred routes rather than purely shortest paths.
+\end{itemize}
+
+Because inter-domain routing reflects economic and administrative relationships, external routing does not necessarily optimize technical metrics such as hop count.
+
+A route learned from another AS is considered a possible route only if the
+policies of the ASs involved and the associated administrative costs are
+accepted. When all these aspects are satisfied, the route can be selected as the
+preferred one.
+
+
+\section{Interior gateway protocols}
+
+Interior gateway protocols fall into two algorithmic families: distance vector and link state.
+
+\subsection{Distance vector based IGPs}
+
+Three historical and widely deployed interior protocols are based on distance vector principles:
+
+\begin{itemize}
+\item the Routing Information Protocol;
+\item the Interior Gateway Routing Protocol;
+\item the Enhanced Interior Gateway Routing Protocol.
+\end{itemize}
+
+\textbf{Routing Information Protocol} The Routing Information Protocol was originally developed for a different network architecture and later standardized for IP in RFC 1058 and RFC 1388. It is implemented on many Unix and Linux systems.
+
+RIP uses hop count as its metric. The protocol imposes a maximum of fifteen hops, so any destination beyond fifteen hops is considered unreachable.
+
+RIP sends periodic distance vector updates every 30 seconds. Routes time out if not refreshed and are removed from the table after a protocol defined interval.
+
+Convergence typically requires about three minutes under normal conditions.
+
+The cost of a path is the number of hops between peers. The limit of fifteen hops
+keeps the convergence time short, but it also means that RIP cannot be used in
+large networks. For many years RIP has been the standard choice for many
+autonomous systems.
+
+\textbf{Interior Gateway Routing Protocol} The Interior Gateway Routing Protocol, developed by Cisco Systems, addressed several limitations of RIP. For a significant period, it represented the main alternative to RIP in enterprise deployments. IGRP uses composite metrics incorporating several parameters:
+
+\begin{itemize}
+\item delay;
+\item bandwidth;
+\item reliability;
+\item load;
+\item maximum packet size.
+\end{itemize}
+
+IGRP supports multipath routing based on these metrics. Although proprietary, the protocol influenced several later designs.
+
+When two paths have the same cost under the main metric, the other metrics
+(for example delay and bandwidth) are examined to choose between them.
+
+\subsection{Link state based IGPs}
+
+Two principal link state protocols are deployed as interior gateway protocols:
+
+\begin{itemize}
+\item Open Shortest Path First;
+\item Integrated Intermediate System to Intermediate System.
+\end{itemize}
+
+\subsubsection*{Open Shortest Path First}
+\addcontentsline{toc}{subsubsection}{Open Shortest Path First}
+
+Open Shortest Path First is specified in RFC 1247 and RFC 1583. OSPF supports hierarchical routing by dividing the routing domain into multiple areas. Routers inside an area possess detailed topological information. Aggregation is performed between areas to limit routing table growth and reduce the amount of inter-area routing information.
+
+OSPF routers construct link state databases based on flooded link state advertisements and then compute shortest paths using Dijkstra's algorithm. The architecture includes backbone areas, regular areas, and special purpose areas for scalability and policy enforcement.
+
+
+\begin{center}
+	\safeimg[width=3.83889in,height=2.47639in]{media/image44.png}
+\end{center}
+
+The architecture is organized around a central \emph{backbone area} (Area~0), to which all other
+areas are connected. Inside an area routers have full visibility of its topology, while the
+internal topology is not announced to the other areas. Routers are classified by position:
+\begin{itemize}
+	\item \textbf{internal router}: all its interfaces belong to a single area;
+	\item \textbf{backbone router}: has at least one interface in the backbone area;
+	\item \textbf{area border router}: connects an area to the backbone and exchanges
+	aggregated information between them;
+	\item \textbf{AS boundary router}: connects the OSPF domain to other ASs.
+\end{itemize}
+
+\section{Exterior gateway protocols}
+
+Exterior gateway protocols are used between autonomous systems and must support policy based routing decisions. Several protocols have been proposed, but only a few are operational today.
+
+\subsection{Border Gateway Protocol}
+
+The Border Gateway Protocol is the prevailing exterior gateway protocol on the Internet. Version 4, standardized in RFC 1654 and subsequent updates, is based on the path vector principle. Each advertisement contains:
+
+\begin{itemize}
+\item the autonomous system sequence forming the path to the destination;
+\item a collection of path attributes that influence route selection.
+\end{itemize}
+
+
+\begin{center}
+	\safeimg[width=3.43889in,height=2.17639in]{media/image45.png}
+\end{center}
+
+BGP supports configurable routing policies, enabling each AS to influence inbound and outbound traffic according to administrative goals.
+
+BGP sessions between border gateways of different ASs (eBGP) and between routers
+of the same AS (iBGP) are described in Section~2.11.
+
+\subsubsection*{Operational characteristics}
+\addcontentsline{toc}{subsubsection}{Operational characteristics}
+
+Key operational aspects of BGP include:
+
+\begin{itemize}
+\item vector exchange performed over TCP sessions;
+\item transmission of routing information only after changes rather than periodic updates;
+\item explicit configuration of neighboring routers participating in a peering session;
+\item independence from direct physical connectivity, since peers may be multiple hops apart.
+\end{itemize}
+
+Because BGP allows extensive policy configuration, routers can specify preference rules that override straightforward path length comparisons.
+
+\subsection{Inter-Domain Routing Protocol}
+
+The Inter-Domain Routing Protocol is an evolution of BGP for the OSI architecture. It was later adapted to the TCP/IP environment. IDRP was expected to become the standard for IPv6 inter-domain routing, but it has not achieved widespread deployment. BGP remains the dominant protocol for inter-AS connectivity.
+

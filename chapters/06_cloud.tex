@@ -1,0 +1,509 @@
+\part{Cloud Technologies}
+
+\chapter{Cloud Computing}
+
+\section{Understanding cloud computing}
+
+The second part of the course (about one third of it) is devoted to cloud computing. The first lectures introduce basic terms (cloud delivery models, cloud providers, cloud consumers) so as to understand what ``cloud'' means; then \textbf{virtualization technologies} are studied (virtual machines, containers, and orchestrators such as Docker Compose and Kubernetes), because cloud computing needs virtualization to be effective. Finally, the course returns to computer networks: not only computers but also \textbf{networks} can be fully virtualized, with virtual routers running on commodity, general-purpose servers, closing the loop between the two parts of the course.
+
+The main idea behind the cloud is that something (data, an application, or even a full computer) is \textbf{not running locally, on our premises, but remotely}, and we interact with it to obtain results.
+
+Cloud computing represents a model for delivering computing capabilities as network-accessible services that can be provisioned dynamically, managed efficiently, and consumed on demand. It has emerged from a long technological evolution that spans networked information systems, distributed computing, and large-scale data center architectures.
+
+The contemporary notion of cloud computing consolidates earlier trends in Internet-based service delivery and draws from innovations in virtualization, resource pooling, and service management. Its conceptual foundations can be traced to developments in both consumer-oriented Internet services and enterprise-level distributed systems.
+
+\subsection{Historical origins}
+
+The conceptualization of cloud-delivered computing services originated in the mid-1990s. Early discussions within the computing industry began to describe the Internet as an abstract computational infrastructure capable of hosting data and applications. This perspective anticipated a shift away from dependence on local personal computers and toward remote service delivery through networked environments.
+
+The principle is not new: on the Internet of the 1990s, with the first social networks and search engines, the data posted by a user were already stored remotely and accessed remotely. The term ``cloud'' was coined in \textbf{November 1996} by George Favaloro during a meeting at Compaq, after the company bought the startup NetCentric and merged it into itself: that startup was creating services running remotely on the Internet, with which clients interacted to produce and retrieve data.
+
+During this period, widely used Internet platforms provided practical demonstrations of scalable, remotely hosted services. Search engines, web-based e-mail systems, and early social media platforms offered continuous, ubiquitous access to information and applications. Although primarily consumer-oriented, these systems validated the architectural principles that underlie modern cloud infrastructures, including centralized resource management, elastic service availability, and distributed data accessibility.
+
+Services such as social networks, publishing platforms and webmail were planned for \textbf{consumers}, not explicitly for enterprises: the idea of cloud was strongly consumer-centric, with a single person interacting with a remote application to save, generate and retrieve data over the Internet.
+
+\subsection{Industrial and commercial developments}
+
+In the late 1990s, enterprise computing began to adopt models for remotely provisioned services. A significant milestone was the introduction of hosted business applications, which provided organizations with centrally managed software accessible through the Internet. This marked one of the first large-scale implementations of the service-based delivery model that later became characteristic of cloud computing.
+
+By 2002, large e-commerce platforms had begun to commercialize service-oriented infrastructures by offering remotely provisioned storage, processing capacity, and programmatic utilities. These early service suites demonstrated that large-scale data center operators could expose their internal computing capabilities to external consumers in a standardized, scalable manner.
+
+The term \textbf{cloud computing} gained widespread recognition in 2006, coinciding with the introduction of virtualized, on-demand compute instances. These services enabled organizations to lease computational capacity without deploying physical hardware, establishing the economic and technological model that now defines cloud computing.
+
+Subsequent years saw rapid expansion of cloud-based enterprise platforms. Browser-based office applications provided evidence that productivity tools could be delivered entirely through web interfaces. Additional cloud platforms reinforced the viability of remote application hosting and execution, further promoting cloud adoption within enterprise environments.
+
+Major global cloud platforms emerged during the late 2000s and early 2010s, offering integrated service ecosystems that encompassed infrastructure, platform, and application delivery. More recently, cloud initiatives within regional and governmental contexts have aimed to establish federated infrastructures designed to meet regulatory, economic, and sovereignty requirements.
+
+The next step was to turn the consumer-centric view into an \textbf{enterprise-centric} one, and this is when the term \emph{cloud computing} acquired its present meaning. \textbf{Salesforce} and \textbf{Amazon (Amazon Web Services)} were among the pioneers of technologies meant for enterprises, which pay a provider to use its physical resources to store data or run applications and generate new data. This started a new business: in most cases providers do not supply the data or applications themselves (they can, but it is not their core business); their core business is preparing \textbf{data centers} with many servers and making those resources available to many enterprises, which lease them and pay a daily, monthly or yearly fee according to the contract.
+
+Other big companies followed: Google created the \textbf{Google Cloud Platform} in 2008, and Microsoft released the first version of \textbf{Azure} in 2010. Today even countries and the European Union are trying to create nationwide or continent-wide cloud platforms, which companies, and still consumers, can access remotely to create data and perform operations instead of doing it locally.
+
+\begin{notebox}
+	\textbf{Analogy with the history of networking.} It is almost like going back in time: first there was a distant \emph{mainframe} used by multiple enterprises; then local area networks interconnected several minicomputers on the premises of a single company; now we are back to a remote situation, with the difference that instead of a single physical mainframe, used by everyone in the same way, there are many \emph{servers with virtualized resources} of different types according to the requests of the different consumers.
+\end{notebox} 
+
+\section{Definition of cloud computing}
+
+The idea of cloud (data, services, applications or even physical resources placed remotely, with which a consumer, first an individual and later an enterprise, interacts to perform operations) is simple, but it was not easy to define. Several standardization bodies tried to give a comprehensive definition; the one that received industry-wide acceptance is the definition by the \textbf{NIST} (National Institute of Standards and Technology), published in 2009 and revised in September 2011:
+
+\begin{notebox}
+	``Cloud computing is a model for enabling \textbf{ubiquitous}, \textbf{convenient}, \textbf{on-demand} network access to a shared pool of \textbf{configurable} computing resources (e.g., networks, servers, storage, applications, and services) that can be \textbf{rapidly provisioned and released} with \textbf{minimal management effort or service provider interaction}.''
+\end{notebox}
+
+The definition can be analyzed element by element.
+
+\begin{itemize}
+	\item \textbf{Network access.} The main goal is to provide remote access: some resources are remote and the consumer interacts with them through the network, which is in general the Internet itself, so the resources can be reached from any part of the Internet.
+	\item \textbf{Ubiquitous.} Wherever the consumer is (in the office, at home, in another country) and with any device, the resources can be accessed, because access happens over the Internet by knowing the IP address of the resources. On-premise infrastructures, such as a company data center, are often restricted to some devices under specific conditions.
+	\item \textbf{Convenient.} Convenience means \emph{economic benefit}: the model should be less expensive than buying and managing servers on the premises of a company. If the cloud were expensive, everybody would keep data, applications and services locally rather than delegating them to a remote company (with additional privacy risks). Because it is convenient, companies tend to adopt it, and the figure of the \textbf{cloud provider} (a company that creates and manages the resources and offers them to consumers, typically at a lower cost than on-premise servers) can exist.
+	\item \textbf{On demand.} Access does not require a continuous interaction between service and consumer: it takes place only when strictly needed, following a request/response pattern (the remote resource answers positively or negatively depending on whether the operation was feasible).
+	\item \textbf{Resources.} The simplest resources are data, applications and services, but they can also be \emph{servers} or even \emph{networks}. For instance, a provider may build a computer network on its premises and let a company use it remotely to run experiments (a new medium access algorithm, a new congestion control algorithm, new security protocols) instead of buying routers, firewalls, VPN equipment and endpoints: the consumer only pays a fee and does not care about buying, installing and managing the physical middleboxes. Everything, including hardware and combinations of it, can be offered through the cloud model.
+	\item \textbf{Configurable.} The provider does not decide the amount of resources: the consumer asks for the amount it needs and can change it dynamically. With one instance of a web service one reserves resources for one instance; if too many requests arrive, one can ask for ten more instances, as long as the consumer pays a higher fee and the provider has adequate resources. The variation can also follow the day: more resources during daytime and fewer at night, with a correspondingly higher or lower fee.
+	\item \textbf{Rapidly provisioned and released.} Provisioning and release must be fast (not days, otherwise one could simply buy a router or a server and install it locally), otherwise the dynamicity is lost. Such speed requires that the mechanisms be, at least partially, \textbf{automated}: orchestrators, software-based platforms that receive a request, understand whether it can be satisfied and accept it.
+	\item \textbf{Minimal management effort or service provider interaction.} The provider takes part at most in defining the contract (how much the consumer is willing to pay); the allocation and release of resources should be automated as much as possible.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Convenient} means that the services should be cheaper than buying a server locally; but of course the problem of \textbf{privacy} must be considered.
+\end{notebox}
+
+\section{Business drivers for cloud adoption}
+
+Organizations adopt cloud computing in response to technical, economic, and operational factors. Several structural challenges within traditional on-premise computing environments motivate the transition toward cloud-based architectures. Key drivers include capacity planning, cost reduction, control of operational overhead, and the need for organizational agility.
+
+Convenience is one of the main reasons why cloud computing became a business at the beginning of the century (first Amazon and Salesforce, then Google and others, each creating its own model): these providers noticed that such features were appreciated by enterprises worldwide, because there are several business factors for which an on-premise service is less convenient than a cloud one.
+
+\subsection{Capacity planning}
+
+Capacity planning involves determining how to meet projected demand for an organization's computing resources. Capacity refers to the maximum workload that an information technology resource can support within a specified time interval. Maintaining an appropriate balance between available capacity and workload demand is central to sustaining efficient and reliable system performance.
+
+For example, if the IT resource is a web service, its capacity is the number of requests it can process in a given period (one second, ten minutes, one hour\ldots). To obtain 100 requests per second, the company must plan how much memory, computing power and so on to reserve for that service. The main goal is the best trade-off between resources and demand: the best solution is the one in which the resources employed are exactly the ones requested, no more and no less.
+
+Predicting the future is difficult: one may plan for an average of 100 requests per second, but if the service becomes popular it may receive thousands per second (an order of magnitude more), which means that the plan was based on a wrong hypothesis. As observed for delay in computer networks, the work requested to an IT resource depends on an \textbf{instantaneous load} (e.g.\ the number of requests in a period), which is hard to predict continuously and is not constant over time. Capacity planning is therefore a big issue for enterprises, with a direct impact on both the operability of their IT resources and their finances; a perfect trade-off almost never happens, and capacity is either higher or lower than demand.
+
+A mismatch between capacity and demand produces two principal conditions: inefficiency resulting from excess capacity and performance degradation resulting from insufficient capacity. Over-provisioning requires investment in hardware and infrastructure that may remain underutilized. Under-provisioning restricts the system's ability to satisfy workload requirements, which can lead to reduced quality of service, application slowdowns, and business losses.
+
+\begin{center}
+	\safeimg[width=4.5in,height=2.53in]{media/image125.png}
+\end{center}
+
+In the plots, capacity and demand are represented as functions of time.
+
+\begin{itemize}
+	\item \textbf{Over-provisioning}: the planned capacity (purchased and installed on the premises) is always higher than the demand, even at the peaks of its fluctuations. The grey area between the two curves represents IT resources that were paid for but are never used, so the main drawback is the \emph{cost}. There is, however, a positive aspect: all requests, even at the peak, are always satisfied, so there is no dissatisfaction and no business loss caused by unsatisfied consumers. A company may therefore consider over-provisioning the best solution when it values customer satisfaction more than the cost of an unused infrastructure.
+	\item \textbf{Under-provisioning}: the capacity is not always above the demand; there are periods with spare capacity (grey areas) but also peaks where the capacity is lower than the demand, and in those short periods some requests cannot be satisfied. The company saves money by buying fewer resources, which is acceptable most of the time, but if the unsatisfied customers are the most important ones (the biggest consumers), they may move to another provider, causing an \emph{indirect business loss} due to poor quality of service.
+\end{itemize}
+
+Which of the two scenarios is better depends on needs and context. What can be said for sure is that the ideal case is the one in which the capacity and demand curves \textbf{coincide}. This is almost impossible on-premise, since resources are typically not removed over time and it is difficult to continuously buy new ones when demand grows. The impossibility is related to the difficulty of estimating usage-load fluctuations: since it is hard to predict and measure the demand at each instant, capacity planning usually considers the \textbf{maximum usage load}, and then the company decides to stay slightly over-provisioned or slightly under-provisioned.
+
+Estimating future demand is inherently difficult because usage patterns fluctuate over time. Organizations must plan for peak loads without incurring unnecessary costs. When infrastructure is dimensioned solely according to maximum expected demand, financial investments can become disproportionate to average usage levels. Conversely, minimizing investment risks insufficient performance during periods of high demand.
+
+Different strategies exist for adjusting resource capacity in response to foreseeable or actual workload changes. A lead strategy introduces additional capacity in anticipation of increased demand. A lag strategy adds capacity only after existing resources reach saturation. A match strategy incrementally expands capacity as demand grows, aiming to keep resource allocation closely aligned with real-time consumption.
+
+\begin{center}
+	\safeimg[width=4.5in,height=2.32in]{media/image126.png}
+\end{center}
+
+All these strategies are approximations of the ideal case in which capacity equals demand.
+
+\begin{itemize}
+	\item \textbf{Lead strategy.} Capacity is added \emph{in anticipation of the demand}: when the demand reaches a threshold that is still lower than the capacity, the capacity is increased. The system is therefore \emph{always over-provisioned}, but the goal is to reduce the over-provisioned areas: the capacity stays constant and is increased in steps only when the demand gets close to it, i.e.\ when a situation of under-provisioning is approaching, which is what the strategy wants to avoid.
+	\item \textbf{Lag strategy.} The opposite criterion: the capacity is \emph{always lower than the demand} (always under-provisioned). The capacity stays constant while the demand grows, so the distance between the curves increases; when this distance exceeds a threshold, the capacity is increased in order to nullify the distance. The increase does not lead to over-provisioning, since at most the capacity is made equal to the current demand; then the capacity stays constant again until the threshold is reached again.
+	\item \textbf{Match strategy.} A hybrid of the two: capacity is added in \emph{small increments}, so sometimes the system is under-provisioned and sometimes over-provisioned. An increment occurs when a threshold of under-provisioning, smaller than the one of the lag strategy, is exceeded; the increment does not merely nullify the distance but goes slightly above the demand, restoring a \emph{controlled over-provisioning}, so that a longer time passes before the next under-provisioning. Both conditions occur, but they are kept small, preferably smaller than in the lead and lag strategies.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Notes from the slide.} Lead: we want to avoid an under-provisioning situation that is approaching. Lag: a threshold is set to be respected every time the demand changes, but the capacity is always kept lower than the demand. Match: hybrid of the previous ones; also in this case a positive and a negative threshold are used.
+\end{notebox}
+
+These strategies are not easy to implement on enterprise infrastructures, and they are always expensive. In the cloud, instead, increments (and decrements, not shown in the plots) simply mean giving a consumer more resources, or removing them from that consumer and possibly giving them to another one, since all resources already exist on the provider's premises. Capacity planning is therefore more intuitive, easier and cheaper in the cloud, which is why it is one of the main business drivers behind the cloud; perfection cannot be reached, but results are much better than on-premise.
+
+\subsection{Cost reduction}
+
+Cost considerations are central to cloud adoption. Traditional computing environments require substantial upfront investments in hardware procurement and significant ongoing expenses related to managing and operating infrastructure. The performance of any automation solution is bounded by the processing capabilities of the underlying on-premise systems, often necessitating continual investment in capacity expansion.
+
+Cloud computing reduces or eliminates many of these capital expenditures by shifting costs to a consumption-based model in which resources are acquired on demand. This model allows organizations to begin with minimal investment and expand their resource usage proportionally as their computing needs grow. Large cloud providers operate data centers at scales that enable lower real estate, personnel, and bandwidth costs, further reducing the financial burden on individual enterprises.
+
+Two factors must be accounted for in the total cost of an on-premise infrastructure (e.g.\ a small data center inside the enterprise): the \textbf{acquisition} of new equipment (routers, servers\ldots) and its \textbf{ownership and maintenance}. The second must not be overlooked: the people managing the resources must be paid, and so must the facilities where the equipment is installed (power, cooling, etc.). Much of the investment is also used for expansion, to satisfy new requests as the enterprise's services become popular. Sustaining these costs over a long time is difficult, while the same money could be invested in improving the services sold. With the cloud there is no infrastructure acquisition or maintenance cost: the consumer pays only a fee (hourly, daily, weekly, monthly\ldots, depending on the contract), and the provider is in charge of expanding and maintaining the infrastructure as part of that fee, typically at a cost lower than buying and maintaining the same resources on-premise.
+
+\subsection{Operational overhead}
+
+Operational overhead encompasses the recurring costs required to maintain and support on-premise information systems. These costs can exceed initial hardware investments, making them a significant component of IT budgets.
+
+Operational overhead includes staffing for equipment maintenance, installation of updates, and application of security patches. It also involves expenditures related to electricity, cooling, facility maintenance, and security controls for physical infrastructure. Administrative resources are required to manage licenses, support contracts, and procurement activities. Cloud computing reduces these overheads by centralizing infrastructure management within the provider's environment.
+
+These costs are not strictly related to what the enterprise wants to offer. Typical examples are: technical personnel able to install new servers and operating systems and to set up security and access control measures; continuous upgrading of all installed systems with patches; utility bills (power, cooling); support agreements for software licenses. In the cloud this overhead is largely absent for the consumer, because the provider is in charge of it.
+
+\subsection{Organizational agility}
+
+Organizational agility denotes the capacity of an enterprise to respond efficiently to changes in its internal or external environment. Traditional on-premise infrastructures can limit this agility because scaling requires capital expenditure, procurement lead times, and extensive planning.
+
+Cloud computing provides flexible resource allocation that enables organizations to adapt quickly to varying workloads, new business requirements, or market conditions. Since cloud-based resources can be provisioned remotely and expanded dynamically, they support rapid scaling with lower financial and operational barriers. This capability aids organizations in maintaining competitiveness and resilience.
+
+Nowadays services and infrastructures must evolve continuously depending on what happens: for example, when new attacks occur, the internal organization of an IT infrastructure may have to change to make it robust and resilient against them. Doing so on-premise requires people and time, to plan and then implement the right answer to the modified conditions; it can be done partially locally, but it is better performed at cloud level, because it is demanded to the provider.
+
+\section{Benefits of cloud computing}
+
+Cloud computing introduces structural advantages that affect the economic, operational, and technical dimensions of information systems. These advantages arise from the consolidation of resources within large-scale data centers, from the adoption of on-demand provisioning models, and from the abstraction of infrastructure through standardized service interfaces. Three categories of benefits are commonly identified: reduced investments and proportional costs, increased scalability, and improved availability and reliability.
+
+These benefits are strictly related to the four business drivers: on the financial side, consumers have reduced investments and costs proportional to what they really use; in addition, the cloud provides higher scalability, availability and reliability of IT resources over time.
+
+\subsection{Reduced investments and proportional costs}
+
+A foundational benefit of cloud computing is the reduction or elimination of significant initial expenditures on hardware and software. Traditional environments require organizations to purchase servers, storage devices, networking equipment, licenses, and support contracts before deploying applications. These capital-intensive acquisitions often occur prior to realizing any operational value, and they can impose long-term financial commitments.
+
+Consider a startup that wants to create a new service to sell worldwide. With a limited budget, it would like to dedicate most of it to its core business (people improving the service with new features), but to run the service it also needs hardware, which must be paid upfront. This expense can be a killer: so much is spent on infrastructure that no budget is left to improve the service, the service stays weak, nobody buys it and the startup dies. If the startup avoids these upfront investments and tests its applications remotely on general-purpose hardware leased from a provider, paying only for what it needs and when it is needed, it can dedicate most of its budget to its core business.
+
+Cloud environments transform these capital expenses into operational expenses. Organizations are able to access computing resources without purchasing or owning the underlying infrastructure. This arrangement permits gradual growth, enabling enterprises to allocate minimal resources during initial stages and expand consumption as operational demands increase. The ability to scale financial expenditure in proportion to actual utilization aligns resource costs more closely with business activity.
+
+Large cloud providers achieve economies of scale by operating massive data centers in locations optimized for cost efficiency. Such locations can offer reduced real estate prices, lower utility costs, and access to an abundant pool of skilled IT professionals. As a result, cloud providers can operate infrastructure at a lower cost per computing unit compared to smaller on-premise facilities. These savings transfer to consumers through competitive pricing models.
+
+Providers also cut costs by reasoning about the geographical regions in which data centers are created. Cooling, for instance, is one of the most important factors: when servers work a lot they become hot and may break without adequate cooling. A provider may therefore build a data center in a colder continent rather than in a hot one, since the average ambient temperature is already low and a strong cooling is not needed. This is just an example of how costs can be reduced by properly planning where data centers are built.
+
+\subsection{Increased scalability}
+
+Cloud computing supports rapid adjustments to resource allocation. This scalability can occur automatically based on predefined policies or manually in response to operational requirements. The ability to obtain resources on demand allows organizations to respond quickly to fluctuations in workload intensity.
+
+Cloud platforms provide the perception of limitless computational resources. Consumers can request processing power, memory, storage, and network bandwidth with minimal delay, often within seconds. Resources can also be released immediately when no longer needed, avoiding the costs associated with maintaining idle capacity. This elasticity reduces the need for extensive planning and over-provisioning, which are common in traditional environments where infrastructure must be sized for peak usage.
+
+Fine-grained scaling is another important characteristic. For example, storage capacity can be increased or decreased in small increments, allowing organizations to align resource consumption precisely with real-time demand. This eliminates the inefficiencies caused by coarse-grained capacity adjustments and supports detailed cost control.
+
+Since resources are leased on demand and paid according to usage, consumers perceive a condition in which resources seem \emph{infinite}: in theory they can always ask for more, as long as they can pay to renew the contract with the provider. Increments and decrements can be \emph{fine-grained}, in the order of gigabytes: they need not concern a full disk, computer or server, since it is possible to reserve only a part of it while keeping the resources of different consumers isolated from each other. This is often possible thanks to \textbf{virtualization}, which hides the full computer or server and exposes only the part the consumer really needs.
+
+\subsection{Increased availability and reliability}
+
+Cloud environments are designed to provide high levels of availability by distributing workloads across redundant components. These architectures reduce the likelihood of service outages and allow systems to maintain operation even when individual components fail. Centralized management enables cloud providers to implement failover mechanisms, data replication strategies, and continuous monitoring to ensure consistent service delivery.
+
+Cloud-based services can be accessed from any device capable of connecting to the network. This accessibility enhances organizational mobility by enabling employees to retrieve, store, process, and manage information from geographically dispersed locations. The ability to access applications and data at any time increases operational flexibility and reduces delays associated with localized system failures.
+
+\begin{center}
+	\safeimg[width=2.0in,height=0.58in]{media/image134.png}
+\end{center}
+
+Reliability is improved through automated fault detection, resource reallocation, and recovery mechanisms. Cloud platforms can mitigate runtime failures by redirecting requests, restarting affected components, or replicating data across multiple sites. These capabilities reduce the impact of individual failures and support uninterrupted business operations.
+
+Thanks to ubiquity, a consumer must be able to interact with a cloud service remotely, anytime, anywhere and possibly with any device: no powerful computer is needed, a smartphone connected to the Internet from any access point is enough. The availability should be continuous (possibly 24 hours a day, 7 days a week) and is one of the parameters to be \textbf{negotiated} with the provider, who is responsible for it: if a consumer's service is unavailable, it is the consumer's enterprise, not the cloud provider, that the final users become angry with.
+
+\textbf{Example.} A few days before the lecture, the bank Revolut was unavailable for a full working day (8--10 hours): it was not possible to pay with cards and the app was unusable, because all of Revolut's services relied on data centers managed by Google Cloud in London, which were unavailable. Both sides were at risk: Revolut should perhaps have considered alternative backups on other clouds, while the provider presumably pays penalties, unless such a downtime was among the clauses of the contract considered acceptable. It depends on the contract, but availability is typically one of the most important factors, and an eight-hour outage causes problems for the provider as well.
+
+\section{Fundamental concepts in cloud computing}
+
+Cloud computing introduces a specialized vocabulary used to classify resources, actors, and interactions in distributed environments. A precise terminology is essential for understanding how cloud-based infrastructures differ from traditional deployments and how organizations engage with providers and services. This chapter presents the foundational concepts that govern the categorization of cloud resources and the roles associated with cloud ecosystems.
+
+The terms introduced here (some already seen, others new) form a long series of interconnected or independent concepts that will be used to discuss cloud delivery models, cloud deployment models and, in the next lectures, virtualization techniques.
+
+\section{On-premise infrastructure and cloud-based resources}
+
+An information technology resource resides \textbf{on-premise} when it is hosted within the physical and administrative domain of an enterprise. The term designates hardware, software, and networking components that operate inside a controlled internal environment. An on-premise resource is, by definition, not cloud-based; conversely, a cloud-based resource resides within an external cloud environment managed by a cloud provider.
+
+Despite this distinction, interactions between environments remain possible. On-premise systems can communicate with cloud-based resources across networks and can rely on cloud-hosted functionality as part of composite applications. Furthermore, organizations may migrate on-premise resources to cloud platforms, thereby transforming them into cloud-based resources. Redundant deployments can also exist simultaneously in both locations, enabling availability, distribution, or backup strategies.
+
+On-premise means that a resource can be reached locally, without crossing the Internet; a cloud-based resource is remote and is reached through a wider network, typically the Internet. The typical interaction is a company workstation (on-premise) connecting to a cloud-based service to have some requests satisfied, but cloud-based services can also interact with other cloud-based services when they need each other's resources.
+
+How an on-premise resource is moved to the cloud depends on its type:
+
+\begin{itemize}
+	\item \textbf{data}: easy to move from on-premise hardware to cloud-based storage;
+	\item \textbf{applications}: the source code is moved, compiled in the cloud and run;
+	\item \textbf{hardware}: more difficult; typically a \emph{virtual profile} (a logical description of the physical on-premise hardware) is created and the provider replicates it in virtual form through virtualization techniques such as virtual machines or containers.
+\end{itemize}
+
+Many companies adopt \textbf{hybrid} solutions in which the same resources are kept both on-premise and in the cloud: with this redundancy, if one of them fails (on-premise or on the cloud) the final consumers can still interact with the other.
+
+\section{Scaling of IT resources}
+
+Scaling refers to the ability of an IT resource to accommodate variations in demand by modifying its capacity. Cloud environments rely on scalable resource provisioning to deliver elasticity and performance consistency. Two primary scaling models are used: \textbf{vertical scaling} and \textbf{horizontal scaling}.
+
+Scaling is strictly connected to the dynamic management of capacity planning: it is the way in which, on-premise or in the cloud, the resources used are increased or decreased to handle the demand. The terms vertical and horizontal scaling are also used in contexts other than resource upgrades.
+
+\begin{notebox}
+	Scaling = deciding to \textbf{lower or increase} the resources used for cloud computing; it is connected with capacity planning.
+\end{notebox}
+
+\subsection{Vertical scaling}
+
+Vertical scaling occurs when an existing resource is replaced with another that possesses greater or lesser capacity. Scaling up replaces the resource with a more powerful instance, while scaling down substitutes a less capable instance. Examples include installing a faster processor, increasing memory, or upgrading to a higher-capacity server.
+
+\begin{center}
+	\safeimg[width=3.5in,height=1.53in]{media/image128.png}
+\end{center}
+
+Vertical scaling typically requires downtime during replacement operations because the existing resource must be removed from service before the new component is introduced. For this reason, vertical scaling is less prevalent in cloud environments, which emphasize uninterrupted availability. The limitations of hardware capacity further restrict the extent to which vertical scaling can increase performance.
+
+For instance, a computer with two CPUs that is no longer enough is replaced by a new one with four CPUs, and the previous one is completely replaced; scaling up/down are the other names of this technique. It is typical of on-premise infrastructures, where removing an element and replacing it with another is easy. In the cloud it is less common because the replacement causes downtime (the previous element is physically disabled and the new one installed and made operative), which clashes with the idea that a cloud-based service should always be available; even if the new element is pre-configured, the downtime is needed to detach the former and activate the latter.
+
+\subsection{Horizontal scaling}
+
+Horizontal scaling adds or removes multiple resources of the same type. Scaling out increases capacity by provisioning additional instances, while scaling in reduces capacity by deprovisioning instances.
+
+Horizontal scaling is the opposite idea: the original resource is not replaced. For example, if a personal computer with two CPUs is no longer enough and six CPUs are needed, two exact replicas of the former are added, each with two CPUs, and the original one is kept: only what is needed more is added, by multiplying resources of the same type. The same applies in the opposite direction when downgrading (scaling in).
+
+\begin{center}
+	\safeimg[width=3.5in,height=1.53in]{media/image129.png}
+\end{center}
+
+This model is common in cloud computing due to its compatibility with distributed architectures. Because newly allocated resources are independent units, they can be instantiated without interrupting service availability. Horizontal scaling enables automated distribution of workload across replicated resources, supporting elasticity and fault tolerance.
+
+\subsection{Comparison of scaling models}
+
+Horizontal scaling is generally less expensive because it relies on commodity components, while vertical scaling often requires specialized hardware.
+
+\begin{center}
+	\safeimg[width=4.5in,height=2.53in]{media/image127.png}
+\end{center}
+
+ Horizontal models provide immediate availability of new resources, whereas vertical adjustments commonly require additional configuration. The upper bounds of vertical scaling are limited by physical hardware constraints, while horizontal scaling can expand as long as additional resources can be provisioned.
+ 
+ In more detail:
+ 
+ \begin{itemize}
+ 	\item \textbf{Cost.} Vertical scaling is a significant upgrade, so it typically means buying much more expensive equipment, often specialized servers. This is one reason why it is not adopted in the cloud, where one goal is to cut costs: a provider buying very expensive specialized servers would have to raise the fees for consumers, which may not be acceptable. Horizontal scaling buys a lot of \emph{commodity} (general-purpose) hardware and adds it whenever needed: the single elements are cheaper but, together, they provide the same features.
+ 	\item \textbf{Availability.} In both cases IT resources are almost always immediately available; for vertical scaling they are not strictly instantaneous because of the downtime needed to disable the previous resource and attach the new one (a pre-configured resource reduces the downtime to the detach/activate operation).
+ 	\item \textbf{Additional setup.} Horizontal scaling needs software, an orchestrator or mechanism that manages resource replication and automated scaling (deciding how many commodity machines should be used and which ones are currently unused), and therefore additional IT resources on which the orchestrator is installed. Vertical scaling needs no additional resources.
+ 	\item \textbf{Limits.} Horizontal scaling is not limited by hardware capacity: if a single CPU supports a maximum number of cores (a current technological limit that may be overcome in the future), one can use multiple CPUs and obtain the desired number of cores by adding small hardware of the same type, as long as replication and automated scaling are managed. Vertical scaling is limited by technology: a replacement server has a CPU with a maximum possible number of cores, and that limit cannot be exceeded.
+ \end{itemize}
+ 
+ Horizontal scaling also allows resources to be dynamically given, or not given, to different consumers on demand, so it is really suitable for cloud computing.
+ 
+ \begin{notebox}
+ 	\textbf{In short.} Vertical = replace something with better (or worse) hardware. Horizontal = replicate what you already have with elements of the same type to get more resources (and the same applies to downgrades).
+ \end{notebox}
+
+\section{Cloud services}
+
+A \textbf{cloud service} is any remotely accessible IT resource made available through a cloud environment. Such a service may consist of a simple software program invoked via a messaging interface, or a more extensive structure, such as administrative consoles, application environments, or runtime platforms.
+
+The \textbf{cloud service consumer} refers to the temporary runtime role that a software program adopts when it accesses a cloud service. This role does not describe the organization itself, but the specific operational activity performed by a program during service invocation.
+
+\section{Actors in cloud computing}
+
+Cloud environments involve several organizational and technical roles responsible for providing, consuming, owning, and administering cloud-based resources. These roles define the interactions and responsibilities within the cloud ecosystem.
+
+\subsection{Cloud provider}
+
+A \textbf{cloud provider} is the organization that offers cloud-based IT resources. When fulfilling this role, the provider is responsible for ensuring that cloud services remain continuously available, properly managed, and securely maintained. The cloud provider typically owns the infrastructure used to deliver these resources. In some cases, however, a provider may resell services or infrastructure leased from another provider, thereby creating a layered service supply chain.
+
+Operational responsibilities include capacity management, fault handling, maintenance of physical data centers, and enforcement of security and access control policies. The provider defines service interfaces and supports billing, metering, and monitoring mechanisms that govern consumer interactions with cloud services.
+
+\subsection{Cloud consumer}
+
+A \textbf{cloud consumer} is an organization or individual that establishes a formal agreement with a cloud provider in order to use provider-managed resources. The consumer interacts with cloud services by means of a cloud service consumer program, which handles service invocation and execution. This role represents the entity that is contractually bound to the provider and that receives the technical, operational, and economic benefits of cloud usage.
+
+\section{Service-level agreements}
+
+A \textbf{service-level agreement (SLA)} is a contractual document that specifies the commitments, guarantees, and expectations governing the relationship between a service provider and a service consumer. SLAs are designed to formalize levels of service quality, performance, availability, and support. They serve as a legally binding reference and provide mechanisms for dispute resolution.
+
+SLAs include measurable targets, typically detailing response times, service availability percentages, escalation procedures, and conditions for issue resolution. SLAs categorize requests by severity and urgency. Severity describes the operational impact of an issue on business processes, while urgency indicates how quickly the consumer requires remediation. Corresponding SLA targets specify maximum response times and maximum resolution times for each category.
+
+\section{Cloud service owner}
+
+The \textbf{cloud service owner} is the individual or organization that legally owns a cloud service. Ownership refers to legal and administrative control over the service, regardless of where it is hosted. This role can be assumed by either the cloud provider or the cloud consumer.
+
+If the consumer develops and deploys a service in a provider-managed environment, the consumer becomes the service owner even though the service operates in the provider's infrastructure. Conversely, when the provider develops and hosts a service for external use, the provider retains ownership. Ownership determines responsibility for service definition, versioning, and long-term lifecycle management.
+
+\section{Cloud resource administrator}
+
+A \textbf{cloud resource administrator} is responsible for managing and maintaining a cloud-based IT resource. This role may be fulfilled by personnel belonging to the cloud consumer, the cloud provider, or an independent third party contracted for administrative duties. The responsibilities associated with this role include configuring resources, applying updates, monitoring performance, managing access permissions, and ensuring compliance with internal and external requirements.
+
+\section{Additional roles in cloud computing}
+
+Beyond the fundamental roles of provider, consumer, owner, and administrator, cloud ecosystems incorporate supplementary roles defined by the NIST Cloud Computing Reference Architecture. These roles address mediation, assurance, and connectivity functions necessary for operating distributed cloud environments.
+
+\subsection{Cloud broker}
+
+A \textbf{cloud broker} is an intermediary that manages relationships and interactions between cloud providers and cloud consumers. The broker negotiates service usage, facilitates integration, and may offer value-added services that simplify or enhance access to cloud offerings.
+
+Broker mediation typically encompasses three categories:
+
+\begin{itemize}
+\item \textbf{Service intermediation}, which augments existing services through additional capabilities such as identity management, access control, or performance optimization.
+\item \textbf{Service aggregation}, which combines multiple services into a unified composite offering.
+\item \textbf{Service arbitrage}, which dynamically selects among multiple providers offering comparable services to achieve optimal performance or cost.
+\end{itemize}
+
+\subsection{Cloud auditor}
+
+A \textbf{cloud auditor} is an independent third party, often accredited, that assesses cloud environments to evaluate their security controls, privacy protections, and performance characteristics. The purpose of the auditor's role is to provide unbiased, objective evaluations that strengthen trust between consumers and providers.
+
+Typical audit activities include verification of compliance with regulatory frameworks, examination of operational safeguards, assessment of data protection mechanisms, and review of system resiliency. The auditor may also issue certifications or attestations that serve as evidence of conformity to established standards.
+
+\subsection{Cloud carrier}
+
+A \textbf{cloud carrier} provides the network-level connectivity that enables communication between cloud providers and cloud consumers. This role is generally fulfilled by telecommunications companies and network service providers that operate the physical and logical infrastructure necessary for data transmission.
+
+The cloud carrier ensures that sufficient bandwidth, reliability, and security exist to support cloud service interactions. Carrier responsibilities may include routing, switching, network monitoring, and the implementation of transport-level encryption or isolation mechanisms.
+
+\section{Interactions among cloud actors}
+
+Cloud ecosystems rely on the coordinated involvement of multiple actors whose roles interact to enable service delivery.
+
+The \textbf{cloud consumer} communicates with the \textbf{cloud provider} through the communication channels established by the \textbf{cloud carrier}. The \textbf{cloud broker} may mediate interactions by negotiating service usage or combining offerings from multiple providers. The \textbf{cloud auditor} operates independently to evaluate and verify the trustworthiness and performance of the provider's environment.
+
+Together, these roles define the operational and organizational structure of cloud computing, ensuring that service delivery, governance, and connectivity are maintained consistently across distributed systems.
+
+\section{Cloud characteristics}
+
+Cloud computing environments exhibit a set of recurring properties that distinguish them from traditional distributed systems and service delivery models. These characteristics define how cloud platforms allocate, expose, and manage information technology resources and how consumers interact with them. The commonly accepted characteristics are on-demand usage, ubiquitous access, multitenancy with resource pooling, elasticity, measured usage, and resiliency. Each of these characteristics contributes to the overall behavioral model of cloud-based systems and influences architectural decisions.
+
+\subsection{On-demand usage}
+
+On-demand usage denotes the capability of a cloud consumer to obtain access to cloud-based information technology resources without requiring human interaction with the cloud provider. A consumer can autonomously provision processing, storage, networking, or higher-level services through standardized mechanisms. This self-service model allows a consumer to configure and instantiate resources whenever required.
+
+Once a resource has been provisioned, its usage can be automated so that no further manual intervention by either the consumer or the provider is needed. Automation may involve predefined scripts, orchestration workflows, or service management logic that allocates and releases resources based on specified operational criteria. The resulting environment behaves as an on-demand service provisioning platform in which resource acquisition and release occur dynamically in response to user actions or system-defined triggers. This form of access is often referred to as on-demand self-service usage and constitutes a foundational aspect of mainstream cloud computing.
+
+\subsection{Ubiquitous access}
+
+Ubiquitous access refers to the capacity of a cloud service to be reachable from a wide range of client platforms and network paths. Cloud services are expected to support heterogeneous devices, including personal computers, mobile devices, thin clients, and other networked endpoints. They must therefore accommodate different transport protocols, communication interfaces, and security mechanisms.
+
+To support ubiquitous access, the architecture of the cloud service needs to be adaptable to the requirements of diverse consumers. This may include the implementation of multiple access endpoints, protocol translations, device-specific presentation formats, and authentication methods suited for varying network conditions and security contexts. The objective is to ensure that cloud-hosted functionality can be invoked reliably and securely regardless of the consumer's physical location or device type.
+
+\subsection{Multitenancy and resource pooling}
+
+Multitenancy is a characteristic of software systems that enables a single instance of a program or resource to serve multiple distinct consumers, known as tenants, while isolating each tenant's data and configuration from the others. In cloud environments, multitenancy is typically implemented through virtualization, containerization, or specialized application-level isolation techniques.
+
+Resource pooling complements multitenancy by allowing a cloud provider to aggregate computing, storage, and networking resources into shared pools that can be dynamically assigned to tenants. These pools enable efficient utilization of hardware infrastructure by minimizing idle capacity and allocating resources to consumers according to real-time demand.
+
+The diagram contrasts two scenarios. In a single-tenant environment, each cloud consumer is served by a distinct instance of a cloud service and an associated storage device, resulting in a one-to-one mapping between consumers and resource instances. In a multitenant environment, a single instance of the cloud service, together with a shared storage device, concurrently serves multiple consumers while maintaining logical separation among them. This architectural model reduces duplication of resources and enhances scalability.
+
+The dynamic nature of multitenancy permits resources to be assigned and reassigned at runtime. Allocation decisions may be based on policies, performance requirements, or evolving workload patterns. By leveraging multitenancy, cloud providers can support large numbers of consumers efficiently and cost-effectively.
+
+\subsection{Elasticity}
+
+Elasticity is the automated capability of a cloud environment to scale information technology resources in response to operational conditions. Scaling may occur by increasing or decreasing allocated compute capacity, storage space, or other resources. The process is transparent to the consumer and typically governed by predefined automation rules or monitoring mechanisms.
+
+Elasticity is central to the economic advantages of cloud computing. It supports reduced initial investment by allowing consumers to provision only the resources needed at a given time and to expand usage proportionally as demand increases. Resource scaling can be triggered by runtime metrics such as processor load, memory utilization, or incoming request volume. It may also follow explicit configurations established by either the cloud provider or the cloud consumer.
+
+Cloud providers with extensive resource pools can offer higher degrees of elasticity. They can allocate additional virtual machines, containers, or service instances rapidly in order to respond to sudden increases in workload, and can deallocate such resources when demand subsides. This automated responsiveness contributes to performance stability and cost efficiency.
+
+\subsection{Measured usage}
+
+Measured usage is the characteristic by which a cloud platform monitors, records, and reports the consumption of information technology resources by consumers. Measurements may include processing time, storage volume, network throughput, or the period during which resources remain allocated.
+
+Based on these metrics, cloud providers can charge consumers according to actual resource utilization or the duration of access, enabling usage-based billing models. Measured usage is closely aligned with on-demand usage, since both characteristics support flexible and consumer-driven resource consumption.
+
+However, measured usage is not restricted to billing. It also encompasses internal monitoring and reporting mechanisms that support capacity planning, system optimization, and usage transparency. Even in private cloud environments where consumers may not be billed individually, these measurements are essential for administrative insight and operational governance.
+
+\subsection{Resiliency}
+
+Resiliency refers to the ability of a cloud system to continue operating in the presence of component failures. It is commonly achieved through the distribution of redundant resource implementations across multiple physical locations. If one instance becomes unavailable or exhibits degraded performance, processing can be transferred automatically to another instance without disrupting service continuity.
+
+By utilizing the resiliency capabilities of cloud-based resources, consumers can enhance the reliability and availability of their applications. High-availability configurations, replicated storage, and geographically distributed deployments are examples of how resiliency is implemented to mitigate the impact of localized failures.
+
+\section{Cloud deployment models}
+
+A cloud deployment model defines a particular category of cloud environment. Deployment models are distinguished primarily by ownership, scale, accessibility, and the distribution of responsibilities between cloud providers and cloud consumers. The standard deployment models are the public cloud, private cloud, community cloud, and hybrid cloud. Each model exhibits distinct operational properties and governance structures, resulting in different trade-offs with respect to security, scalability, and cost.
+
+\subsection{Public clouds}
+
+A public cloud is a cloud environment that is publicly accessible and owned by an external third-party cloud provider. In this arrangement, the provider creates, manages, and maintains the infrastructure and services that comprise the cloud platform. Cloud consumers access these resources through standardized interfaces and are typically charged on a usage or subscription basis. Some public cloud offerings may be subsidized or commercialized through alternative mechanisms such as advertisements.
+
+Public clouds may be operated by commercial enterprises, academic institutions, governmental bodies, or configurations involving partnerships among these entities. The defining characteristic is that the infrastructure is not restricted to a single organization. The cloud provider assumes responsibility for ensuring availability, performance, security controls, and scaling capabilities.
+
+Several well-known cloud providers, represented as distinct cloud environments such as Google, Salesforce, Microsoft, Amazon, Yahoo, Zoho, and Rackspace, offer services to organizations acting as cloud consumers. Each organization accesses services that reside entirely within the provider's infrastructure, and resource allocation is performed by the provider.
+
+\subsection{Private clouds}
+
+A private cloud is a cloud environment owned and used by a single organization. In this model, the same organization assumes both the cloud provider and cloud consumer roles; however, these roles are differentiated internally. A designated department is responsible for provisioning, managing, and operating the private cloud infrastructure and therefore acts as the cloud provider. Other departments or organizational units requiring access to resources function as cloud consumers.
+
+The ownership of a private cloud is exclusively held by the organization. The cloud serves as a centralized platform that delivers information technology resources to different departments, branch offices, or internal units. Private clouds frequently utilize cloud computing technologies to improve resource utilization, automate provisioning, and provide unified access to applications and services within the organization.
+
+The distinction between the terms ``on-premise'' and ``cloud-based'' must be used precisely in the context of private clouds. Even when the private cloud infrastructure is physically located on the organization's premises, the resources it hosts are considered ``cloud-based'' as long as access is delivered remotely through cloud service interfaces. Conversely, information technology resources maintained separately by local departments and not integrated into the private cloud remain ``on-premise''relative to the cloud-based resources.
+
+\subsection{Community clouds}
+
+A community cloud combines characteristics of both public and private cloud models. The infrastructure is shared among several independent organizations that collectively form a community based on shared goals, regulatory requirements, or operational needs. Like a public cloud, the community cloud enables multiple organizations to access shared resources; like a private cloud, membership is restricted and subject to governance.
+
+Ownership of a community cloud may be distributed in different ways. The participating organizations may jointly own and manage the infrastructure, or a third-party cloud provider may provision a dedicated environment with access limited to the community members. In either case, the members participate in defining usage policies, operational procedures, and the future evolution of the cloud environment.
+
+Membership in the community does not automatically entitle an organization to access all available resources. Access and control may be differentiated according to policy decisions or functional requirements. Parties outside the community are excluded unless explicitly granted authorization.
+
+\subsection{Hybrid clouds}
+
+A hybrid cloud is formed by combining two or more distinct cloud deployment models. Common hybrid configurations integrate private clouds with public clouds, enabling organizations to distribute workloads according to sensitivity, regulatory requirements, or performance considerations. For instance, an organization may deploy applications processing confidential or regulated data within a private cloud, while leveraging a public cloud for hosting non-sensitive applications or for handling excess computational load.
+
+Hybrid clouds introduce architectural complexity because the participating cloud environments may differ significantly in management interfaces, security mechanisms, resource models, and operational responsibilities. Coordination between the private cloud provider organization and the external public cloud provider is required to ensure consistent operation, secure data transfer, and unified access control.
+
+A cloud service consumer accesses two cloud services: one hosted in the public cloud that manages non-sensitive or public data, and another hosted in the private cloud that stores sensitive data. The consumer interacts with both environments, and data movement or process delegation between the environments is governed by the architecture.
+
+\subsection{Comparison of cloud deployment models}
+
+The key observations are as follows:
+
+\begin{itemize}
+\item \textbf{Scalability}: Private and community clouds offer limited scalability due to their constrained resource pools. Public and hybrid clouds provide very high scalability.
+\item \textbf{Security}: Private clouds offer the highest degree of security. Community clouds are also considered very secure. Public clouds provide moderate security. Hybrid clouds achieve very secure configurations when designed appropriately.
+\item \textbf{Performance}: Private and community clouds typically provide very good performance. Public clouds may range from low to medium performance depending on workload isolation and multitenant effects. Hybrid clouds achieve good performance with proper architecture.
+\item \textbf{Reliability}: Private and community clouds offer very high reliability, while public clouds provide medium reliability. Hybrid clouds offer medium to high reliability, influenced by inter-cloud coordination.
+\item \textbf{Cost}: Private clouds are associated with high cost, community clouds with medium cost, public clouds with low cost, and hybrid clouds with medium cost.
+\end{itemize}
+
+\section{Cloud delivery models}
+
+A cloud delivery model defines a pre-packaged and standardized combination of information technology resources offered by a cloud provider. These combinations are presented as services that cloud consumers can access through well-defined interfaces. The most widely established and formalized delivery models are Infrastructure-as-a-Service, Platform-as-a-Service, and Software-as-a-Service. Each model offers a different abstraction level, a distinct distribution of administrative responsibilities, and varying degrees of control to the consumer.
+
+\subsection{Infrastructure-as-a-Service}
+
+Infrastructure-as-a-Service (IaaS) represents a self-contained information technology environment composed of infrastructure-centric resources. These resources typically include processing capacity, storage devices, networking components, connectivity mechanisms, and operating systems. Access to these resources is provided through cloud service interfaces and associated tools.
+
+Unlike traditional hosting environments, IaaS resources are commonly virtualized and packaged into standardized bundles that simplify runtime configuration and scaling. Virtual servers are leased by specifying hardware-related requirements such as processor capacity, memory allocation, and local storage volume. Consumers can therefore tailor the infrastructure to their application requirements while avoiding capital expenditure associated with acquiring physical hardware.
+
+The purpose of an IaaS environment is to grant cloud consumers a high level of control and administrative responsibility over configuration and operation. Users can instantiate virtual machines, attach them to virtual disk volumes, create virtual networks, and configure network-level components. They can install custom operating systems and deploy traditional or legacy applications that require fine-grained control over the runtime environment.
+
+Because IaaS resources are generally not pre-configured, substantial administrative effort remains with the consumer. This responsibility includes applying security patches to operating systems, updating applications, enforcing security controls, configuring network policies, and deploying intermediate components such as firewalls, load balancers, and auto-scaling mechanisms. As a result, IaaS provides flexibility at the cost of operational complexity.
+
+A cloud consumer interacts with a virtual server hosted by the provider, while the provider maintains the underlying physical server. The accompanying service contract specifies the characteristics of the leased virtual server, including memory size, storage capacity, service level agreements, and cost metrics such as fees per hour of usage and charges for outbound data transfer.
+
+\subsection{Platform-as-a-Service}
+
+Platform-as-a-Service (PaaS) offers a ready-made and pre-configured environment consisting of deployed and managed information technology resources. In contrast to IaaS, the consumer is relieved of responsibility for configuring and administering the underlying infrastructure. Instead, the consumer focuses on developing, deploying, and managing applications within the platform.
+
+The platform handles the details of distributing the consumer's application across servers, managing operating system-level configuration, establishing network connectivity, and enabling automatic scaling. This abstraction accelerates the software development cycle by removing the operational overhead associated with infrastructure management.
+
+However, this model introduces limitations. Consumers typically have restricted control over the hardware, security policies, operating systems, and lower-level run-time components. The platform may impose constraints on supported programming languages, frameworks, and libraries.
+
+A cloud consumer accesses a virtualized environment associated with a ready-made platform containing databases, application servers, and other managed components. The cloud provider maintains responsibility for the infrastructure and ensures platform availability, performance, and elasticity.
+
+\subsection{Software-as-a-Service}
+
+Software-as-a-Service (SaaS) positions an entire software program as a shared cloud-hosted service that is made available as a reusable utility. SaaS offerings are typically accessed through a front-end interface such as a web application or application-specific client. The consumer uses the software without managing the underlying infrastructure, runtime environment, or application hosting.
+
+SaaS models are widely used to provide commercial and enterprise-grade applications to a broad range of consumers. Licensing structures may include subscription fees, usage-based billing, or bundled service packages. The cloud provider maintains responsibility for implementing, updating, scaling, and maintaining the service.
+
+\subsection{Separation of responsibility}
+
+Cloud delivery models differ markedly in how administrative responsibilities are divided between the cloud consumer and the cloud provider.
+
+For traditional on-premise environments, the consumer manages all layers, including applications, data, runtime environments, middleware, operating systems, virtualization, servers, storage, and networking. Under IaaS, responsibilities for networking, storage, physical servers, and virtualization are shifted to the provider, while the consumer continues to manage the operating system, middleware, runtime, data, and applications. Under PaaS, management shifts further, with the provider taking responsibility for the operating system, middleware, and runtime environment as well. Under SaaS, the provider assumes nearly full responsibility, and the consumer manages only application-level configuration and usage.
+
+\subsection{Comparing cloud delivery models}
+
+Cloud delivery models differ not only in administrative responsibility but also in the degree of control granted to consumers and in the functionality provided.
+
+SaaS offers usage-based configuration, providing access to only the front-end user interface. PaaS grants limited administrative control that extends to platform-level resources. IaaS provides full administrative control over virtualized infrastructure resources.
+
+SaaS consumers use and configure the software service, while providers implement, manage, and maintain the software and monitor usage. PaaS consumers design, deploy, and manage applications using the platform, while providers configure platforms and manage underlying infrastructure and middleware. IaaS consumers provision and configure virtualized infrastructure resources and install software, while providers manage the physical infrastructure and monitor overall usage.
+
+\subsection{Combining delivery models}
+
+Delivery models can be combined to form integrated cloud solutions. At the lowest layer, virtual servers provided through an IaaS environment host ready-made platform environments that correspond to PaaS offerings. These platforms support the deployment of SaaS services that are subsequently exposed to cloud consumers. This stacked architecture allows organizations to coordinate infrastructure, platform, and application-level services within a cohesive operational environment.
+
+\subsection{Notable examples of cloud services}
+
+Prominent commercial platforms offer representative examples of the primary delivery models. IaaS providers include Amazon EC2 and Rackspace Hosting. PaaS platforms include Google App Engine and Microsoft Azure. SaaS products include Google Docs, Gmail, Microsoft Office.com, and Salesforce CRM.
+
+\subsection{Other cloud service models}
+
+Numerous specialized service models extend the functionality of the three core delivery models. These models provide targeted capabilities by combining specific sets of information technology resources. Examples include Storage-as-a-Service, Database-as-a-Service, Security-as-a-Service, Communication-as-a-Service, Integration-as-a-Service, Testing-as-a-Service, and Process-as-a-Service.
+
+\subsection{XaaS}
+
+The term XaaS refers to the broadest conceptualization of cloud service provisioning. It is interpreted as Anything-as-a-Service, Everything-as-a-Service, or X-as-a-Service, where X can denote any service delivered through the cloud. Although no provider offers every conceivable service, XaaS indicates an extensive portfolio of offerings that often include IaaS, PaaS, and SaaS, enabling consumers to acquire a wide range of capabilities from a single provider.
+
+\subsection{NIST cloud computing reference architecture}
+
+The architecture decomposes the provider environment into layers, including physical hardware, resource abstraction, control mechanisms, and service orchestration. It identifies SaaS, PaaS, and IaaS as components of the service layer and highlights security, privacy, configuration management, and business support as cross-cutting concerns. Cloud brokers facilitate aggregation, intermediation, and arbitrage of services, while auditors assess security, privacy, and performance.
+
+\subsection{Cloud-enabling technologies}
+
+Modern cloud environments rely on several foundational technologies. Broadband networks and Internet architecture provide the necessary connectivity. Data center technologies support large-scale resource hosting. Virtualization technologies abstract physical resources. Web technologies facilitate interaction and service delivery. Multitenant architectures enable shared resource usage, and containerization technologies provide lightweight isolation and rapid deployment capabilities.
+

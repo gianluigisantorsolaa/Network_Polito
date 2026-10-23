@@ -1,0 +1,287 @@
+\chapter{IPv4}
+
+\section{IP addressing: terminology}
+
+An IPv4 address is a 32 bit identifier assigned to the interfaces of hosts and routers. Each interface connecting a device to a network is assigned a distinct address. An IPv4 address is logically divided into two parts: a \emph{network part} and a \emph{host part}. The network part comprises the most significant bits of the address, while the host part comprises the least significant bits.
+
+An \textbf{IP network} is defined as the set of all devices whose interfaces share the same network part of the IP address and that are attached to the same link layer network. All hosts belonging to the same IP network must be directly reachable at the link layer without crossing a router.
+
+\section{Special IPv4 addresses}
+
+Certain address patterns have predefined meanings within IPv4. These values do not identify individual hosts but serve specific control or broadcast purposes.
+
+\subsection{Network identifier}
+
+A network identifier is obtained by placing a valid network part in the high order bits and filling all remaining host bits with zero. It identifies the entire IP network rather than any specific host. For example, in a network 130.192.0.0/16, the address 130.192.0.0 is the network identifier.
+
+\begin{center}
+\safeimg[width=4.72361in,height=1.61667in]{media/image2.png}
+\end{center}
+
+\subsection{Broadcast addresses}
+
+\subsubsection*{Limited broadcast}
+\addcontentsline{toc}{subsubsection}{Limited broadcast}
+
+An address composed entirely of ones, 255.255.255.255, is interpreted as a limited broadcast. Packets sent to this address are delivered to all hosts on the local network. They are never forwarded by routers.
+
+\subsubsection*{Directed broadcast}
+\addcontentsline{toc}{subsubsection}{Directed broadcast}
+
+A directed broadcast for a specific network is obtained by filling the host part of a valid network identifier with all ones. For example, for the network 130.192.0.0/16, the directed broadcast address is 130.192.255.255. The resulting address targets all hosts belonging to that network. Routers may forward directed broadcasts depending on configuration and security policies.
+
+\subsection{Loopback addresses}
+
+All addresses whose first byte is 127 identify the loopback range. They refer internally to the same device and are not forwarded. The address 127.0.0.1 is commonly used as the standard loopback endpoint. Communications sent to a loopback address are processed within the local host and never reach the network.
+
+\section{IP addressing classes}
+
+Historically, IPv4 addressing followed a classful structure. The address space was partitioned into classes based on the value of the most significant bits. Although classful addressing has been replaced by classless methods, its terminology remains relevant and is still used in many examples and legacy systems.
+
+\begin{center}
+\safeimg[width=4.72361in,height=3.15556in]{media/image3.png}
+\end{center}
+
+\subsection{Class A}
+
+Class A addresses have the first bit equal to 0. The first byte therefore ranges from 0 to 127. The network part is 8 bits long, allowing 128 class A networks, each supporting more than sixteen million host addresses.
+
+\subsection{Class B}
+
+Class B addresses begin with the bit pattern 10. The first byte ranges from 128 to 191. The network part is 16 bits long, allowing approximately 16 384 networks, each with up to about 65 534 usable host addresses.
+
+\subsection{Class C}
+
+Class C addresses begin with the bit pattern 110. The first byte ranges from 192 to 223. The network part is 24 bits long, yielding more than two million networks, each supporting up to 254 usable hosts.
+
+\section{CIDR: Classless Interdomain Routing}
+
+CIDR (\emph{Classless Interdomain Routing}) eliminates rigid class boundaries and permits the network portion of the address to have arbitrary length.
+
+\subsection{General format}
+
+An IPv4 address with CIDR notation is written as the network identifier followed by the prefix length. The prefix length denotes the number of bits belonging to the network part. For example, 200.23.16.0/23 identifies a network in which the first 23 bits represent the network portion. The equivalent netmask is 255.255.254.0, which contains bits set to 1 in the network part and bits set to 0 in the host part.
+
+In general, a CIDR address can be written either in the form a.b.c.d/x, where x is the prefix length, or as a.b.c.d combined with an explicit netmask such as 255.255.255.0.
+
+\subsection{Valid netmask values}
+
+Each byte of a netmask must consist of contiguous bits set to 1 followed by contiguous bits set to 0. The valid byte values, when interpreted as decimal numbers, are:
+
+\begin{itemize}
+\item 0 (binary 00000000)
+\item 128 (binary 10000000)
+\item 192 (binary 11000000)
+\item 224 (binary 11100000)
+\item 240 (binary 11110000)
+\item 248 (binary 11111000)
+\item 252 (binary 11111100)
+\item 254 (binary 11111110)
+\item 255 (binary 11111111) The last two values impose severe restrictions. A value of 254 is not valid in the fourth byte because it leaves only a single host address in that octet. Using 255 in the final byte corresponds to a prefix of length /32, which identifies a single device rather than a network with multiple hosts.
+\end{itemize}
+
+\subsection{CIDR examples}
+
+Several examples illustrate the relationship between prefix length and netmask:
+
+\begin{itemize}
+\item 130.192.0.0/16 corresponds to netmask 255.255.0.0.
+\item 130.192.0.0/24 corresponds to netmask 255.255.255.0.
+\item 130.192.0.0/25 corresponds to netmask 255.255.255.128.
+\item 130.192.2.0/23 corresponds to netmask 255.255.254.0.
+\item 130.192.1.4/30 corresponds to netmask 255.255.255.252.
+\item 130.192.1.0/31 corresponds to netmask 255.255.255.254.
+\end{itemize}
+
+Every IP network must contain at least two reserved addresses: the network identifier and the broadcast address. The remaining addresses, if any, can be used for hosts and routers.
+
+\subsection{Valid and invalid network identifiers}
+
+A prefix length constrains which values are acceptable as network identifiers. To be valid, the host bits of the address must be all zeros. Examples of valid network identifiers include:
+
+\begin{itemize}
+\item 130.192.1.4/30
+\item 130.192.1.16/30
+\item 130.192.1.16/29 Examples of invalid network identifiers include:
+\item 130.192.1.1/30
+\item 130.192.1.4/29
+\item 130.192.1.24/28 In each invalid case, the address has at least one host bit set to 1, so it cannot represent the base network address for the indicated prefix.
+\end{itemize}
+
+\section{IPv4 addressing: a complete example}
+
+Consider a network scenario in which a netmask 255.255.255.0 is used. Three IPv4 networks are defined:
+
+\begin{itemize}
+\item 223.1.1.0/24
+\item 223.1.2.0/24
+\item 223.1.3.0/24
+\end{itemize}
+
+Each network contains hosts whose addresses share the same first three bytes. For instance, addresses 223.1.1.1, 223.1.1.2, 223.1.1.3, and 223.1.1.4 all belong to network 223.1.1.0/24, while addresses such as 223.1.2.1, 223.1.2.2, and 223.1.2.9 belong to network 223.1.2.0/24. Similarly, 223.1.3.1, 223.1.3.2, and 223.1.3.27 are part of network 223.1.3.0/24.
+
+\begin{center}
+\safeimg[width=4.72361in,height=3.46111in]{media/image4.png}
+\end{center}
+
+Routers interconnect these networks. Each router interface that connects to a given network is assigned an address from that network, and routing tables are configured so that packets can be forwarded between the three /24 networks and ultimately toward the Internet if needed.
+
+\section{IP routing}
+
+\subsection{General forwarding rule}
+
+When forwarding an IP packet, an IP device examines the destination address and searches its local routing table for matching entries. A routing table entry typically contains at least a destination prefix, a next hop, and an outgoing interface. If multiple entries match the destination address, the device selects the entry with the longest prefix length. This procedure is known as \emph{longest prefix matching} and ensures that the most specific route is chosen.
+
+The routing decision therefore depends not only on whether a destination matches a prefix, but also on the degree of specificity, measured as the number of bits in the prefix.
+
+\subsection{Example of a routing table}
+
+Given this network configuration:
+
+\begin{center}
+\safeimg[width=4.72361in,height=3.46111in]{media/image5.png}
+\end{center}
+
+A routing table may contain entries such as the following (for a router R1):
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Type} & \textbf{Destination} & \textbf{Next hop} & \textbf{Cost}\\
+\midrule
+S & 130.192.0.0/24 & 130.192.3.2 & 2\\
+S & 130.192.1.0/24 & 130.192.3.2 & 2\\
+S & 130.192.3.8/30 & 130.192.3.2 & 2\\
+S & 0.0.0.0/0 & 80.105.10.2 & 2\\
+D & 130.192.2.0/24 & 130.192.2.1 & 1\\
+D & 130.192.3.0/30 & 130.192.3.1 & 1\\
+D & 130.192.3.4/30 & 130.192.3.5 & 1\\
+D & 80.105.10.0/30 & 80.105.0.1 & 1\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Static routes are denoted by S, while dynamically learned routes are denoted by D. A next hop may refer to a local interface address or to a remote router interface.
+
+The default route 0.0.0.0/0 is selected for destinations that do not match any more specific prefix. Its presence allows the router to forward packets toward an upstream provider (represented here by next hop 80.105.10.2) without storing explicit routes for all external networks.
+
+\section{Methodology for IPv4 address allocation}
+
+The design of an IPv4 addressing plan follows a structured approach. The goal is to assign addresses efficiently while ensuring that present and anticipated requirements are satisfied.
+
+\begin{center}
+	\safeimg[width=3.72361in,height=2.46111in]{media/image26.png}
+\end{center}
+
+\subsection{Identification of IP networks}
+
+The first step is to determine the number of IP networks to deploy and their locations. For example, suppose that three networks are needed:
+
+\begin{itemize}
+\item an IP network for LAN 1 with 40 end systems,
+\item an IP network for LAN 2 with 100 end systems,
+\item a third IP network with 4 end systems (for example, for a point to point link or small infrastructure segment).
+\end{itemize}
+
+\subsection{Computation of required addresses}
+
+For each network, the number of required addresses must account for all hosts plus the network and broadcast addresses. In the example, the required addresses become:
+
+\begin{itemize}
+\item 43 addresses for the network with 40 hosts,
+\item 103 addresses for the network with 100 hosts,
+\item 4 addresses for the small network.
+\end{itemize}
+
+\subsection{Allocation of address blocks}
+
+Address blocks must be assigned so that each network receives a block size equal to or larger than the required number of addresses, with the constraint that each block size is a power of two. A possible allocation is:
+
+\begin{itemize}
+\item 64 addresses for the first LAN,
+\item 128 addresses for the second LAN,
+\item 4 addresses for the small network.
+\end{itemize}
+
+These sizes are sufficient because 64 is greater than 43, 128 is greater than 103, and 4 is exactly equal to the requirement for the small network.
+
+\subsection{Selection of a global address range}
+
+A global address block must be selected that is sufficiently large to contain all subnet allocations. In the example, the total minimum number of addresses is 196. A block of size 256 addresses, corresponding to a prefix /24, is therefore adequate.
+
+One can select, for instance, the block 10.0.0.0/24. This block contains addresses from 10.0.0.0 to 10.0.0.255.
+
+\subsection{Determination of netmasks}
+
+Each subnet is then assigned a prefix length corresponding to its allocated block. A consistent allocation within 10.0.0.0/24 is:
+
+\begin{itemize}
+\item 10.0.0.0/25 with netmask 255.255.255.128 (128 addresses),
+\item 10.0.0.128/26 with netmask 255.255.255.192 (64 addresses),
+\item 10.0.0.192/30 with netmask 255.255.255.252 (4 addresses).
+\end{itemize}
+
+These three subnets are non overlapping and entirely contained within 10.0.0.0/24.
+
+\subsection{Assignment of host addresses}
+
+Host addresses are assigned from within each subnet range:
+
+\begin{itemize}
+\item Subnet 10.0.0.0/25 has usable host addresses from 10.0.0.1 to 10.0.0.126, with 10.0.0.0 as network identifier and 10.0.0.127 as broadcast address.
+\item Subnet 10.0.0.128/26 has usable host addresses from 10.0.0.129 to 10.0.0.190, with 10.0.0.128 as network identifier and 10.0.0.191 as broadcast address.
+\item Subnet 10.0.0.192/30 has usable host addresses from 10.0.0.193 to 10.0.0.194, with 10.0.0.192 as network identifier and 10.0.0.195 as broadcast address. Routers and hosts are configured with addresses from these ranges, respecting the conventional reservation of the first and last address for network and broadcast.
+\end{itemize}
+
+\section{IPv4 multicast}
+
+\subsection{Definition and purpose}
+
+Multicast communication enables a source to send packets to multiple receivers efficiently. It is fundamental for group based applications such as videoconferencing, video broadcasting, and other group communication services. A multicast address identifies a group rather than a single destination. Any host that joins the group is expected to receive packets addressed to that multicast address.
+Multicast should not be confused with broadcast: a broadcast packet is
+delivered to \emph{every} host of the network, whereas a multicast packet is
+delivered only to the hosts that have joined the group.
+\begin{center}
+\safeimg[width=3.54306in,height=1.89305in]{media/image6.png}
+\end{center}
+
+\subsection{Multicast addressing}
+
+Multicast addresses belong to class D, whose first four bits are 1110. The corresponding address range extends from 224.0.0.0 to 239.255.255.255. A packet sent to a multicast address is delivered to all members of the addressed host group, regardless of their location in the network, provided that multicast routing is properly configured between all involved networks.
+
+\subsection{Host group membership}
+
+Hosts may join or leave a multicast group at any time. Unlike unicast communication, where the source determines the receiver by specifying a single destination address, multicast group membership is determined by the receivers themselves. When a host decides to receive traffic for a multicast group, it issues a join request for the corresponding multicast address.
+
+This receiver initiated model makes it more challenging to control the reach of multicast traffic. The network must ensure that multicast packets are forwarded only to those parts of the topology where at least one group member exists, in order to avoid unnecessary traffic.
+
+\subsection{Multicast operation within IEEE 802 networks}
+
+On IEEE 802 networks (for example Ethernet), group delivery is delegated to the link layer. An IPv4 multicast address is mapped to a corresponding MAC multicast address. The mapping uses a fixed 25 bit prefix represented, in hexadecimal notation, by the MAC address prefix 01-00-5E-0. The remaining 23 bits of the MAC address are filled with the 23 least significant bits of the IPv4 multicast address. In other words, the link layer multicast address is obtained by:
+
+\begin{itemize}
+\item taking the constant prefix 01-00-5E,
+\item setting the following bit to 0, so that the fixed prefix is 25 bits long (01-00-5E-0);
+\item copying the lower 23 bits of the IP multicast address into the remaining bits of the MAC address.
+\end{itemize}
+
+\begin{center}
+\safeimg[width=4.72361in,height=1.87361in]{media/image7.png}
+\end{center}
+
+Network interface cards are configured to receive frames addressed to the corresponding MAC multicast address when the host joins the associated IP multicast group. This enables multicast delivery at the link layer without requiring separate unicast transmissions for each receiver.
+
+\subsection{Multicast routing across networks}
+
+Routers must discover multicast group members on each local network and then coordinate with other routers to establish end to end multicast distribution trees.
+
+On each local network, routers use the Internet Group Management Protocol (IGMP) to learn which multicast groups are active and which hosts participate in each group. Hosts send IGMP messages to report their group memberships, and routers listen to these messages to maintain an updated view.
+
+Routers then exchange multicast routing information using multicast routing protocols. Based on this information, they construct distribution trees that define, for each multicast group, how packets should be replicated and forwarded so that they reach all LANs containing at least one group member while avoiding loops and redundant transmissions.
+
+\subsection{Deployment considerations}
+
+Native IP multicast is not widely deployed in the global Internet. It is difficult to integrate with common traffic engineering and traffic control practices, which are often optimized for unicast traffic. As a consequence, multicast support is mostly limited to controlled environments, such as enterprise networks and dedicated infrastructures for services like video broadcasting over IP.
+
+In these controlled contexts, multicast provides significant bandwidth savings by avoiding the need to send separate unicast streams to each receiver. However, the additional complexity of multicast routing and group management has limited its adoption in general purpose public networks.
+
