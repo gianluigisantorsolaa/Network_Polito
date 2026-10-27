@@ -225,7 +225,7 @@ Scaling is strictly connected to the dynamic management of capacity planning: it
 Vertical scaling occurs when an existing resource is replaced with another that possesses greater or lesser capacity. Scaling up replaces the resource with a more powerful instance, while scaling down substitutes a less capable instance. Examples include installing a faster processor, increasing memory, or upgrading to a higher-capacity server.
 
 \begin{center}
-	\safeimg[width=3.5in,height=1.53in]{media/image128.png}
+	\safeimg[width=3.8in,height=1.83in]{media/image128.png}
 \end{center}
 
 Vertical scaling typically requires downtime during replacement operations because the existing resource must be removed from service before the new component is introduced. For this reason, vertical scaling is less prevalent in cloud environments, which emphasize uninterrupted availability. The limitations of hardware capacity further restrict the extent to which vertical scaling can increase performance.
@@ -275,6 +275,12 @@ A \textbf{cloud service} is any remotely accessible IT resource made available t
 
 The \textbf{cloud service consumer} refers to the temporary runtime role that a software program adopts when it accesses a cloud service. This role does not describe the organization itself, but the specific operational activity performed by a program during service invocation.
 
+Remote access depends on the nature of the resource. If the IT resource is a software program, a web-based interface (for example over HTTPS) is usually enough. If it is hardware or a network, a web interface may not be sufficient and a \textbf{remote access point} is used, exposing administrative and management tools that control the resource remotely. In both cases, what matters is that the control happens remotely through an endpoint offering suitable interfaces.
+
+\begin{notebox}
+	A cloud service can be \emph{any} generic IT resource (an application, data, or even hardware) made available through the Internet or a wide network to multiple consumers. The cloud service consumer, instead, is always a \emph{software program}, possibly running on any kind of personal computer or device.
+\end{notebox}
+
 \section{Actors in cloud computing}
 
 Cloud environments involve several organizational and technical roles responsible for providing, consuming, owning, and administering cloud-based resources. These roles define the interactions and responsibilities within the cloud ecosystem.
@@ -285,9 +291,25 @@ A \textbf{cloud provider} is the organization that offers cloud-based IT resourc
 
 Operational responsibilities include capacity management, fault handling, maintenance of physical data centers, and enforcement of security and access control policies. The provider defines service interfaces and supports billing, metering, and monitoring mechanisms that govern consumer interactions with cloud services.
 
+The cloud provider is usually an organization, not a single person, and it is the entity that controls the cloud service and gives remote access to consumers. By definition, however, the roles of \textbf{provider}, \textbf{owner} and \textbf{administrator} are distinct, even though they usually coincide (the provider typically owns the infrastructure, pays to keep it operative and carries out the administrative duties).
+
+\textbf{Example.} Let $P_1$ be a provider that owns bare general-purpose servers with no operating system and no applications, and offers a remote access point to configure them. A second provider $P_2$ pays $P_1$ for access to these servers, installs an operating system and web services on them, and sells the resulting configured platform to a final consumer $C$, who is still using $P_1$'s infrastructure. $C$ pays $P_2$ for the organized platform; alternatively, $C$ could pay $P_1$ directly, but then it would have to configure the whole platform (operating system, applications) and take on all the administrative duties. In this case $P_2$ sells remote access to a service that is only partly under its control, since it is not the legal owner of the hardware on which it runs.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image135.png}
+\end{center}
+
 \subsection{Cloud consumer}
 
 A \textbf{cloud consumer} is an organization or individual that establishes a formal agreement with a cloud provider in order to use provider-managed resources. The consumer interacts with cloud services by means of a cloud service consumer program, which handles service invocation and execution. This role represents the entity that is contractually bound to the provider and that receives the technical, operational, and economic benefits of cloud usage.
+
+\begin{notebox}
+	\textbf{Do not confuse} the \emph{cloud consumer} with the \emph{cloud service consumer}. The cloud consumer (like the cloud provider) is a human entity, a person or an organization bound by a legal contract. The cloud service consumer is the \emph{software program}, running on the consumer's premises, that interacts with the cloud service offered by the provider.
+\end{notebox}
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image136.png}
+\end{center}
 
 \section{Service-level agreements}
 
@@ -295,15 +317,38 @@ A \textbf{service-level agreement (SLA)} is a contractual document that specifie
 
 SLAs include measurable targets, typically detailing response times, service availability percentages, escalation procedures, and conditions for issue resolution. SLAs categorize requests by severity and urgency. Severity describes the operational impact of an issue on business processes, while urgency indicates how quickly the consumer requires remediation. Corresponding SLA targets specify maximum response times and maximum resolution times for each category.
 
+SLAs are not specific to cloud computing: in general they define the service-level capabilities promised by the provider and the expectations of the consumer. A typical target is the number of requests the service must handle per minute (for instance, 200 requests per minute must always be satisfied); the provider must then have enough hardware and network connectivity to guarantee it. Since the contract is legally binding, it can be used as proof in a trial if the consumer is unsatisfied, or if the provider notices that the consumer is using the service in an unexpected way.
+
+The importance of each target depends on the \textbf{priority} of the service (for example low, normal, high, urgent). Each priority defines a \emph{severity} (the impact of a disservice on the consumer's work) and an \emph{urgency} (how fast the service must be restored). For a low-priority service the client can keep working, so an immediate resolution is not required; for a high-priority one no workaround is available, so an immediate resolution is needed.
+
+\begin{itemize}
+	\item \textbf{First response time}: the time from when the consumer notifies the provider of an issue (for example by opening a ticket) to the first acknowledgement that the provider is working on it. In the example, in 80\% of the cases a low or normal ticket receives a response within the same business day (a ticket opened in the morning may be answered at 5--6 pm), while high and urgent tickets receive it within 2 hours and 1 hour respectively.
+	\item \textbf{Resolution time}: the time from when the issue appears to its complete solution. In the example: low 2--4 weeks, normal 1--2 weeks, high up to 5 working days, urgent an immediate hotfix within 24 hours, including non-business hours.
+\end{itemize}
+
+These values are only examples: SLAs and targets are negotiated freely at the beginning of the relationship.
+
+\begin{center}
+	\safeimg[width=5in]{media/image137.png}
+\end{center}
+
 \section{Cloud service owner}
 
 The \textbf{cloud service owner} is the individual or organization that legally owns a cloud service. Ownership refers to legal and administrative control over the service, regardless of where it is hosted. This role can be assumed by either the cloud provider or the cloud consumer.
 
 If the consumer develops and deploys a service in a provider-managed environment, the consumer becomes the service owner even though the service operates in the provider's infrastructure. Conversely, when the provider develops and hosts a service for external use, the provider retains ownership. Ownership determines responsibility for service definition, versioning, and long-term lifecycle management.
 
+The case in which the consumer is the owner is a corner case: the consumer owns the hardware but pays a third party (the provider) to prepare the cloud model and manage it. It is uncommon, but it can happen.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image138.png}
+\end{center}
+
 \section{Cloud resource administrator}
 
 A \textbf{cloud resource administrator} is responsible for managing and maintaining a cloud-based IT resource. This role may be fulfilled by personnel belonging to the cloud consumer, the cloud provider, or an independent third party contracted for administrative duties. The responsibilities associated with this role include configuring resources, applying updates, monitoring performance, managing access permissions, and ensuring compliance with internal and external requirements.
+
+Most of the time the administrator coincides with the service owner and the provider, but it can also be the consumer (the provider only prepares the service). In some scenarios the administration is entrusted to a third-party organization independent of both, paid by both so as to keep the service in the best possible shape while preserving its reachability for the consumer.
 
 \section{Additional roles in cloud computing}
 
@@ -312,6 +357,8 @@ Beyond the fundamental roles of provider, consumer, owner, and administrator, cl
 \subsection{Cloud broker}
 
 A \textbf{cloud broker} is an intermediary that manages relationships and interactions between cloud providers and cloud consumers. The broker negotiates service usage, facilitates integration, and may offer value-added services that simplify or enhance access to cloud offerings.
+
+In practice, the broker manages the definition of the SLA: it supports the negotiation before the contract is established and, afterwards, intermediation and arbitrage in case of disputes (for example, the consumer thinks that the quality of service differs from the SLA targets, while the provider claims that it works as agreed), up to legal support in a trial. It therefore needs a \emph{legal} rather than technical background; the technical information on how the service behaves comes from another role, the cloud auditor.
 
 Broker mediation typically encompasses three categories:
 
@@ -327,11 +374,15 @@ A \textbf{cloud auditor} is an independent third party, often accredited, that a
 
 Typical audit activities include verification of compliance with regulatory frameworks, examination of operational safeguards, assessment of data protection mechanisms, and review of system resiliency. The auditor may also issue certifications or attestations that serve as evidence of conformity to established standards.
 
+The auditor must be a \emph{third party}, different from both consumer and provider, because its goal is to provide independent assessments: it checks how the service works, compares its behaviour with the SLA characteristics, and writes a report on performance, efficiency, security and privacy. These reports are often made public, so that all consumers are aware of them; sometimes, before publication, the auditor contacts the service owner (usually the provider) so that the issues are fixed first. Its role is not to favour the consumer but to give an unbiased assessment.
+
 \subsection{Cloud carrier}
 
 A \textbf{cloud carrier} provides the network-level connectivity that enables communication between cloud providers and cloud consumers. This role is generally fulfilled by telecommunications companies and network service providers that operate the physical and logical infrastructure necessary for data transmission.
 
 The cloud carrier ensures that sufficient bandwidth, reliability, and security exist to support cloud service interactions. Carrier responsibilities may include routing, switching, network monitoring, and the implementation of transport-level encryption or isolation mechanisms.
+
+Carriers are usually the standard network and telecommunication providers, the same ones from which Internet access is bought. This is consistent with the idea that cloud services must be reachable from anywhere, which requires the connectivity of ordinary telecommunication providers.
 
 \section{Interactions among cloud actors}
 
@@ -339,11 +390,19 @@ Cloud ecosystems rely on the coordinated involvement of multiple actors whose ro
 
 The \textbf{cloud consumer} communicates with the \textbf{cloud provider} through the communication channels established by the \textbf{cloud carrier}. The \textbf{cloud broker} may mediate interactions by negotiating service usage or combining offerings from multiple providers. The \textbf{cloud auditor} operates independently to evaluate and verify the trustworthiness and performance of the provider's environment.
 
+In more detail: consumer and provider interact with the broker when they establish the SLA of their legally binding contract; the auditor supports the broker's arbitrage decisions by interacting with the provider (it must know the services in operation) and produces reports that consumers can read; the carrier simply provides the network over which the cloud service consumer and the cloud service interact.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image139.png}
+\end{center}
+
 Together, these roles define the operational and organizational structure of cloud computing, ensuring that service delivery, governance, and connectivity are maintained consistently across distributed systems.
 
 \section{Cloud characteristics}
 
 Cloud computing environments exhibit a set of recurring properties that distinguish them from traditional distributed systems and service delivery models. These characteristics define how cloud platforms allocate, expose, and manage information technology resources and how consumers interact with them. The commonly accepted characteristics are on-demand usage, ubiquitous access, multitenancy with resource pooling, elasticity, measured usage, and resiliency. Each of these characteristics contributes to the overall behavioral model of cloud-based systems and influences architectural decisions.
+
+Most of these characteristics were already mentioned in the previous lectures; \emph{multitenancy} and \emph{resiliency} are the new ones.
 
 \subsection{On-demand usage}
 
@@ -351,17 +410,34 @@ On-demand usage denotes the capability of a cloud consumer to obtain access to c
 
 Once a resource has been provisioned, its usage can be automated so that no further manual intervention by either the consumer or the provider is needed. Automation may involve predefined scripts, orchestration workflows, or service management logic that allocates and releases resources based on specified operational criteria. The resulting environment behaves as an on-demand service provisioning platform in which resource acquisition and release occur dynamically in response to user actions or system-defined triggers. This form of access is often referred to as on-demand self-service usage and constitutes a foundational aspect of mainstream cloud computing.
 
+The mechanism benefits both sides. The consumer explicitly requests the amount of resources it needs and pays only for what it actually uses, unlike an on-premise scenario in which the hardware is bought at the beginning and the expense has been made even if it is partially unused. The provider benefits as well, because what one consumer does not use can be given to another, so that its resources are almost always exploited.
+
 \subsection{Ubiquitous access}
 
 Ubiquitous access refers to the capacity of a cloud service to be reachable from a wide range of client platforms and network paths. Cloud services are expected to support heterogeneous devices, including personal computers, mobile devices, thin clients, and other networked endpoints. They must therefore accommodate different transport protocols, communication interfaces, and security mechanisms.
 
 To support ubiquitous access, the architecture of the cloud service needs to be adaptable to the requirements of diverse consumers. This may include the implementation of multiple access endpoints, protocol translations, device-specific presentation formats, and authentication methods suited for varying network conditions and security contexts. The objective is to ensure that cloud-hosted functionality can be invoked reliably and securely regardless of the consumer's physical location or device type.
 
+To make services widely accessible, the cloud provider makes contracts with cloud carriers, which provide the connectivity to the cloud services from anywhere.
+
+
 \subsection{Multitenancy and resource pooling}
 
 Multitenancy is a characteristic of software systems that enables a single instance of a program or resource to serve multiple distinct consumers, known as tenants, while isolating each tenant's data and configuration from the others. In cloud environments, multitenancy is typically implemented through virtualization, containerization, or specialized application-level isolation techniques.
 
 Resource pooling complements multitenancy by allowing a cloud provider to aggregate computing, storage, and networking resources into shared pools that can be dynamically assigned to tenants. These pools enable efficient utilization of hardware infrastructure by minimizing idle capacity and allocating resources to consumers according to real-time demand.
+
+\begin{center}
+	\safeimg[width=5in]{media/image140.png}
+\end{center}
+
+But how can two services run on the same hardware and stay isolated? Through \textbf{virtualization} (covered in the next lectures): a software layer that abstracts the hardware representation presented to the software, in order to hide, mask or change some of its characteristics. Each cloud service believes it is working on its own virtualized storage device, while a piece of software, the \textbf{hypervisor}, maps these virtual environments onto the single real hardware and prevents programs from touching the parts reserved for the other virtual environments.
+
+The isolation is not as strong as in the single-tenant case, but traditional virtualization (virtual machines) still provides quite a strong isolation, whereas \emph{containers}, another virtualization technique, are only loosely isolated and therefore much weaker in terms of security.
+
+\begin{notebox}
+	\textbf{Why accept less isolation?} Because it is cheaper: the hardware is exploited as much as possible by dividing it among tenants, whereas with single tenancy half of a device may never be used because it was entirely reserved for one service. This is ideal for the cloud, where hardware is divided among many consumers; on-premise, single tenancy may be enough because nobody else would use the unused share.
+\end{notebox}
 
 The diagram contrasts two scenarios. In a single-tenant environment, each cloud consumer is served by a distinct instance of a cloud service and an associated storage device, resulting in a one-to-one mapping between consumers and resource instances. In a multitenant environment, a single instance of the cloud service, together with a shared storage device, concurrently serves multiple consumers while maintaining logical separation among them. This architectural model reduces duplication of resources and enhances scalability.
 
@@ -375,6 +451,8 @@ Elasticity is central to the economic advantages of cloud computing. It supports
 
 Cloud providers with extensive resource pools can offer higher degrees of elasticity. They can allocate additional virtual machines, containers, or service instances rapidly in order to respond to sudden increases in workload, and can deallocate such resources when demand subsides. This automated responsiveness contributes to performance stability and cost efficiency.
 
+Elasticity works \emph{within the limits of the contract}: the service cannot comprise the provider's whole infrastructure. An upper bound must be defined early (for example, the consumer may use at most $X$ CPUs, starting with $X/2$ and reserving more when the system notices they are no longer enough); otherwise the elasticity would be infinite.
+
 \subsection{Measured usage}
 
 Measured usage is the characteristic by which a cloud platform monitors, records, and reports the consumption of information technology resources by consumers. Measurements may include processing time, storage volume, network throughput, or the period during which resources remain allocated.
@@ -383,11 +461,20 @@ Based on these metrics, cloud providers can charge consumers according to actual
 
 However, measured usage is not restricted to billing. It also encompasses internal monitoring and reporting mechanisms that support capacity planning, system optimization, and usage transparency. Even in private cloud environments where consumers may not be billed individually, these measurements are essential for administrative insight and operational governance.
 
+In summary, measurement serves two purposes: \textbf{billing} (the provider must know the resources actually used in order to issue the bill) and \textbf{general monitoring}, to identify possible issues (an attack or a simple disservice) before they impact the work of the consumer.
+
+
 \subsection{Resiliency}
 
 Resiliency refers to the ability of a cloud system to continue operating in the presence of component failures. It is commonly achieved through the distribution of redundant resource implementations across multiple physical locations. If one instance becomes unavailable or exhibits degraded performance, processing can be transferred automatically to another instance without disrupting service continuity.
 
+\begin{center}
+	\safeimg[width=5in]{media/image145.png}
+\end{center}
+
 By utilizing the resiliency capabilities of cloud-based resources, consumers can enhance the reliability and availability of their applications. High-availability configurations, replicated storage, and geographically distributed deployments are examples of how resiliency is implemented to mitigate the impact of localized failures.
+
+The key solution is \textbf{redundancy}: backup services, not necessarily used at the moment, are ready to be activated if the main one fails, so that the cloud service consumer can redirect its requests to the pre-configured backup without noticing any disservice. Redundancy has an issue: it is not enough to create a copy at the beginning. The redundant copies must be kept \textbf{consistent} over time, i.e.\ they must maintain the same updated information; otherwise, if the backup were left isolated, the whole history of the interactions with the consumers would be lost on failover. An external database from which the service retrieves its information also works: in that case the switch from primary to secondary requires the backup to reload some data, but it is still quite fast.
 
 \section{Cloud deployment models}
 
@@ -396,6 +483,11 @@ A cloud deployment model defines a particular category of cloud environment. Dep
 \subsection{Public clouds}
 
 A public cloud is a cloud environment that is publicly accessible and owned by an external third-party cloud provider. In this arrangement, the provider creates, manages, and maintains the infrastructure and services that comprise the cloud platform. Cloud consumers access these resources through standardized interfaces and are typically charged on a usage or subscription basis. Some public cloud offerings may be subsidized or commercialized through alternative mechanisms such as advertisements.
+
+\begin{notebox}
+	``Public'' does \emph{not} mean a cloud managed or owned by a public body; it is the opposite. A public cloud is publicly accessible to everyone, without discrimination, but owned by a third-party provider that sells the access at a cost. The provider is usually a private business, but it may also be an academic or governmental organization. The adjective comes from the fact that the environment is open to the full public: if you ask and have the money, the provider accepts you as a consumer. Microsoft, Google, Amazon and Rackspace are public clouds because we pay to use their resources, but they are private enterprises seeking an economic benefit.
+\end{notebox}
+
 
 Public clouds may be operated by commercial enterprises, academic institutions, governmental bodies, or configurations involving partnerships among these entities. The defining characteristic is that the infrastructure is not restricted to a single organization. The cloud provider assumes responsibility for ensuring availability, performance, security controls, and scaling capabilities.
 
@@ -409,6 +501,14 @@ The ownership of a private cloud is exclusively held by the organization. The cl
 
 The distinction between the terms ``on-premise'' and ``cloud-based'' must be used precisely in the context of private clouds. Even when the private cloud infrastructure is physically located on the organization's premises, the resources it hosts are considered ``cloud-based'' as long as access is delivered remotely through cloud service interfaces. Conversely, information technology resources maintained separately by local departments and not integrated into the private cloud remain ``on-premise''relative to the cloud-based resources.
 
+A private cloud clashes with the idea of a public one. The role of provider almost coincides with that of consumer: the organization creates a cloud environment that is accessible only to its own people (for example employees), who normally do not pay, because the organization offers the resources to improve their efficiency. A typical case is a company department acting as internal cloud provider, with the other employees requesting services from it. Access may be further restricted (for instance through a VPN), which goes against the idea of wide accessibility.
+
+\textbf{Why is a private cloud hosted on the organization's premises not a traditional on-premise infrastructure?} Because it preserves the cloud characteristics (on-demand usage, remote access, flexibility): the hardware is physically in the same building, but it is managed by cloud orchestrators and virtualization platforms (such as Docker Compose or Kubernetes) and not by traditional mechanisms. The organization is typically cloud owner, provider and consumer at the same time.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image141.png}
+\end{center}
+
 \subsection{Community clouds}
 
 A community cloud combines characteristics of both public and private cloud models. The infrastructure is shared among several independent organizations that collectively form a community based on shared goals, regulatory requirements, or operational needs. Like a public cloud, the community cloud enables multiple organizations to access shared resources; like a private cloud, membership is restricted and subject to governance.
@@ -417,6 +517,10 @@ Ownership of a community cloud may be distributed in different ways. The partici
 
 Membership in the community does not automatically entitle an organization to access all available resources. Access and control may be differentiated according to policy decisions or functional requirements. Parties outside the community are excluded unless explicitly granted authorization.
 
+The community cloud is a trade-off between private and public: the set of users is larger than in a private cloud (a whole community of organizations that jointly decided to create the environment), but still restricted. Access may be free, or one company of the community may manage the environment while the others pay a small fee as compensation for the management task.
+
+\textbf{Examples.} (1) An organization and its commercial partners sharing data in a cloud prepared on the premises of the main company, which the others access with restrictions. (2) Universities forming an alliance to create a shared environment where students can store data, software, etc. for free.
+
 \subsection{Hybrid clouds}
 
 A hybrid cloud is formed by combining two or more distinct cloud deployment models. Common hybrid configurations integrate private clouds with public clouds, enabling organizations to distribute workloads according to sensitivity, regulatory requirements, or performance considerations. For instance, an organization may deploy applications processing confidential or regulated data within a private cloud, while leveraging a public cloud for hosting non-sensitive applications or for handling excess computational load.
@@ -424,6 +528,14 @@ A hybrid cloud is formed by combining two or more distinct cloud deployment mode
 Hybrid clouds introduce architectural complexity because the participating cloud environments may differ significantly in management interfaces, security mechanisms, resource models, and operational responsibilities. Coordination between the private cloud provider organization and the external public cloud provider is required to ensure consistent operation, secure data transfer, and unified access control.
 
 A cloud service consumer accesses two cloud services: one hosted in the public cloud that manages non-sensitive or public data, and another hosted in the private cloud that stores sensitive data. The consumer interacts with both environments, and data movement or process delegation between the environments is governed by the architecture.
+
+\begin{notebox}
+	A hybrid cloud is not a standalone model but a \emph{combination} of other deployment models (the most common being private + public, but community + public is also possible). It has no specific characteristics of its own: all its features are inherited from the composing elements. Today this is very common: a student who uses services of the Politecnico (a private/community cloud) together with services of Google or Microsoft (public clouds) is already a consumer of a hybrid cloud.
+\end{notebox}
+
+\begin{center}
+	\safeimg[width=3.5in]{media/image142.png}
+\end{center}
 
 \subsection{Comparison of cloud deployment models}
 
@@ -437,9 +549,26 @@ The key observations are as follows:
 \item \textbf{Cost}: Private clouds are associated with high cost, community clouds with medium cost, public clouds with low cost, and hybrid clouds with medium cost.
 \end{itemize}
 
+\begin{center}
+	\safeimg[width=5in]{media/image143.png}
+\end{center}
+
+The reasons behind these values (hybrid inherits from its components, so only the three standard models are compared):
+
+\begin{itemize}
+	\item \textbf{Scalability}: in a public cloud the provider buys a large amount of hardware and consumers simply pay for more. In private and community clouds the organization has a limited budget, so there is an upper bound; it cannot buy a whole data center, and for this reason these clouds are accessible only to the organization's own people.
+	\item \textbf{Security}: public clouds have fewer controls and less trust (you do not know how the provider may use your data), while in private and community clouds the data stay within the organization(s). The public cloud is still moderately secure thanks to the contract and to security and trust SLAs.
+	\item \textbf{Performance}: traffic in private and community clouds is controlled within a local network, with no need to cross a wide network (unless a remote worker connects through a VPN).
+	\item \textbf{Reliability}: everything is under control and the organization, being both provider and consumer, can fix issues directly.
+	\item \textbf{Cost} (for the consumer): high for private, because the consumer is the provider and buys the whole infrastructure; medium for community, because the cost is shared among organizations; low for public, because the consumer pays an on-demand fee, much less than creating a full deployment.
+\end{itemize}
+
 \section{Cloud delivery models}
 
 A cloud delivery model defines a pre-packaged and standardized combination of information technology resources offered by a cloud provider. These combinations are presented as services that cloud consumers can access through well-defined interfaces. The most widely established and formalized delivery models are Infrastructure-as-a-Service, Platform-as-a-Service, and Software-as-a-Service. Each model offers a different abstraction level, a distinct distribution of administrative responsibilities, and varying degrees of control to the consumer.
+
+This list is not exhaustive (others exist, for example Network-as-a-Service), but these three models are the most used commercially, and almost every provider lists them.
+
 
 \subsection{Infrastructure-as-a-Service}
 
@@ -452,6 +581,22 @@ The purpose of an IaaS environment is to grant cloud consumers a high level of c
 Because IaaS resources are generally not pre-configured, substantial administrative effort remains with the consumer. This responsibility includes applying security patches to operating systems, updating applications, enforcing security controls, configuring network policies, and deploying intermediate components such as firewalls, load balancers, and auto-scaling mechanisms. As a result, IaaS provides flexibility at the cost of operational complexity.
 
 A cloud consumer interacts with a virtual server hosted by the provider, while the provider maintains the underlying physical server. The accompanying service contract specifies the characteristics of the leased virtual server, including memory size, storage capacity, service level agreements, and cost metrics such as fees per hour of usage and charges for outbound data transfer.
+
+More precisely, the provider sells access to a \emph{raw} IT resource: if it is a server, nothing is installed (no operating system, software or data). Through the remote access point, the consumer uses configuration and management tools to prepare the platform on which services and data run. The provider is responsible for buying the hardware, ensuring that it works and is available, and guaranteeing wire-level connectivity, but gives \emph{no guarantee} of a running service handling a given number of requests.
+
+Usually the provider sells \emph{virtualized} resources, mapped onto physical ones by software layers (orchestrators, hypervisors). The consumer asks for a server with given processor capacity, memory and local storage; the provider typically owns hardware with higher capacities, creates a virtual environment with exactly the requested requirements on part of it, and can give the rest to other consumers.
+
+The consumer therefore gets more control and more responsibility: it installs the desired operating system and applications (for example an Apache server) and manages the full security of the platform it builds (firewalls, VPN gateways, intrusion detection systems, antivirus, updates and patches). For instance, a PHP vulnerability is the consumer's problem and the provider is not legally bound. If the hardware fails, instead, the provider must fix it, since it is the only thing it sells.
+
+\begin{notebox}
+	\textbf{Why choose IaaS instead of buying hardware on-premise?} (1) The consumer gets exactly the hardware it wants, even a configuration that does not exist in reality. (2) It gets all the benefits of the cloud: vertical and horizontal scaling, on-demand usage.
+\end{notebox}
+
+\textbf{Example contract.} The provider sells access to a \emph{virtual} (not physical) server with 32 GB of RAM and 4 GB of local storage; SLA availability 99.5\%; price \$0.95 per hour plus \$0.05 per GB transferred out. The cost is low and on demand: if the server is not used and no data is transferred, there is no extra fee. The consumer receives only the virtual server; operating system, software and data (and their security) are installed and managed by the consumer. In other words, the provider is responsible for the \emph{security of the cloud} (the hardware), the consumer for the \emph{security in the cloud} (the software).
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image144.png}
+\end{center}
 
 \subsection{Platform-as-a-Service}
 
