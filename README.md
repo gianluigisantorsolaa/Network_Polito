@@ -1,6 +1,6 @@
 # Appunti di Network & Cloud Technologies and Security - PoliTo
 
-Questi appunti riprendono e rielaborano i contenuti presenti su [polito-students.gitlab.io/cybersecurity](https://polito-students.gitlab.io/cybersecurity/), arricchiti con modifiche dettagliate, approfondimenti e appunti mirati basati esattamente sulle spiegazioni e le cose dette dal professore a lezione.
+Questi appunti riprendono e rielaborano i contenuti presenti su [polito-students.gitlab.io/cybersecurity](https://polito-students.gitlab.io/cybersecurity/), arricchiti con modifiche dettagliate, approfondimenti e appunti mirati basati esattamente sulle spiegazioni e argomenti detti dal professore a lezione.
 
 ## Contributi e Modifiche
 
