@@ -608,11 +608,29 @@ However, this model introduces limitations. Consumers typically have restricted 
 
 A cloud consumer accesses a virtualized environment associated with a ready-made platform containing databases, application servers, and other managed components. The cloud provider maintains responsibility for the infrastructure and ensures platform availability, performance, and elasticity.
 
+Compared with IaaS, the provider's responsibilities are higher: besides configuring the hardware, it installs the operating system and some applications (for example an Apache server), and it is also in charge of the \textbf{security and management} of the platform it prepares. The consumer is spared this burden and can concentrate only on its own work (developing, improving and testing software) without caring about the underlying platform or hardware.
+
+The counterpart is that the platform may be \emph{restrictive}. If it is pre-built with certain features, not all programming languages or applications may be supported, and the consumer has no control over the hardware, the operating system or the security model. The only option to obtain different characteristics is to request a new platform, based on a new contract with the PaaS provider.
+
+\textbf{Example contract.} Besides a virtual server, the product sold is access to an application server paired with a DBMS platform. The contract also specifies availability, auto-scaling and cost, here $\$0.45$ per hour for a given number of requests (500{,}000 on the slide), so the price is tied to the amount of requests.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image146.png}
+\end{center}
+
 \subsection{Software-as-a-Service}
 
 Software-as-a-Service (SaaS) positions an entire software program as a shared cloud-hosted service that is made available as a reusable utility. SaaS offerings are typically accessed through a front-end interface such as a web application or application-specific client. The consumer uses the software without managing the underlying infrastructure, runtime environment, or application hosting.
 
 SaaS models are widely used to provide commercial and enterprise-grade applications to a broad range of consumers. Licensing structures may include subscription fees, usage-based billing, or bundled service packages. The cloud provider maintains responsibility for implementing, updating, scaling, and maintaining the service.
+
+With SaaS the consumer accesses directly a software program running on a platform prepared on an underlying hardware: it cannot install its own applications, but simply uses the programs that are already available. In some cases the applications come from a \textbf{marketplace} prepared by the provider, from which the consumer selects the preferred one. Examples are Word or Forms used online: they are programs running in the cloud to which the user only gets access. At most the consumer can \emph{fine-tune their usage} (specify some parameters), but it cannot change the way they actually work and behave.
+
+SaaS is particularly useful when a cloud service must be reused among multiple consumers: a single instance can run on different virtualized servers while different consumers access it. The provider sells access to a cloud service (here a running application), and the price is based on the number of requests the application must answer in a given period.
+
+\begin{center}
+	\safeimg[width=5in]{media/image147.png}
+\end{center}
 
 \subsection{Separation of responsibility}
 
@@ -620,35 +638,88 @@ Cloud delivery models differ markedly in how administrative responsibilities are
 
 For traditional on-premise environments, the consumer manages all layers, including applications, data, runtime environments, middleware, operating systems, virtualization, servers, storage, and networking. Under IaaS, responsibilities for networking, storage, physical servers, and virtualization are shifted to the provider, while the consumer continues to manage the operating system, middleware, runtime, data, and applications. Under PaaS, management shifts further, with the provider taking responsibility for the operating system, middleware, and runtime environment as well. Under SaaS, the provider assumes nearly full responsibility, and the consumer manages only application-level configuration and usage.
 
+In an IaaS model the provider manages the hardware part: servers and storage, the network interconnecting them, and the virtualization techniques, including any orchestration platform used to virtualize the hardware into virtual machines or containers. Everything above (operating system, middleware, runtime, data, applications) is managed by the customer.
+
+
+\begin{center}
+	\safeimg[width=5in]{media/image148.png}
+\end{center}
+
+\begin{notebox}
+	\textbf{Pizza as a Service.} The analogy with a pizza helps to remember who manages what. \emph{On-premise} is a pizza made at home: you buy the ingredients, prepare and bake it, and set the table with the drinks. \emph{IaaS} is ``take and bake'': the pizza is already prepared (frozen), but you cook it and eat it at home. \emph{PaaS} is pizza delivery: almost everything is managed by the pizza maker, and at home you only prepare the table. \emph{SaaS} is dining out: the restaurant manages everything, you just eat and pay for the service.
+\end{notebox}
+
+\begin{center}
+	\safeimg[width=5in]{media/image149.png}
+\end{center}
+
+
 \subsection{Comparing cloud delivery models}
 
 Cloud delivery models differ not only in administrative responsibility but also in the degree of control granted to consumers and in the functionality provided.
 
 SaaS offers usage-based configuration, providing access to only the front-end user interface. PaaS grants limited administrative control that extends to platform-level resources. IaaS provides full administrative control over virtualized infrastructure resources.
 
+In IaaS the consumer is given access to the whole infrastructure. Most of the time this access is to the \emph{virtual} infrastructure, which gives users less visibility of the actual resources they use, although in theory the consumer may also be given access to physical resources. In PaaS the consumer is limited to accessing the already installed operating system, since the provider configures the operating system and the middleware. In SaaS the consumer can only use the service or communicate to the provider usage-related configuration: for instance, in Microsoft Word online it can configure the graphical user interface used to write, but cannot change the way the software behaves.
+
+\begin{center}
+	\safeimg[width=5in]{media/image150.png}
+\end{center}
+
+
 SaaS consumers use and configure the software service, while providers implement, manage, and maintain the software and monitor usage. PaaS consumers design, deploy, and manage applications using the platform, while providers configure platforms and manage underlying infrastructure and middleware. IaaS consumers provision and configure virtualized infrastructure resources and install software, while providers manage the physical infrastructure and monitor overall usage.
+
+Summarizing the activities: in SaaS the consumer only uses and configures the service, while the provider maintains and manages everything, including monitoring. In PaaS the provider pre-configures the platform while provisioning the underlying hardware, and the consumer develops, tests and runs its own applications with any freedom, as long as they are compatible with the restrictions of the platform. In IaaS the consumer sets up and configures the raw hardware, while the provider only manages networking, storage and physical processing, and addresses only hardware-related issues.
+
+\begin{center}
+	\safeimg[width=5in]{media/image151.png}
+\end{center}
 
 \subsection{Combining delivery models}
 
 Delivery models can be combined to form integrated cloud solutions. At the lowest layer, virtual servers provided through an IaaS environment host ready-made platform environments that correspond to PaaS offerings. These platforms support the deployment of SaaS services that are subsequently exposed to cloud consumers. This stacked architecture allows organizations to coordinate infrastructure, platform, and application-level services within a cohesive operational environment.
 
+In this combination a provider may also be the consumer of another one, typically offering a different service. There are \textbf{three levels of hierarchy}: the IaaS provider (level one); the PaaS provider, which is the consumer of the IaaS provider and enriches its virtual servers with an operating system and a runtime environment, selling the result at a higher price; and the SaaS provider, which is the consumer of the PaaS provider, installs its applications on the ready-made platform and makes them available to the final consumers. Final consumers can also access the intermediate levels, depending on their needs.
+
+The hierarchy is helpful at each level: the PaaS provider does not have to buy and maintain the physical resources, and the SaaS provider, which may have many applications in its marketplace, can invest in improving them instead of buying hardware again, installing operating systems and maintaining them with security patches.
+
+\begin{center}
+	\safeimg[width=5in]{media/image152.png}
+\end{center}
+
 \subsection{Notable examples of cloud services}
 
 Prominent commercial platforms offer representative examples of the primary delivery models. IaaS providers include Amazon EC2 and Rackspace Hosting. PaaS platforms include Google App Engine and Microsoft Azure. SaaS products include Google Docs, Gmail, Microsoft Office.com, and Salesforce CRM.
+
+Gmail is also a cloud service (SaaS), since the data are stored and the application runs in the cloud, not on the personal computer: the user opens a browser and accesses it, and at most configures the graphical environment. The same holds for Microsoft Office.com used through the browser, whereas a client installed on the computer already runs part of the software locally.
 
 \subsection{Other cloud service models}
 
 Numerous specialized service models extend the functionality of the three core delivery models. These models provide targeted capabilities by combining specific sets of information technology resources. Examples include Storage-as-a-Service, Database-as-a-Service, Security-as-a-Service, Communication-as-a-Service, Integration-as-a-Service, Testing-as-a-Service, and Process-as-a-Service.
 
+These models are not so common because almost all of them can be mapped onto IaaS, PaaS or SaaS. For instance, \emph{data storage as a service} is a sort of SaaS: besides the infrastructure where data are saved, it usually includes a DBMS and possibly the software to access it, so the full stack must be configured. With \emph{communication as a service} the consumer has nothing to do about the hardware, but must configure the networking stack in the operating system and the software for the interaction (for example sockets). They are therefore variations or extensions of the three main models.
+
+\begin{center}
+	\safeimg[width=5in]{media/image153.png}
+\end{center}
+
 \subsection{XaaS}
 
 The term XaaS refers to the broadest conceptualization of cloud service provisioning. It is interpreted as Anything-as-a-Service, Everything-as-a-Service, or X-as-a-Service, where X can denote any service delivered through the cloud. Although no provider offers every conceivable service, XaaS indicates an extensive portfolio of offerings that often include IaaS, PaaS, and SaaS, enabling consumers to acquire a wide range of capabilities from a single provider.
+
+It is not so commonly used as a definition, because the other delivery models can be mapped onto the three main ones, and there is no single specific definition of XaaS: it is used with a different meaning depending on the source. It can be seen as a wildcard for any possible cloud service option.
 
 \subsection{NIST cloud computing reference architecture}
 
 The architecture decomposes the provider environment into layers, including physical hardware, resource abstraction, control mechanisms, and service orchestration. It identifies SaaS, PaaS, and IaaS as components of the service layer and highlights security, privacy, configuration management, and business support as cross-cutting concerns. Cloud brokers facilitate aggregation, intermediation, and arbitrage of services, while auditors assess security, privacy, and performance.
 
+\begin{center}
+	\safeimg[width=5in]{media/image154.png}
+\end{center}
+
 \subsection{Cloud-enabling technologies}
 
 Modern cloud environments rely on several foundational technologies. Broadband networks and Internet architecture provide the necessary connectivity. Data center technologies support large-scale resource hosting. Virtualization technologies abstract physical resources. Web technologies facilitate interaction and service delivery. Multitenant architectures enable shared resource usage, and containerization technologies provide lightweight isolation and rapid deployment capabilities.
+
+Among these, virtualization is the main tool used to provide services to remote users without giving them direct access to the physical IT resources, and containerization is its alternative with different characteristics. Both are studied in the following chapters.
 

@@ -1,10 +1,14 @@
 \chapter{Virtualization}
 
+In the previous chapter we repeatedly said that virtualization is the main tool used to provide services to remote users without allowing them to access the physical IT resources directly. A \emph{virtualization platform} is the piece of software that maps what happens in the virtual world onto the physical one. Two main strategies are studied: \textbf{traditional virtualization}, based on virtual machines (the one used on personal computers with VirtualBox or VMware), and \textbf{containerization}, which creates virtual environments with different characteristics: in some cases better performance and more flexibility, but weaker boundaries between environments and therefore partly lower security. Both technologies are widespread, among end users and among enterprises and cloud providers.
+
 \section{Virtualization as hardware abstraction}
 
 Virtualization is a software technique that introduces an abstraction layer between physical hardware and the software that uses it. The goal of this layer is to present one or more \textbf{virtual computers} that behave like independent machines even though they share the same physical platform. Each virtual computer is commonly called a \textbf{virtual machine} (\textbf{VM}). A VM is provided with virtualized processors, memory, storage, and peripheral devices, and it runs its own operating system and application stack as if the hardware were dedicated.
 
 The abstraction enables a single physical computer to be divided into multiple isolated execution environments. Each VM executes in a logically separate environment and, from the perspective of software inside the VM, the presented devices and resources are consistent and stable. This decoupling is fundamental to modern cloud computing because it enables multiplexing physical resources across many tenants and workloads, while preserving isolation properties comparable to those expected from separate physical servers.
+
+The virtual computers of a single physical machine can be quite different from each other: one may run Windows, another Linux and a third macOS, and each may be assigned different resources (for example 8 GB of memory for the first and 16 GB for the second). However, there is only \emph{one} physical computer: when an instruction is executed on a processor (moving data between registers, using the ALU, etc.) the elements actually used are the physical ones. Everything that happens in software must therefore be mapped to the physical infrastructure, and this mapping is managed by the virtualization platform (for example the VirtualBox installed on a personal computer, which exposes virtual machines that the user treats as real computers). In the cloud, a single physical server can instantiate a different virtualized service for each tenant, each customized to the resources it needs, in line with on-demand usage, flexibility and resilience.
 
 \section{Why virtualization is useful}
 
@@ -12,13 +16,21 @@ Virtualization improves efficiency by increasing utilization of physical resourc
 
 for compute infrastructure.
 
+\textbf{Example.} A developer who wants to sell a program as able to run in different environments must test it, for example, on Linux with 4 GB of memory, on Linux with 16 GB, on Windows and on macOS. Without virtualization, each environment requires a dedicated physical computer with the desired resources and operating system. With virtualization, one physical computer with a virtualization layer such as VMware can host all these virtual machines (within the limit of its total resources). Moreover, the hardware can be general purpose: many identical physical servers can be bought, and the virtual machines with the desired characteristics are created on top of them. Some virtualization platforms even run directly on the physical computer, replacing its operating system, which is suitable for cloud providers who need many VMs with performance close to native.
+
 Virtualization also enables operational flexibility. A VM is typically represented by a set of files describing its configuration and its virtual disk state. This representation supports fast provisioning by cloning an existing VM image, rather than installing and configuring an operating system from scratch. It also supports capturing point-in-time state through \textbf{snapshots}, which preserve the VM's virtual disk state and, depending on the platform, aspects of memory and device state.
+
+Snapshots have no equivalent on a physical computer. If an error is introduced, it is difficult to go back: even for an accidentally deleted file (which is first only flagged as deleted and may be retrievable with complex operations), the operating system will at some point overwrite it. With a VM it is enough to save the state at a given moment (installed OS version, applications, running processes, saved data are written in additional files) and restore it later with a click: everything done afterwards is removed and replaced by the previous state.
 
 Scalability benefits follow from this representation and from standardized VM life-cycle operations. In a cloud setting, deploying multiple copies of a VM image can increase capacity when load increases. When demand decreases, instances can be removed, returning resources to a shared pool.
 
 Portability is another key benefit. Because the VM encapsulates the software stack and relies on virtual devices rather than specific physical ones, a VM can often be relocated from one host to another within a network. This enables maintenance and load balancing through relocation operations, including \textbf{live migration}, where a running VM is moved between physical hosts with little or no service interruption. Portability also supports hybrid deployment models in which workloads may move between on-premises environments and external cloud providers when compatible virtualization interfaces and operational constraints are satisfied.
 
+A VM saved as a snapshot with its configuration files can be imported on another computer that has the same virtualization platform, which understands those files and recreates the same VM as it was before. A configured VM can thus be distributed to many people, who do not have to create the VM, install the operating system and the applications.
+
 Security benefits arise primarily from isolation. The virtualization layer can enforce separation between VMs so that one VM does not access another VM's memory or CPU state. Security considerations are nuanced and depend on hypervisor design, device models, and management interfaces, but isolation is a central motivation for virtualization in multi-tenant infrastructures.
+
+Security is not as high as with a dedicated on-premise infrastructure, but it is still quite high, because virtualization platforms are designed to confine each VM independently so that it does not interfere with the others. This is something that does not happen to the same extent with containers.
 
 \section{Core definitions and execution roles}
 
@@ -34,17 +46,27 @@ A \textbf{virtual machine} (VM) is a software-defined execution environment that
 
 The VM runs a complete operating system and application stack. The operating system running inside the VM is called the \textbf{guest OS}.
 
+All this (virtual hardware, operating system, applications) is managed through configuration files that the virtualization platform uses to map the VM onto the physical machine. Some are simple, such as the mapping of a virtual memory position to the physical one for each piece of data; others introduce features not suitable for physical computers, such as snapshots.
+
+Since each VM has its own operating system, there are Windows, Linux (for example Ubuntu), Mac and Android virtual machines, but also \emph{specialized} ones, such as Java and Python virtual machines, whose goal is to provide an easy environment to develop, test and run applications written in a specific high-level language. VMs can also be \textbf{nested}: for instance, a Windows VM on an Ubuntu personal computer, with a Java virtual machine inside an IDE such as Eclipse to run Java programs.
+
 \subsection{Host OS and guest OS}
 
 The \textbf{host OS} is the operating system running on the physical machine that hosts one or more VMs when an operating system is present as part of the virtualization stack. In some architectures, the host OS provides drivers and management services that support virtualization. In other architectures, the host OS is not present as a conventional general-purpose system, and the virtualization layer runs directly on hardware.
 
 The \textbf{guest OS} is the operating system running inside a VM. In many virtualization approaches, the guest OS is designed to run \emph{without being aware} that it is executing on virtualized hardware. In other approaches, the guest OS is intentionally aware and cooperates with the virtualization layer to improve performance or simplify the implementation.
 
+The guest OS never has visibility of the physical hardware, only of the virtual one. The host OS is present in type 2 solutions and absent in type 1 solutions, where it is replaced by another piece of software. In general the host OS manages the physical hardware and the guest OS the virtual hardware; what is missing is the software that maps the virtual hardware onto the physical one: the hypervisor.
+
 \subsection{Hypervisor and virtual machine monitor}
 
 A \textbf{virtual machine monitor} (\textbf{VMM}) is responsible for presenting virtualized system resources to the guest, including virtual devices (such as storage controllers, network interfaces, and graphics adapters) and for allocating and managing guest memory. A \textbf{hypervisor} is the software responsible for coordinating VMs and controlling their execution with respect to the underlying hardware, including management of CPU state transitions, entry into and exit from guest execution, and memory protection.
 
-In practice, these terms are often used interchangeably. Many systems integrate the responsibilities into a single virtualization platform. In this chapter, \textbf{hypervisor} denotes the combined functionality that provides VM execution, isolation, virtual hardware presentation, and resource control.
+In practice, these terms are often used interchangeably. Many systems integrate the responsibilities into a single virtualization platform.
+
+Originally they were two separate applications with different tasks, but many operations turned out to be common to both, and there is no standard division of the tasks (different sources describe it differently). For this reason today the term hypervisor is generally used for both, and it is the software working as an interface between the physical hardware (if there is a host OS), the virtual hardware, the guest operating systems (always present) and the applications running on them.
+
+In this chapter, \textbf{hypervisor} denotes the combined functionality that provides VM execution, isolation, virtual hardware presentation, and resource control.
 
 \section{Hypervisors and their essential properties}
 
@@ -55,6 +77,8 @@ Several properties are central when evaluating a hypervisor.
 \subsection{Performance}
 
 A primary objective is that guest operating systems and applications achieve performance close to native execution. Performance overhead arises from CPU virtualization mechanisms, memory address translation, device emulation, and scheduling. The magnitude of overhead depends on workload characteristics, the extent of hardware support for virtualization, and the quality of I/O virtualization.
+
+Hypervisors are complex software, because they must manage virtual computers that are themselves complex entities. Performance close to native is rarely fully achieved, because multiple abstraction layers lie between the guest OS and the physical hardware (the hypervisor itself and, when present, the host OS): this is why some solutions have no host OS, so that there is one software level less.
 
 \subsection{Management and lifecycle control}
 
@@ -70,9 +94,13 @@ Operating VM workloads at scale requires management tooling beyond basic VM crea
 
 A hypervisor architecture is therefore typically evaluated together with its ecosystem of management services.
 
+\textbf{Example of VM sprawl.} Suppose that about 80 students create a virtual machine each on a shared lab platform (CrownLabs) for a lab activity. Afterwards they no longer use these VMs, while other courses create another 100 VMs a day. After a certain point the maximum number of VMs that can be created is reached. VM sprawl is exactly this: the uncontrolled creation of VMs without a mechanism to delete the unused ones and free resources for the new ones. A hypervisor working as expected should continuously check whether a VM is still used and apply algorithms to remove the unused ones. CrownLabs, for instance, has no such mechanism, so the unused VMs have to be deleted manually by the staff.
+
 \subsection{Ecosystem and extensibility}
 
 Enterprise deployments often rely on third-party agents and plugins for backup, replication, monitoring, and fail-over orchestration. A hypervisor with a robust ecosystem can integrate into operational workflows and broader infrastructure tooling.
+
+These tools are not always embedded since the beginning: a hypervisor is often released with basic features and as open source, which allows an ecosystem where anyone can create plugins or extensions (for instance an algorithm against VM sprawl). Open source is also considered a strong requirement for security.
 
 \subsection{Live migration}
 
@@ -82,13 +110,23 @@ Live migration is the capability to move a running VM between hypervisors on dif
 
 Cost includes licensing for the hypervisor and, frequently, separate licensing for management platforms required for large-scale operation. Total cost of ownership also includes staffing, training, and operational complexity.
 
+The cost varies: end-user products such as VirtualBox or VMware (desktop editions) are free, but they are lower-level solutions that never reach the performance of a native host OS (a lag or latency is noticeable compared with the same program running directly on the machine). Hypervisors providing performance close to native are quite more expensive.
+
 \section{Type 1 and type 2 hypervisors}
 
 Hypervisors are commonly classified based on how they are deployed relative to the host operating system.
 
+There are two ways to put a virtual machine on physical hardware, and the \textbf{main difference is the presence of the host operating system} below the hypervisor.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image155.png}
+\end{center}
+
 \subsection{Type 1 hypervisors}
 
 A \textbf{type 1 hypervisor} runs directly on the physical hardware (bare-metal). In this structure, the hypervisor is the first layer above the hardware and it takes the place of a traditional host operating system. VMs run above the hypervisor.
+
+Since there is no host OS, a type 1 hypervisor must include all the drivers needed to interact with the hardware components. It is, however, \emph{not} an operating system: it can be seen as a specialized version of one with a single task, creating, managing, maintaining and deleting virtual machines. It cannot run an application such as a word processor or an email client; it can only manage virtual machines, structured as virtual hardware, guest operating systems and applications. Examples are VMware ESXi, VMware vSphere and Microsoft Hyper-V, not so common among end users. They interact directly with the physical CPU, memory, network and disk storage.
 
 A bare-metal structure can be described as a stack in which:
 
@@ -97,6 +135,10 @@ A bare-metal structure can be described as a stack in which:
 \item The hypervisor directly controls those resources and enforces VM isolation.
 \item Multiple VMs run above the hypervisor, each with its own guest OS.
 \end{itemize}
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image156.png}
+\end{center}
 
 \subsubsection*{Advantages of type 1 hypervisors}
 \addcontentsline{toc}{subsubsection}{Advantages of type 1 hypervisors}
@@ -114,6 +156,12 @@ $8 \times 24\text{ GB} = 192\text{ GB}$.
 
 This can be feasible when actual working sets are smaller than configured maxima, but it requires careful monitoring because simultaneous peaks can lead to contention and performance degradation.
 
+Concretely, the type 1 hypervisor checks how much memory is used by the VMs at every moment. Typically they do not all run simultaneously or use all of the 24 GB; if this does happen, the hypervisor stops a VM and relaunches it when memory is available. This cannot be done with type 2 hypervisors, which are bound by the available memory.
+
+\begin{notebox}
+	\textbf{Why type 1 is faster and safer.} Performance is higher because the hypervisor is the only software running on the hardware, so nobody competes with it, whereas on a personal computer many foreground and background processes compete for the resources. Security is higher because there is one software layer less (the host OS), and the hypervisor code is smaller and specialized, not general purpose and not supporting many applications with their possible bugs, so the attack surface is smaller. Live migration is possible as long as the VMs use the same virtualization platform (for example both based on vSphere). For these reasons type 1 hypervisors are the best choice for a cloud provider.
+\end{notebox}
+
 \subsubsection*{Disadvantages of type 1 hypervisors}
 \addcontentsline{toc}{subsubsection}{Disadvantages of type 1 hypervisors}
 
@@ -123,6 +171,10 @@ Common drawbacks include:
 \item \textbf{Management complexity}. Administration may require a dedicated management station and specialized consoles to configure hosts and VMs.
 \item \textbf{Licensing and ecosystem costs}. Enterprise-grade management features may introduce substantial additional costs beyond the base hypervisor.
 \end{itemize}
+
+Type 1 hypervisors are usually expensive, so mainly big enterprises are willing to pay for them. As for management, with a type 2 hypervisor such as VirtualBox the VMs are created and controlled from the same computer. With a type 1 hypervisor the management software cannot run on the server itself: a \emph{second computer} with its own operating system and a management console is needed, connected to the hypervisor. If one boots the server, only information is shown: the hardware (for example CPU model and frequency, memory), the hypervisor and its version, and the network address to use to manage the host. Nothing else can be done locally.
+
+In summary, type 1 hypervisors offer performance, security, live migration and resource over-allocation, at the price of a higher cost and a more complex management.
 
 \subsection{Type 2 hypervisors}
 
@@ -136,7 +188,15 @@ A hosted structure can be described as a stack in which:
 \item VMs run above the hypervisor, each with its own guest OS.
 \end{itemize}
 
+
+
 Type 2 hypervisors often provide enhanced integration features between guest and host, such as shared clipboard operations and convenient access to host files from the guest. These features are typically implemented through additional software components installed inside the guest OS.
+
+On a personal computer the hypervisor is an application like the others (for example a word processor, an email client and VirtualBox), all competing for the resources of the host OS and of the hardware. Type 2 hypervisors are typically used on personal computers and are not so common in cloud environments, where type 1 is preferred for performance. Their advantages and disadvantages are essentially the opposite of those of type 1.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image157.png}
+\end{center}
 
 \subsubsection*{Advantages of type 2 hypervisors}
 \addcontentsline{toc}{subsubsection}{Advantages of type 2 hypervisors}
@@ -149,6 +209,8 @@ Type 2 hypervisors typically offer:
 \item \textbf{Lower cost} in many cases, particularly for personal or educational use.
 \end{itemize}
 
+The cost is very low, and basic versions are sometimes free; management is easy thanks to a graphical user interface from which VMs are created, managed and entered, with no need for a second computer. This is useful for testing and development: many environments with different operating systems and memory sizes can be created one after the other, or even simultaneously, without dedicating physical computers, and additional tools can be installed (for example the VirtualBox ones to drag and drop files between VMs).
+
 \subsubsection*{Disadvantages of type 2 hypervisors}
 \addcontentsline{toc}{subsubsection}{Disadvantages of type 2 hypervisors}
 
@@ -159,6 +221,8 @@ Important limitations include:
 \item \textbf{Less flexible resource management}. Resources allocated to a VM may be held in reserve regardless of whether the VM actively uses them. For instance, on a host with 32 GB of RAM, allocating three VMs with 8 GB each reserves 24 GB, leaving 8 GB for the host OS and other processes. Creating additional VMs can pressure the host, even if individual VMs are lightly loaded.
 \item \textbf{Security exposure}. Vulnerabilities in the host OS can increase risk because compromise of the host can threaten hosted VMs.
 \end{itemize}
+
+In particular: performance is always lower than with type 1, because the full host OS sits between the hypervisor and the hardware and must compete with other processes. There is no resource over-allocation: with 120 GB of memory and 12 VMs, at most 10 GB can be assigned to each, and creating another VM with 10 GB makes the system crash. Finally, the host OS is an additional software layer, with all its applications, so more vulnerabilities may be exploited, for example for lateral movement towards the virtual machines.
 
 \section{Internal organization of type 1 hypervisors}
 
@@ -189,6 +253,12 @@ A conceptual description of this organization is:
 
 This organization reduces the amount of code executing in the most privileged hypervisor context, at the cost of introducing additional communication paths between guests, the parent partition, and physical devices.
 
+In terms of performance the two designs are almost the same (neither has a full host OS), although the monolithic one is slightly faster, since everything is in one bundle with fewer interactions between software levels. Both are type 1 hypervisors: having drivers in the parent partition does not mean that applications can be installed on it; it is only used to interact with the hardware. The microkernelized design is appreciated because it is more flexible and easier to upgrade: when drivers must change, only those in the parent partition are updated, while the hypervisor code base stays the same.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image158.png}
+\end{center}
+
 \section{Virtual hardware and resource profiles}
 
 Each VM is defined by a \textbf{virtual hardware profile} that specifies the characteristics of the hardware presented to the guest OS. The hypervisor's duty is to implement this profile by emulating or virtualizing the requested devices and resources so that the guest OS can run as if the specified hardware were present.
@@ -218,6 +288,10 @@ In \textbf{full virtualization}, the guest OS is unaware that it is running unde
 
 A common method is \textbf{binary translation}, in which the hypervisor dynamically rewrites certain instruction sequences so that operations that would affect the physical machine instead affect only the guest's virtualized state. The translated code preserves the semantics expected by the guest while enforcing isolation.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image159.png}
+\end{center}
+
 \subsubsection*{Example of handling CLI under full virtualization}
 \addcontentsline{toc}{subsubsection}{Example of handling CLI under full virtualization}
 
@@ -235,11 +309,19 @@ MOV vCPU_IF, 0   ; clear the guest's virtual interrupt flag
 
 In this conceptual translation, the physical CPU interrupt state remains unchanged. From the guest's perspective, interrupts are disabled because its virtual interrupt flag is cleared, while the hypervisor continues to manage real interrupts for the host and other VMs.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image160.png}
+\end{center}
+
 \subsection{Paravirtualization}
 
 In \textbf{paravirtualization}, the guest OS is aware of virtualization and is modified to cooperate with the hypervisor. Instead of executing certain sensitive instructions directly, the guest invokes explicit \textbf{hypercalls}, which are API-like calls into the hypervisor for operations such as memory management, interrupt handling, and timekeeping.
 
 Paravirtualization can reduce the need for complex binary translation. However, it introduces compatibility constraints because the guest OS must be modified or built with paravirtualization support.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image161.png}
+\end{center}
 
 \subsubsection*{Example of handling CLI under paravirtualization}
 \addcontentsline{toc}{subsubsection}{Example of handling CLI under paravirtualization}
@@ -253,11 +335,19 @@ Hypervisor: handle_hypercall_disable_interrupts(guest_vm_id)
 
 The hypervisor retains full control of the physical interrupt state, ensuring that the host remains stable and that other VMs are unaffected.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image162.png}
+\end{center}
+
 \subsection{Hardware-assisted virtualization}
 
 In \textbf{hardware-assisted virtualization}, the CPU provides features that support virtualization, enabling the hypervisor to handle sensitive instructions efficiently using hardware traps rather than relying solely on software emulation or binary translation. On x86-64 platforms, such support is provided by virtualization extensions such as \textbf{Intel VT-x} and \textbf{AMD-V}.
 
 In this approach, the guest OS can often remain unmodified, and the hypervisor does not need to expose hypercall APIs for the same set of privileged operations as in paravirtualization. When the guest executes a sensitive instruction, the CPU triggers a controlled transition to the hypervisor, typically described as a \textbf{VM-exit}. The hypervisor handles the event and then resumes the guest through a \textbf{VM-entry}.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image163.png}
+\end{center}
 
 \subsubsection*{Example of handling CLI under hardware-assisted virtualization}
 \addcontentsline{toc}{subsubsection}{Example of handling CLI under hardware-assisted virtualization}
@@ -275,6 +365,11 @@ MOV vCPU_IF, 0   ; clear the guest's virtual interrupt flag
 \end{codeblock}
 
 The key distinction from full virtualization is that the transition is supported by hardware mechanisms designed for virtualization, which can reduce overhead relative to purely software-based interception and translation.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image164.png}
+\end{center}
+
 
 \section{Major types of virtualization in practice}
 
@@ -294,9 +389,18 @@ A conceptual system virtualization stack can be described as:
 
 From the perspective of applications inside the guest OS, the virtual operating system environment behaves similarly to an OS installed directly on physical hardware. The hypervisor ensures that concurrently running OS instances do not affect one another while reusing shared physical resources.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image165.png}
+\end{center}
+
+
 \subsection{Server virtualization}
 
 \textbf{Server virtualization} applies system virtualization to server hardware. The goal is to virtualize one physical server into several logical servers (VMs), allowing multiple server workloads to run concurrently on a single physical host. The benefit is typically higher utilization and more flexible deployment than dedicating separate physical servers to each application.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image166.png}
+\end{center}
 
 \subsection{Desktop virtualization}
 
@@ -332,9 +436,17 @@ The conceptual distinction among VDI, remote desktop virtualization, and DaaS ca
 \item DaaS externalizes infrastructure management to a cloud provider while delivering full desktops as a service.
 \end{itemize}
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image167.png}
+\end{center}
+
 \subsection{Storage virtualization}
 
 \textbf{Storage virtualization} aggregates storage resources across a network and presents them as a single logical storage device or storage pool. Blocks from multiple storage devices are combined into a shared pool that can be allocated to VMs on demand. This simplifies provisioning, enables flexible resizing, and can improve overall utilization by reducing stranded capacity on individual devices.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image168.png}
+\end{center}
 
 \subsection{Application virtualization}
 
@@ -376,9 +488,16 @@ Hyper-V structures virtual machines in terms of \textbf{partitions}. A partition
 
 Device access is mediated through a communication mechanism commonly described as a \textbf{VMBus}. In an indirect driver model, the root partition hosts drivers and virtualization services that handle I/O requests on behalf of child partitions. Conceptually, this introduces a structured pathway: guest I/O requests are routed through a virtualization channel to services in the root partition, which then interact with physical device drivers.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image169.jpg}
+\end{center}
+
 \subsection{Kernel-based Virtual Machine}
 
 The \textbf{Kernel-based Virtual Machine} (\textbf{KVM}) is a virtualization approach implemented as a Linux kernel module that allows a Linux system to function as a hypervisor when loaded. KVM leverages hardware virtualization extensions (such as Intel VT or AMD-V) and is often described as a full virtualization solution with a relatively small code base integrated into the standard Linux kernel.
 
 KVM's classification as type 1 or type 2 can be debated because it is implemented within the host OS kernel while enabling virtualization features that resemble bare-metal control when combined with hardware support. Practically, KVM provides virtualization by turning the Linux kernel into a hypervisor-like control plane, with user-space components commonly providing device emulation and management functionality.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image170.png}
+\end{center}
