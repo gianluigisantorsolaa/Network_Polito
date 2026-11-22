@@ -265,6 +265,10 @@ Each VM is defined by a \textbf{virtual hardware profile} that specifies the cha
 
 The virtual hardware profile can differ substantially from the physical hardware. For example, a physical host might have a single network interface controller (NIC) from one vendor, while a VM might be configured with two virtual NICs that appear to the guest OS as a different vendor model. This decoupling is essential for portability and for standardized VM templates, but it requires the hypervisor to mediate device behavior and enforce correctness.
 
+\begin{notebox}
+	\textbf{Mismatch between virtual and real hardware.} The profile is stored in a file (or set of files) associated with each VM, and it describes the hardware that the guest OS \emph{thinks} to see. If the VM is configured with several network interface cards but the real machine has only one, all the virtual cards are mapped onto the same physical one, and the hypervisor keeps additional metadata to distinguish how this single card is used by each virtual one. This metadata is typically a set of \textbf{state variables} saved in memory: keeping state variables is almost always the best way to map something digital onto the physical world, because, depending on their value, the hypervisor makes different choices when it interacts with the real hardware.
+\end{notebox}
+
 Virtualization of hardware resources is commonly discussed along three major dimensions:
 
 \begin{itemize}
@@ -282,9 +286,24 @@ Virtualization of hardware resources is commonly discussed along three major dim
 
 A key challenge in virtualization is enabling an unmodified or modified guest OS to execute privileged operations safely. Privileged instructions and sensitive state changes must not compromise the host or other VMs. Several approaches are used.
 
+The mapping becomes critical when the guest OS requests the execution of instructions that must be carried out by a real CPU, contacting real memory and possibly real input/output devices. Two kinds of instructions are distinguished:
+
+\begin{itemize}
+\item \textbf{Critical instructions} cannot be interrupted while they execute and, above all, they \emph{alter the state of the hardware} on which they run. An example is \texttt{CLI}, which disables interrupts. In general, instructions concerned with interrupt handling, memory management and I/O device management are critical.
+\item \textbf{Non-critical instructions} are those of normal user applications (multiplication, addition, \dots). They are executed and produce a result, but the hardware stays the same.
+\end{itemize}
+
+Three virtualization techniques are studied: \textbf{full virtualization}, \textbf{paravirtualization} and \textbf{hardware-assisted virtualization}. All of them handle non-critical instructions in the same way (they are executed directly on the hardware), while each handles critical instructions differently, with its own advantages and disadvantages.
+
 \subsection{Full virtualization}
 
 In \textbf{full virtualization}, the guest OS is unaware that it is running under a hypervisor. User-level instructions typically execute directly on the hardware, while sensitive instructions (privileged, control-sensitive, or behavior-sensitive) are intercepted and handled by the hypervisor.
+
+Because the guest OS does not know that it is a guest, any operating system can be used (Windows, macOS, any Linux distribution) without customization: it simply requests the execution of its instructions as on a normal computer. The hypervisor, however, must be clever: non-critical instructions can be executed directly on the real hardware with no translation, whereas critical ones cannot be executed as they are.
+
+To see why, consider three VMs on a host, and suppose that VM1 executes \texttt{CLI} directly on the real hardware. Interrupts become disabled for VM1, but also for VM2 and VM3, because the hardware is shared, and also for the host OS, if present. The VMs would no longer be isolated environments: they would share the same real characteristics. For this reason critical instructions require modifications, and the way they are handled differentiates the three techniques.
+
+In full virtualization the handling is done \textbf{on the fly by the hypervisor}, which must continuously inspect the code requested by the guest operating systems, discover critical instructions one at a time (it cannot know in advance that they will be requested) and replace each of them with another set of instructions that simulates what happens in the digital world instead of executing it on the real hardware. This is called binary translation.
 
 A common method is \textbf{binary translation}, in which the hypervisor dynamically rewrites certain instruction sequences so that operations that would affect the physical machine instead affect only the guest's virtualized state. The translated code preserves the semantics expected by the guest while enforcing isolation.
 
@@ -309,6 +328,10 @@ MOV vCPU_IF, 0   ; clear the guest's virtual interrupt flag
 
 In this conceptual translation, the physical CPU interrupt state remains unchanged. From the guest's perspective, interrupts are disabled because its virtual interrupt flag is cleared, while the hypervisor continues to manage real interrupts for the host and other VMs.
 
+In detail, the hypervisor creates a variable, for instance \texttt{vCPU\_IF} (virtual interrupt flag), which stores in memory whether interrupts are enabled for that specific VM; it is initialized as enabled. When the guest requests \texttt{CLI}, the hardware does not execute it: it executes \texttt{MOV vCPU\_IF, 0}. From then on, if an interrupt arrives from the real hardware, the hypervisor knows that the VM has disabled interrupts and never propagates it to the VM, even though interrupts are still enabled on the real hardware.
+
+In full virtualization the hardware and the guest OS are the same as always, and only the hypervisor is clever: it translates (in binary and on the fly) critical instructions into non-critical ones based on state variables that represent the virtual CPU. The state of the physical CPU can be altered only by the host OS, never by the guests.
+
 \begin{center}
 	\safeimg[width=4.5in]{media/image160.png}
 \end{center}
@@ -318,6 +341,10 @@ In this conceptual translation, the physical CPU interrupt state remains unchang
 In \textbf{paravirtualization}, the guest OS is aware of virtualization and is modified to cooperate with the hypervisor. Instead of executing certain sensitive instructions directly, the guest invokes explicit \textbf{hypercalls}, which are API-like calls into the hypervisor for operations such as memory management, interrupt handling, and timekeeping.
 
 Paravirtualization can reduce the need for complex binary translation. However, it introduces compatibility constraints because the guest OS must be modified or built with paravirtualization support.
+
+Since the beginning the hypervisor offers a set of \textbf{hypercall APIs}, each one specific to a critical instruction (for example, one API to be called every time the guest would execute \texttt{CLI}). The hypervisor therefore does not search the code for critical instructions: it is the guest OS that has been modified to call these APIs instead. This means that vanilla operating systems cannot be used as guests, but only systems pre-modified with this knowledge.
+
+Extending an operating system in this way is not very complex, so it is feasible, and it avoids the very complex on-the-fly binary translation of full virtualization. The main problem is compatibility: the modification is \textbf{hypervisor-dependent}, because a guest OS modified for one hypervisor may not work with another, as they offer different APIs.
 
 \begin{center}
 	\safeimg[width=4.5in]{media/image161.png}
@@ -335,6 +362,8 @@ Hypervisor: handle_hypercall_disable_interrupts(guest_vm_id)
 
 The hypervisor retains full control of the physical interrupt state, ensuring that the host remains stable and that other VMs are unaffected.
 
+Internally the handler again modifies a variable of the virtual CPU state, so the final outcome is the same as in full virtualization. What changes is that the hypervisor does not look for critical instructions and replace them: it just waits for the call and executes the function safely, because the guest OS is in charge of calling the hypercall APIs.
+
 \begin{center}
 	\safeimg[width=4.5in]{media/image162.png}
 \end{center}
@@ -344,6 +373,12 @@ The hypervisor retains full control of the physical interrupt state, ensuring th
 In \textbf{hardware-assisted virtualization}, the CPU provides features that support virtualization, enabling the hypervisor to handle sensitive instructions efficiently using hardware traps rather than relying solely on software emulation or binary translation. On x86-64 platforms, such support is provided by virtualization extensions such as \textbf{Intel VT-x} and \textbf{AMD-V}.
 
 In this approach, the guest OS can often remain unmodified, and the hypervisor does not need to expose hypercall APIs for the same set of privileged operations as in paravirtualization. When the guest executes a sensitive instruction, the CPU triggers a controlled transition to the hypervisor, typically described as a \textbf{VM-exit}. The hypervisor handles the event and then resumes the guest through a \textbf{VM-entry}.
+
+So far the burden of the translation was on the hypervisor (full virtualization) and on the guest OS (paravirtualization); in this technique the \textbf{hardware} itself notices that an instruction is critical and must not be executed directly. The host OS is not considered here, since these techniques apply both to type 1 hypervisors (no host OS) and to type 2.
+
+The critical instruction goes from the user application of the VM straight to the real CPU. The CPU recognizes that a critical instruction is coming from a privileged level associated with a virtual machine, refuses its execution and performs a \textbf{hardware trap}. A trap is similar to calling an API of the hypervisor, but it is invoked directly by a piece of hardware (the real CPU) and not by software: the hardware tells the hypervisor that a VM requested a critical instruction and asks for alternative, non-critical instructions to execute in its place.
+
+This is the most efficient technique: the guest OS is not modified, the hypervisor does not have to search for critical instructions and there is no overhead of software emulation. The drawback is cost: it needs dedicated hardware able to recognize critical instructions coming from the privilege levels of the VMs (Intel VT-x, AMD-V). Such processors are more expensive and therefore not commercially widespread everywhere, even though this is the most efficient technique.
 
 \begin{center}
 	\safeimg[width=4.5in]{media/image163.png}
@@ -366,6 +401,10 @@ MOV vCPU_IF, 0   ; clear the guest's virtual interrupt flag
 
 The key distinction from full virtualization is that the transition is supported by hardware mechanisms designed for virtualization, which can reduce overhead relative to purely software-based interception and translation.
 
+\begin{notebox}
+	\textbf{Comparing the three techniques on \texttt{CLI}.} In all cases the final effect is the same: \texttt{vCPU\_IF} is set to 0 and the real interrupt state is untouched. What changes is \emph{who} detects the critical instruction: the \textbf{hypervisor} on the fly in full virtualization (the guest is unaware), the \textbf{guest OS} in paravirtualization (it calls a hypercall), the \textbf{hardware} in hardware-assisted virtualization (VM-exit trap). Non-critical instructions are executed directly on the hardware by all three techniques, because they alter neither the virtual nor the physical state and cannot affect the other VMs.
+\end{notebox}
+
 \begin{center}
 	\safeimg[width=4.5in]{media/image164.png}
 \end{center}
@@ -374,6 +413,8 @@ The key distinction from full virtualization is that the transition is supported
 \section{Major types of virtualization in practice}
 
 Virtualization appears in several forms depending on which system component is being virtualized and how the virtualized environment is delivered.
+
+The \emph{type} of virtualization identifies the target of the virtualization, i.e.\ what is virtualized. Most often it is a full computer (\textbf{system virtualization}, declined into \textbf{server} and \textbf{desktop} virtualization depending on whether a server or a client is virtualized); sometimes only the \textbf{storage} where data is saved, or an \textbf{application} that has to run in a sandbox, i.e.\ a controlled and safe environment.
 
 \subsection{System virtualization}
 
@@ -398,6 +439,8 @@ From the perspective of applications inside the guest OS, the virtual operating 
 
 \textbf{Server virtualization} applies system virtualization to server hardware. The goal is to virtualize one physical server into several logical servers (VMs), allowing multiple server workloads to run concurrently on a single physical host. The benefit is typically higher utilization and more flexible deployment than dedicating separate physical servers to each application.
 
+This is particularly useful in cloud computing: a consumer may ask for several servers, each answering requests coming from different customers, and the provider simply creates the different VMs on the same hardware, each dedicated to a different purpose.
+
 \begin{center}
 	\safeimg[width=4.5in]{media/image166.png}
 \end{center}
@@ -418,15 +461,21 @@ In local desktop virtualization, a hypervisor runs on a user's local computer, e
 
 A VDI deployment can provide users with access to multiple OS environments from many types of endpoint devices (traditional PCs, thin clients, or mobile devices) without installing those OSs on each endpoint. Depending on configuration, users may be assigned dedicated VMs, shared pools, or reserved resource allocations that match user-specific compute needs.
 
+For example, if a company needs 100 desktops, 100 VMs are created on the same central server and the end users only request access to them. Since the desktops run on the server and not on the client, even thin devices (smartphones, tablets, low-power computers) can be used. For each desktop VM the server can reserve CPU, memory and disk capacity according to the requirements stated when the desktop was requested. The drawback is that someone must manage this central server and guarantee isolation among the virtualized desktops.
+
 \subsubsection*{Remote desktop virtualization}
 \addcontentsline{toc}{subsubsection}{Remote desktop virtualization}
 
 Remote desktop virtualization delivers a desktop session or application interface from a central server to clients using a remote display protocol. A representative implementation is Microsoft Remote Desktop Services (\textbf{RDS}), which provides Windows-based application and desktop delivery via the \textbf{RDP} protocol. A key characteristic is that multiple user sessions can share a server environment, and resources are typically not dedicated to individual users in the same way as in per-user VDI VMs.
 
+RDS is available only on Windows (a proprietary Microsoft solution) and it is not a real virtualization: a server running Microsoft RDS allows several user sessions to be active in parallel on the same computer. On a laptop several accounts may exist, but only one can be used at a time; with RDS, several accounts can open their own session simultaneously, interacting remotely with a shared desktop environment on the same physical server. The end user does not perceive the difference. However, since there are no VMs, the memory and the CPU usage reserved for each session are \textbf{not guaranteed}: the overall resources are shared among the active sessions (a single session can use all the hardware, ten sessions share it), so there is no quality-of-service guarantee.
+
 \subsubsection*{Desktop as a Service}
 \addcontentsline{toc}{subsubsection}{Desktop as a Service}
 
 \textbf{Desktop-as-a-Service} (\textbf{DaaS}) delivers complete virtual desktop environments from cloud infrastructure managed by a provider. Desktops run in VMs hosted on provider-managed compute, storage, and network infrastructure. Users access their desktop environment from a wide range of devices, including PCs, laptops, tablets, and some smartphones.
+
+Unlike VDI, the desktops are not hosted on a company server but are VMs in the cloud, managed by a provider, with all the cloud features: flexibility, usage-based price, reliability and scalability. Among the delivery models it resembles \textbf{PaaS}: a prepared platform with a running operating system, with some restrictions. It is not IaaS (the hardware is not what is offered), and it is not really SaaS, because here the ``application'' is the operating system itself, the desktop.
 
 The conceptual distinction among VDI, remote desktop virtualization, and DaaS can be framed as follows:
 
@@ -436,6 +485,22 @@ The conceptual distinction among VDI, remote desktop virtualization, and DaaS ca
 \item DaaS externalizes infrastructure management to a cloud provider while delivering full desktops as a service.
 \end{itemize}
 
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{0.13\textwidth}p{0.25\textwidth}p{0.25\textwidth}p{0.25\textwidth}@{}}
+\toprule
+ & \textbf{VDI} & \textbf{RDS} & \textbf{DaaS} \\
+\midrule
+\textbf{Hosting} & On-premises server, managed in-house (expensive) & In-house server with Windows Server and the RDS service & Nothing on premises: hardware managed by the cloud provider \\
+\textbf{Requirements} & The organization builds its own virtualization hardware and servers & RDS service running & No specific requirements for the end user \\
+\textbf{Licensing} & Persistent or non-persistent desktops (always active or created on demand) & A client license for each unique user & Handled by the provider \\
+\textbf{Effort} & High: buy the server, run a hypervisor and all the desktop VMs & Medium: no hypervisor or VMs, Microsoft handles it, sessions only partially isolated & Limited: requirements in the contract/SLA, nothing installed at the client \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of VDI, RDS and DaaS (local desktop virtualization is omitted: it simply means installing VMs on the local computer).}
+\end{table}
+
 \begin{center}
 	\safeimg[width=4.5in]{media/image167.png}
 \end{center}
@@ -443,6 +508,8 @@ The conceptual distinction among VDI, remote desktop virtualization, and DaaS ca
 \subsection{Storage virtualization}
 
 \textbf{Storage virtualization} aggregates storage resources across a network and presents them as a single logical storage device or storage pool. Blocks from multiple storage devices are combined into a shared pool that can be allocated to VMs on demand. This simplifies provisioning, enables flexible resizing, and can improve overall utilization by reducing stranded capacity on individual devices.
+
+The goal is to show a computer a storage that appears different from what it really is. For instance, a single physical partition can be shown as three digital partitions, or two real partitions can be shown as one to an external computer. The hypervisor performs the mapping between the digital and the real world through internal state variables (which logical partition corresponds to which physical part).
 
 \begin{center}
 	\safeimg[width=4.5in]{media/image168.png}
@@ -459,6 +526,8 @@ Three common models are:
 \item \textbf{Application streaming}, where an application is hosted on a server and components are delivered to the endpoint as needed for execution.
 \item \textbf{Server-based application virtualization}, where the application executes entirely on a server and only the user interface is delivered to the client.
 \end{itemize}
+
+A familiar example of local application virtualization is a Python or Java virtual machine, which executes the code in a sandbox, in a controlled environment, without interfering with the host OS. In application streaming the application is not virtualized proper: its \emph{execution} is delegated to a remote server, and only some parts run locally when interaction with the client is needed. In the server-based model everything runs on the server, so any issue affects the server while the endpoint stays clean.
 
 \section{Representative hypervisor platforms}
 
@@ -498,6 +567,10 @@ The \textbf{Kernel-based Virtual Machine} (\textbf{KVM}) is a virtualization app
 
 KVM's classification as type 1 or type 2 can be debated because it is implemented within the host OS kernel while enabling virtualization features that resemble bare-metal control when combined with hardware support. Practically, KVM provides virtualization by turning the Linux kernel into a hypervisor-like control plane, with user-space components commonly providing device emulation and management functionality.
 
+The reason why KVM is hard to classify is that it is implemented directly in the Linux kernel: when it is enabled, Linux becomes a hypervisor itself. One can say it is type 2, because it runs on a computer with a Linux distribution; but once enabled, Linux changes its nature and behaves like a hypervisor, so it can also look like type 1. There is no definitive answer, some consider it type 2 and others type 1, and both answers may be considered correct.
+
 \begin{center}
 	\safeimg[width=4.5in]{media/image170.png}
 \end{center}
+
+Traditional virtualization is already enough to virtualize computers for cloud computing models, but it virtualizes everything, including the whole operating system, which can be excessive. Sometimes a more \textbf{lightweight} virtualization is preferable, accepting weaker isolation in exchange for better performance: this is \textbf{containerization}, the topic of the next chapter.

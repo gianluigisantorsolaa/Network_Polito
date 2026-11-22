@@ -4,13 +4,34 @@
 
 Computer virtualization provides a set of desirable system properties, including \emph{scalability} (the ability to increase or decrease capacity by adding or removing execution units), \emph{elasticity} (the ability to adapt resource allocation to varying demand), and \emph{isolation} (the containment of faults, interference, and security-relevant effects within a defined boundary). Traditional virtualization techniques achieve these goals by virtualizing hardware and running guest operating systems on top of a hypervisor. While effective, full machine virtualization introduces overheads associated with device emulation, additional kernel instances, and the management of virtual hardware.
 
+\begin{notebox}
+	\textbf{Why another form of virtualization?} Traditional virtualization means virtualizing full computers, from the hardware to the applications themselves. With hypervisors and the techniques seen so far (full, para and hardware-assisted virtualization), a physical machine can host additional VMs, which cloud providers use to deliver their services: for example, they can constantly create new VMs, flexibly replicated on the same physical infrastructure, whenever the workload of a customer increases, so that more requests are served at the same time by a higher number of machines. Traditional virtualization is still widely used (everybody has VirtualBox or VMware on a personal computer, to test other operating systems or to do exercises for courses), so the question is why an alternative is needed. The answer is that we need a virtualization that is \emph{lighter} than the traditional one.
+
+\medskip
+\textbf{Example.} Consider a very light application that consumes only 100~MB of memory and few CPU cycles, and that a cloud provider wants to offer to its consumers as software as a service. The provider would like to create virtual environments each containing a single instantiated process of that application, so that every consumer interacts with a perfectly isolated process, which is not affected by the others because they live in different environments. If these environments are traditional VMs, then, even if each application uses only 100~MB, each VM also needs the virtualized hardware and a guest operating system. Just to provide isolation in this multi-tenant scenario the provider spends physical resources and CPU time on management overhead due to virtualization.
+\end{notebox}
+
 Lightweight virtualization aims to preserve the operational benefits of virtualization while reducing resource consumption and deployment latency. It is particularly appropriate when the overhead of classical virtual machines is unacceptable, or when the primary requirement is a rapidly deployable, migratable, and disposable isolated environment with minimal performance impact. Lightweight approaches emphasize fast creation and teardown, high density (many isolated environments per host), and integration with native process scheduling and resource management.
+
+The idea is therefore to get rid of this overhead with a technique that consumes fewer resources, so that multiple virtual environments (which will no longer be called virtual machines) can be instantiated using less resources and less time than traditional VMs. The goals are three:
+
+\begin{enumerate}
+\item consume \textbf{fewer resources} to deploy virtual environments;
+\item be \textbf{faster} in deploying, modifying and possibly stopping them;
+\item keep the environments as \textbf{isolated} from each other as possible. Without isolation we would go back to the original situation in which all processes run on the same machine, compete with each other for the resources and may interfere with each other, with problems also related to privacy.
+\end{enumerate}
 
 \subsection{Operating system-level and application-level virtualization}
 
 Lightweight virtualization is typically implemented as \emph{operating system-level virtualization} or \emph{application-level virtualization}. In operating system-level virtualization, isolation boundaries are constructed by the host kernel itself. The host kernel provides a set of mechanisms that make a group of processes perceive a restricted and customized view of system resources, while still executing as ordinary processes from the host perspective. In this setting, the role played by a hypervisor in full virtualization is largely replaced by kernel subsystems and user-space tooling.
 
 Application-level virtualization focuses on packaging and isolating an application and its dependencies in a way that can be executed reliably across environments, often relying on the same kernel mechanisms as operating system-level virtualization. In both cases, the central idea is to avoid running multiple kernels and to avoid hardware emulation.
+
+Operating system-level virtualization means that a new operating system level is no longer created over the host operating system: an existing operating system is taken and made to work as the ``hypervisor'' of the new lightweight virtual environments. This may look similar to a type 1 hypervisor, where the host OS is fully replaced by the hypervisor, but here things are even more different, because there is no dedicated hypervisor: normal operating systems are used, and some of their specific features are exploited to provide isolation, agility and flexibility in the management of virtual environments.
+
+The operating system most commonly used is Linux, with all its variants, because it natively offers \emph{cgroups} and \emph{namespaces}, the building blocks of these virtual environments. The technique was so successful that other operating systems followed and introduced analogous features (Windows, for example, has alternative ones), so what is studied for Linux can be replicated in other ways. In this course the focus is on Linux.
+
+These virtual environments have had different names over the years: first \textbf{jails} (in the FreeBSD operating system), then \textbf{virtual private servers} and nowadays \textbf{containers}, the name used from now on. A container is a \emph{partial} virtual computer: it does not virtualize everything, and its goal is to give to some processes (instantiated applications) guarantees similar to those of processes running in traditional VMs; not all of them, but as many as possible. As a consequence the concept of guest operating system is lost: containers simply live on a normal host operating system.
 
 \subsection{Controllable properties}
 
@@ -26,9 +47,21 @@ A lightweight virtual environment can be configured to control, isolate, and acc
 
 These properties are realized primarily through Linux \emph{control groups} (cgroups) and \emph{namespaces}. Together they provide the building blocks for container technologies.
 
+The two mechanisms serve different purposes. \textbf{Cgroups} are used for resource \emph{usage limitation}: a group of processes is bound to limits in the use of physical resources such as CPU, memory and I/O devices. \textbf{Namespaces} are used for resource \emph{visibility}: groups of processes are made able to see only part of the existing resources, and in many cases to see different things, for example two completely different networking stacks, so that they interact with external networks thinking to be different entities, something that is not true from the physical point of view, because the physical machine is one and the separation is only simulated. In the list above, the first two properties (quotas, I/O and memory limits) concern the control of resource usage, while the last three (network, file system and root privilege isolation) concern visibility.
+
+\begin{notebox}
+	\textbf{An analogy.} Think of a building with many apartments. Each apartment can be assigned a maximum consumption of water or electricity per day: this is the equivalent of cgroups. Namespaces are more like the walls between the apartments: each family has only a partial view of the whole building, even though the physical building is shared. At the same time, this isolation is not very strong, because all the families live in the same building and can easily interact just by opening the doors of their apartments: we are not in a situation of strong isolation like the one of traditional virtualization.
+\end{notebox}
+
+The first principle of lightweight virtualization is thus to take a group of processes and manage them so that they think to be isolated containers, while they actually reside on the same machine. Besides CPU and disk quotas, the properties that can be managed include the rate of interaction with I/O devices, memory limits, network isolation, file system isolation (for example each group may have its own separate \texttt{/etc} folder) and the privileges of root that the processes may have.
+
 \section{Linux control groups}
 
 A \emph{control group} (cgroup) is a collection of processes bound by a criterion and associated with a set of parameters or limits. The kernel enforces these parameters by attaching resource controllers to a cgroup and applying controller-specific policies to all member processes.
+
+Without cgroups, each process is an entity by itself: at most an operating system can give different priorities or limits to each single process (Linux, for example, can choose through its scheduling algorithms to give more priority to one process than to another because it was started by a certain user), but it cannot give limits that are related to \emph{multiple processes at the same time}. This is exactly what is needed for containers, where several processes may run in the same virtual environment: to separate and control them with respect to the processes of other groups, limits shared by multiple processes are needed, and the group must fully respect them. For example, if a group is allowed at most 8~GB of memory, the processes of the group can never request more than 8~GB overall: one process may use all 8~GB and the others be unable to work, or the memory may be shared (for instance 2~GB, 2~GB and 4~GB). What matters is that the limit is on the \emph{group}, and the sum of the resources used by its processes cannot exceed it.
+
+This is not so different from what happens with traditional virtual machines: each VM is assigned resources defined by the virtual hardware profile, which are then mapped to real hardware. With type 1 hypervisors resources can be over-allocated, hoping that they are not fully used, but if they are, one ends up in a similar situation in which the resources are exhausted. Likewise, a number of CPU cycles can be reserved to each group, with different values so that some groups are prioritized over others, as a hypervisor can give higher priority to some VMs through the configuration parameters of the VMM software embedded in it.
 
 \subsection{Resource accounting and limiting model}
 
@@ -57,6 +90,8 @@ Resource limiting constrains a group so that its total consumption does not exce
 
 For memory, the kernel may trigger reclaim or invoke the out-of-memory mechanism for the group when the limit is exceeded. The exact behavior depends on the controller version and configuration, but the core principle is that the limit is enforced at the group boundary rather than per process.
 
+So the main goal of control groups is to define a maximum limit on memory, CPU and disk that cannot be exceeded by the group of processes to which it refers.
+
 \subsubsection*{Prioritization}
 \addcontentsline{toc}{subsubsection}{Prioritization}
 
@@ -64,29 +99,41 @@ Prioritization assigns a relative share of a resource to a cgroup. If multiple g
 
 Prioritization is distinct from limiting. A group with higher weight does not necessarily receive a fixed amount; it receives a larger fraction under contention. When contention is absent, groups may use more resources than their shares would suggest, depending on the policy.
 
+Prioritization is strictly related to resource limiting: when different limits are assigned to different groups of processes, each group obtains a different preference.
+
 \subsubsection*{Accounting}
 \addcontentsline{toc}{subsubsection}{Accounting}
 
 Accounting measures resource usage of the group. These measurements support administrative goals such as chargeback and billing, as well as operational monitoring. Accounting data is typically made visible via pseudo-files in a cgroup file system hierarchy.
+
+Accounting is especially important for cloud computing. The measurement can easily be done by the cgroup controller active in the operating system, which continuously checks how many resources are used by each group of processes, because the operating system must verify that the groups do not exceed their limits. Recall one of the basic characteristics of cloud computing: the provider should bill the consumers only for what they actually use. Having a native mechanism to monitor the resources actually used is therefore ideal: with cgroups lightweight virtualization is provided by giving limits and different priorities to groups, and the resource usage can also be checked without a dedicated software such as the hypervisor, which was needed instead to manage traditional VMs.
 
 \subsubsection*{Control and lifecycle management}
 \addcontentsline{toc}{subsubsection}{Control and lifecycle management}
 
 Control capabilities include freezing and thawing groups of processes. Freezing suspends execution without terminating processes, enabling use cases such as check-pointing and controlled migration. Restarting and resuming can then be orchestrated by user-space tools that coordinate process state, resource configuration, and file system context.
 
+The cgroup manager can control the life of the processes themselves. If it notices that a group of processes is behaving badly, for example because it constantly requires new resources exceeding the defined limits, it may at least temporarily freeze the group and restart it when it wants. In the extreme case it may terminate the processes, for example when one process is running out of memory and will never be able to proceed because the limit cannot be changed. This fourth capability shows that the cgroup manager can do more than setting limits: it can control the life cycle of groups of processes.
+
 \subsection{Cgroups as an enabling mechanism for containers}
 
 Cgroups provide the resource management foundation for operating system-level virtualization by allowing container runtimes to enforce resource constraints at container boundaries. When a container is modeled as a set of processes, placing those processes into dedicated cgroups enables per-container limits, proportional shares, and observability.
 
+It is worth noting that the cgroup feature was \emph{not} created for virtualization. It was originally introduced to give limits and priorities to groups of processes; only afterwards did it become an ingredient of containers, because it was also suitable to provide these virtual environments.
+
 \section{Linux namespaces}
 
 Namespaces virtualize global system resources by wrapping each resource class in an abstraction that provides processes within a namespace an isolated instance of that resource. Processes in different namespaces can therefore observe distinct system identifiers, network configurations, file system mount points, and other kernel-managed objects.
+
+A typical abstraction is the one related to the file system. Normally all processes active in an operating system share the same file system: if they go to the folder \texttt{/etc}, they all see the files saved there by the others and can modify them. With namespaces each process (or group of processes) may see a different file system: two processes placed in different Linux namespaces that go to the same folder \texttt{/etc} see different files, because that is not the real \texttt{/etc} but an abstraction of the original one towards separate entities. These abstractions are not applied only to file systems, but to other resources too.
 
 \subsection{General isolation principle}
 
 Consider a global kernel resource type $X$ (for example the network stack). A namespace mechanism creates disjoint instances $X_1, X_2, \dots$, and associates each process with exactly one instance. Kernel operations performed by a process are resolved with respect to the instance associated with that process. Isolation means that operations on $X_i$ are not visible through $X_j$ for $i \neq j$, subject to explicit inter-namespace communication mechanisms.
 
 Namespaces can be combined. A process may simultaneously belong to a mount namespace, a network namespace, a PID namespace, and so on. This composability enables custom isolation boundaries, but it also increases management complexity.
+
+Note that, by default, a namespace does not abstract all the resources: it abstracts one specific resource. Several namespaces can be combined to obtain abstraction with respect to multiple features (for example a PID namespace plus a network namespace, putting the same processes in both, so that they share the characteristics of both), or one can focus on a single resource at a time.
 
 \subsection{Namespace types in Linux}
 
@@ -97,20 +144,28 @@ Linux implements several namespace types that collectively cover the most releva
 
 Mount namespaces isolate the set of file system mount points visible to a process. Two mount namespaces can have different mount trees and therefore different views of the directory hierarchy. This is essential for containers because it enables each container to have its own root file system and its own view of system directories such as /etc. Mount namespaces are created with the CLONE\_NEWNS flag.
 
+Mount namespaces are not the most commonly used for virtualization, since this feature was created for other purposes, but having different file system mount points was considered quite useful.
+
 \subsubsection*{UTS namespaces}
 \addcontentsline{toc}{subsubsection}{UTS namespaces}
 
 UTS namespaces isolate system identifiers, in particular the hostname and NIS domain name. This allows processes in different UTS namespaces to observe different hostnames, supporting the illusion that each container is a distinct host. UTS namespaces are created with the CLONE\_NEWUTS flag.
+
+In the words of the professor, UTS namespaces provide the isolation of the OS name.
 
 \subsubsection*{IPC namespaces}
 \addcontentsline{toc}{subsubsection}{IPC namespaces}
 
 IPC namespaces isolate interprocess communication resources such as System V IPC objects and POSIX message queues. This prevents processes in distinct namespaces from accessing shared memory segments, semaphores, and other IPC objects unless explicitly shared. IPC namespaces are created with the CLONE\_NEWIPC flag.
 
+These are the data structures (variables, shared segments, semaphores) that are written and read by multiple processes to manage concurrency when they access the same memory, so that they do not interfere with each other.
+
 \subsubsection*{PID namespaces}
 \addcontentsline{toc}{subsubsection}{PID namespaces}
 
 PID namespaces isolate the process identifier space and the process tree. A process can have different PIDs in different PID namespaces, and processes in a child PID namespace can observe a process tree rooted at an init-like process for that namespace. This supports the abstraction that a container has its own process tree, independent of the host. PID namespaces are created with the CLONE\_NEWPID flag.
+
+Normally two processes cannot have the same PID, because each PID characterizes the position of a process in the hierarchy of the process tree, depending on the various forks performed by the applications. With PID namespaces, instead, two processes may both think to be the process with PID 8: they are put in separate namespaces, which make them believe to have the same PID while they are actually mapped to different real ones.
 
 \subsubsection*{Network namespaces}
 \addcontentsline{toc}{subsubsection}{Network namespaces}
@@ -118,6 +173,18 @@ PID namespaces isolate the process identifier space and the process tree. A proc
 Network namespaces isolate the network stack. Each network namespace has its own set of network interfaces (including virtual interfaces), IP addresses, routing tables, and firewall rules. This enables two namespaces to have independent networking configurations, even though they run on the same host.
 
 A common configuration uses a host (or global) network namespace and one or more container network namespaces. Virtual Ethernet pairs (veth) are often used to connect a container namespace to a bridge in the host namespace. Conceptually, one endpoint of the veth pair appears as a network interface inside the container namespace, while the other endpoint appears in the host namespace. The host can then connect multiple container endpoints via a software bridge and can apply routing and filtering rules.
+
+Each network namespace has its own complete networking stack: processes may think to interact with a different instance of the IP protocol and to send packets through a different Ethernet layer and a virtual Ethernet interface. In the typical configuration there are a root network namespace and a container network namespace, each with a loopback interface, its own \texttt{iptables} (the firewall implementation of the Linux kernel, a packet filter working on the values of the IP 5-tuple; it cannot, for example, filter by URL or domain) and its own virtual interfaces. Since the firewall is replicated, each namespace may have completely different rules and configuration, for instance a default deny action in one and a default allow action in the other.
+
+The interaction between namespaces is easy: each one may host an application server and they communicate through the virtual interfaces. Moreover, the processes of these applications may be associated with the \emph{same transport-layer port}, because the networking stacks are completely different. The virtual interfaces can also communicate with the physical one, which communicates with the outside. If two processes use the same port, how can they be made visible outside, since an incoming packet reaching the physical interface could not be identified? The solution is an internal translation: the networking stack of the real machine maps a port made visible on the outside to the internal one, so that it can forward the packets to the virtual interface of a container or of another one. The routing process shown on the right of the figure may be in charge of this translation, because it can enrich its routing entries so as to discriminate packets coming from the outside and send them to different network namespaces. Network namespaces can therefore interact both with each other and with the outside world. (Virtual machines could do the same, but that was easier to imagine because each of them was a full computer, virtualized or physical.)
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image171.png}
+\end{center}
+
+\begin{notebox}
+	\textbf{Is this isolation strong?} No. With a network namespace only one resource is differentiated for different processes, while all the others stay the same: the file system, the process tree, the shared segments and semaphores are shared. Above all, it is just an abstraction: the computer in which all the processes live is the same. This is a first sign that with lightweight virtualization we will never reach the strong isolation of virtual machines, and we have to give up, at least partially, that guarantee.
+\end{notebox}
 
 Network namespaces are created with the CLONE\_NEWNET flag.
 
@@ -131,9 +198,16 @@ User namespaces isolate user and group identifiers. They enable a mapping betwee
 
 Cgroup namespaces isolate the view of the cgroup virtual file system hierarchy presented to a process. A process can therefore see a virtualized cgroup path that is meaningful within the container context rather than the host-wide cgroup structure. Cgroup namespaces are created with the CLONE\_NEWCGROUP flag.
 
+\subsubsection*{Time namespaces}
+\addcontentsline{toc}{subsubsection}{Time namespaces}
+
+More recent versions of Linux introduced an additional (eighth) namespace, the time namespace, which allows processes to see all the time-related entities, including the clock, in a separate way.
+
 \section{From kernel building blocks to containers}
 
 Cgroups and namespaces are general-purpose kernel mechanisms, originally developed for process isolation and resource management rather than full virtualization. When combined, they can implement a lightweight virtual environment in which a set of processes is constrained in resources and observes a restricted system view.
+
+Once cgroups and namespaces have been presented, it is possible to evaluate to what extent they are useful for virtualization. Compared with traditional virtualization, both show native limitations.
 
 \subsection{Limitations of raw cgroups and namespaces}
 
@@ -144,19 +218,27 @@ When used directly, cgroups and namespaces exhibit important limitations for lar
 
 The mechanisms are highly flexible. Each namespace type and each cgroup controller can be configured independently. However, this flexibility implies that creating a coherent isolated environment requires multiple coordinated operations, such as setting up mount points, configuring user mappings, building a network topology, and assigning cgroup policies. Doing so directly often requires extensive scripting and intimate familiarity with kernel interfaces.
 
+These features are low-level, compared with the high-level control of VMs that one has with type 2 hypervisors. Managing them is not easy at all: a human user would need a complete overview of all the processes living in the physical computer, understand how to divide them into groups, define correctly the limits of the control groups and then create the namespace abstractions. All these are low-level operations that require interacting with the command line and command-line instructions; so, even if flexible, the creation of virtual environments becomes even less user-friendly than with virtual machines.
+
 \subsubsection*{Portability}
 \addcontentsline{toc}{subsubsection}{Portability}
 
 Full virtual machines can be packaged as images that include the guest operating system and are expected to boot on any compatible hypervisor that reproduces the virtual hardware environment. In contrast, an environment constructed from namespaces and cgroups depends on host kernel features and on host-specific configuration. Packaging an isolated application so that it can be instantiated on another server in a consistent way requires additional tooling, conventions, and image formats.
+
+For VMs, the virtual hardware profile can be replicated from one physical computer to another as long as the hypervisor is the same. With OS-level virtualization there is no longer virtualization of the hardware and of the operating system: applications simply run in separate environments over the same OS, so one might expect portability to be easier, but it still has limitations. A group of processes cannot be moved from a Linux machine to a Windows machine, because the features are completely different. Even moving a cgroup from one Linux machine to another is not easy: the machines have different hardware, so one cannot take for granted that the same limits remain valid, as the amount of hardware may differ and the limits should be revised; the same holds for namespaces. Since cgroups and namespaces are kernel features and the Linux kernel is common, this is positive for portability, but in general portability is more related to the hardware limits.
 
 \subsubsection*{Lack of datacenter-scale orchestration}
 \addcontentsline{toc}{subsubsection}{Lack of datacenter-scale orchestration}
 
 Cgroups and namespaces alone do not provide a control plane for placing workloads across a fleet of machines, reacting to machine failures, or coordinating networking and storage at cluster scale. Additional layers are required to manage the lifecycle of isolated environments, to provide service discovery, and to implement self-healing behaviors.
 
+A cloud provider should, by definition, have minimal manual interaction with the infrastructure on which the delivery model is provided. With raw cgroups and namespaces user-friendliness is lost and automation is much less feasible than in the past. So, after seeing that cgroups and namespaces seem good for lightweight virtualization, one almost finds the opposite: for cloud computing they are nice but difficult to handle. The solution is to keep them but add a software layer that manages cgroups and namespaces automatically: a \textbf{userland configuration tool}. It may be called a container orchestrator or container manager, depending on the implementation; what matters is that it is a collection of tools that automate the use of control groups and namespaces.
+
 \subsection{LXC containers}
 
 LXC (Linux Containers, commonly pronounced \emph{lecsi}) is a container technology that assembles cgroups and namespaces into a cohesive container abstraction and provides user-space configuration tools. LXC operates on a standard Linux kernel without requiring kernel patches.
+
+LXC containers were the first containers ever created in history. The idea of modern containers is not very different: the next lecture and the third lab activity are about Docker, which is still based on cgroups and namespaces but has a much richer userland configuration toolset, so that more capabilities and even higher user-friendliness are provided, while the concept remains the one of the original LXC container: the combination of cgroups, namespaces and software tools.
 
 An LXC container can be understood as:
 
@@ -168,9 +250,19 @@ An LXC container can be understood as:
 
 This organization turns low-level kernel primitives into a usable environment that resembles a virtual machine from the inside while remaining a set of ordinary processes from the outside.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image172.png}
+\end{center}
+
+\begin{notebox}
+	\textbf{Definition.} A container is the combination of control groups, possibly namespaces, and user-friendly userland configuration tools. Together they create virtual environments that are less isolated than virtual machines, but that at least provide resource usage limitation and resource visibility differentiation for groups of processes.
+\end{notebox}
+
 \section{Containers as a software packaging and execution unit}
 
 A \emph{container} is an executable unit of software in which application code is packaged together with its libraries and dependencies, using conventions that allow the unit to be run consistently across environments. Containerization relies on operating system virtualization, leveraging kernel mechanisms such as Linux namespaces and cgroups to isolate processes and control their resource access.
+
+The dependencies and libraries packaged in a container may depend on the specific operating system, so a container cannot simply be moved from one OS to another without modification: some adaptation may be needed. For example, a Linux container uses namespaces and cgroups, whereas Windows has the equivalent \emph{silos} and \emph{job objects}, so different tools are needed to manage these different features.
 
 \subsection{What containers do}
 
@@ -183,6 +275,8 @@ Containers implement the following behaviors.
 \item \textbf{Dual perspective}: from inside the container, the environment appears similar to a separate machine, with its own process tree, hostname, and network configuration. From outside, the container appears as a set of processes with associated cgroup membership and namespace associations.
 \end{itemize}
 
+The processes of a container live in the same operating system as the host and may therefore compete with the normal processes that do not belong to these groups, that is, the processes of the normal operating system (the so-called \emph{root namespace}, which characterizes the standard machine). Containers may look like VMs because they have some controls, but they are normal processes: there is no real isolation in the sense of VMs.
+
 \subsection{What containers do not do}
 
 Containers do not provide certain properties commonly associated with full virtual machines.
@@ -192,6 +286,20 @@ Containers do not provide certain properties commonly associated with full virtu
 \item \textbf{No distinct kernels}: containers do not run different kernels or operating systems. They execute on the host kernel.
 \item \textbf{Security requires configuration}: containerization does not automatically guarantee strong security isolation. Kernel attack surface is shared, and misconfiguration can lead to privilege escalation or data exposure. However, an appropriate security level can be achieved by combining namespaces, user namespaces, capability restrictions, mandatory access control, and careful image and runtime practices.
 \end{itemize}
+
+Security for containers cannot be taken for granted. This module does not discuss security, but reasoning about how to enforce it for containers is a central topic: additional boundaries must be put in place so that one container does not interfere with the others, since otherwise there is no immediate control by which this property is achieved.
+
+\subsection{Revisiting the goals of lightweight virtualization}
+
+The goals stated at the beginning can now be checked.
+
+\begin{itemize}
+\item \textbf{Fewer resources.} Achieved, because there is no hypervisor: lightweight virtualization is provided by native features of the OS kernel (cgroups and namespaces) plus some additional tools. The operating system is no longer virtualized, so the variables and data structures required for full hardware and system virtualization are not used.
+\item \textbf{Faster deployment.} Achieved. In traditional virtualization every VM contains a guest OS, whose installation may take a long time (the professor recalled launching the installation of a guest OS before dinner, knowing that it would take the whole dinner to complete: not acceptable if speed is needed). With containers the guest OS is not present, so creating a new container simply means changing some parameters in the cgroups and in the namespaces to create the new controlled environment for a group of processes: it is immediately ready, since it just means launching processes as usual and putting some constraints on them.
+\item \textbf{Isolation.} Achieved only to some extent, thanks to namespaces, but the strong isolation of VMs is lost, because the resources are shared by everything: the operating system is always one.
+\end{itemize}
+
+It is therefore wrong to say that each container has a different operating system; the correct statement is that \textbf{all containers share the same operating system}, which is the opposite of what happens with virtual machines. Tools that bundle the code of the processes with all the required libraries and dependencies turn them into executable units of software ready to be launched as needed.
 
 \section{Containers and virtual machines}
 
@@ -203,17 +311,27 @@ A virtual machine typically consists of an application stack running on a guest 
 
 A containerized architecture typically consists of multiple application stacks running as isolated process groups on a shared host operating system. A container runtime (sometimes called a container engine) configures namespaces and cgroups and manages container images. The kernel and most device drivers are shared across containers.
 
+In the figure of the slides, on the left, the physical infrastructure hosts a hypervisor and, on top of it, virtual machines each with a guest OS, binaries and libraries needed to run the software. That is only one way to do traditional virtualization: since there is no host operating system, the hypervisor is of type 1; with a host operating system between hardware and hypervisor it would be type 2. In containerization there is instead the physical hardware, always a host operating system, a container engine and finally the containers. The \textbf{container engine} is the userland configuration tool set that makes the use and control of cgroups and namespaces more user-friendly, and each container bundles not only the application code but also binaries, libraries and all the dependencies required to run that code on that specific host operating system.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image173.png}
+\end{center}
+
 \subsection{Performance and density}
 
 Containers are generally faster to start, stop, freeze, and dispose than virtual machines because container creation does not require booting a guest operating system. Containers are lighter in terms of CPU and memory usage because they avoid instruction emulation and avoid duplicating kernel memory. These properties enable higher density, meaning that more isolated workloads can be hosted on the same physical machine.
 
 With mature kernel implementations, containerization can achieve performance close to native execution for many workloads, since system calls and scheduling operate directly on the host.
 
+In more detail, containers are faster than VMs from any point of view: to \emph{boot}, because there is no operating system to activate; to \emph{freeze}, \emph{dispose} and \emph{orchestrate}, because they use fewer resources and are therefore easy to stop and to isolate from the others. They are lighter because they use less CPU, since they are only processes governed by some constraints, and less memory for the same reason, and they do not require the full virtualization overhead of typical hypervisors. This makes it easier to reach a performance close to the native one: the difference between normal processes and container processes is just some controls to perform, which absorb some CPU cycles, but there is none of the emulation of full virtualization, where, as recalled, the guest was unaware to be a guest and the hypervisor had to translate instructions on the fly.
+
 \subsection{Isolation and flexibility}
 
 Virtual machines typically provide stronger isolation because the hypervisor boundary separates guest kernels from the host. This can mitigate the impact of guest kernel exploits and reduces shared kernel attack surface. Virtual machines also enable running different operating systems on the same host.
 
 Containers provide isolation primarily at the process level. Their security depends heavily on correct configuration, kernel hardening, and careful management of privileges. Containers cannot directly provide a different kernel per workload.
+
+Virtual machines still have some positive aspects. First, they provide better isolation: suppose that an attacker gets control of the kernel of the system; at that point all the containers are immediately reachable by the attacker, whereas with VMs, if the kernel of the host OS were attacked the guest OS could still be protected, and if only one VM were attacked the others would surely be protected. Second, they provide better security because, with VMs, the number of attack points is more limited: in particular a type 1 hypervisor is particularly tiny, so it has few lines of code that can be attacked. Finally, with virtual machines there is no limit (compatibly with the available resources) to the operating systems that can run on the same physical machine: one VM with Windows, one with Linux, one with macOS, one with another Linux distribution. With containers on a Linux physical computer all containers share Linux, so the possibility of testing different applications on different operating systems within the same computer is lost.
 
 \subsection{Comparison table}
 
@@ -233,56 +351,191 @@ Management unit & Image and container instance & VM image and VM instance\\
 \end{tabular}
 \end{center}
 
+\subsection{Containers or virtual machines?}
+
+Which one is better depends on the application. If stronger isolation and security are wanted, performance is not a concern (waiting some minutes for the virtual environments to be created is acceptable) and perhaps different operating systems on the same machine are preferred, virtual machines are better. Conversely, if flexibility, dynamism and speed are the main requirements to provide services in the cloud, containerization is the approach to follow. Indeed, nowadays cloud providers mainly use containers orchestrated with software such as Docker and Kubernetes, discussed in the next lectures, which provide very good performance at the price of losing some security. For this reason a lot of recent research on cloud security focuses on containerization rather than on VM management, because that is where most issues are.
+
+\section{Use cases for containers}
+
+Besides virtual machines, which have their own purposes, containers are very useful. The main scenarios are:
+
+\begin{itemize}
+\item \textbf{Cloud computing}: containers are perfect to be deployed easily and rapidly whenever they are needed, and they are easy to migrate from a public cloud to a private one and vice versa, which fits the hybrid cloud architecture seen in the previous lectures.
+\item \textbf{Application modernization}: bundling an application before migrating it from an on-premises infrastructure to the cloud.
+\item \textbf{DevOps}: the programming paradigm according to which software should be built, shipped and run as fast as possible; containerization makes it easy to build such pre-built packages.
+\item \textbf{Microservices}: a very important scenario, a programming paradigm that has become particularly widespread in the last ten years. Being more complex to discuss than the others, it is analyzed in the following section.
+\end{itemize}
+
 \section{Microservices and the role of containers}
+
+Among the use cases of containers, microservices are the one most closely related to cloud computing: nowadays deploying services based on microservices as cloud services has become quite common, because the two philosophies, microservices and cloud computing, share a lot of features. Before looking at concrete container implementations (Docker, and containers managed by Kubernetes), it is therefore worth analyzing this use case in greater detail, to understand why containers in general, and LXC containers in particular, are well suited to it.
 
 Modern applications are increasingly designed as collections of cooperating components rather than as monolithic systems.
 
 \subsection{Monolithic applications}
 
-A \emph{monolithic} application is designed, developed, and deployed as a single unit. A monolith often integrates multiple logical components, such as a web server, application logic, and a database, within one deployment artifact and one operational boundary. A common example is a web application stack composed of a Linux operating system, an HTTP server, a database server, and a scripting or application runtime.
+A \emph{monolithic} application is designed, developed, and deployed as a single unit. All the routines and functions required to provide the sub-services of the main service of the application are implemented within the same application, that is, in the source code of the main application itself. A monolith often integrates multiple logical components, such as a web server, application logic, and a database, within one deployment artifact and one operational boundary. A common example is a web application stack composed of a Linux operating system, an HTTP server, a database server, and a scripting or application runtime.
 
-Monolithic design can lead to the following challenges:
+\begin{notebox}
+	\textbf{Example: an e-commerce platform.} Consider a platform like Amazon. It has to provide several sub-services: the \emph{catalog}, through which users search for products; the \emph{cart}, in which each consumer temporarily saves the items before buying them; \emph{account} creation and management; the management of \emph{orders}; and the \emph{processing of payments} with credit cards. With the monolithic paradigm all these features are implemented in one single application, which is then activated as a process either on an on-premise infrastructure or on a cloud infrastructure. This means that all the sub-functionalities are \emph{tightly coupled}: they are strictly connected to each other, because the life of one is also determined by the way the others are living.
+\end{notebox}
 
-\begin{itemize}
-\item a cumbersome development and testing process because changes to any component may require rebuilding and revalidating the entire application,
-\item difficulty updating or scaling individual components since components are tightly coupled,
-\item limited scalability flexibility because scaling typically replicates the entire monolith even when demand concentrates on a specific function.
-\end{itemize}
+Monolithic applications are not bad in general. If the service to create is small, for example just three main functionalities with a limited number of lines of code each, a monolithic application can easily be created, run, and also scaled, because the sub-services are tightly coupled but all of them are small. Conversely, for a very big web service such as an e-commerce portal, the monolithic paradigm is not the most suitable and convenient one. There are four main reasons.
+
+\subsubsection*{Multiple programming languages}
+\addcontentsline{toc}{subsubsection}{Multiple programming languages}
+
+With the LAMP stack (Linux, Apache, MySQL, PHP) multiple programming languages are already introduced, together with the custom glue code that connects the components. Not all operating systems or platforms where the monolithic application is going to run support applications written in multiple languages.
+
+\subsubsection*{Maintainability}
+\addcontentsline{toc}{subsubsection}{Maintainability}
+
+Suppose that a developer must update only one routine of the application, for example the one that processes payments, because a new kind of payment with a different type of card has to be supported. After the update is committed to the internal repository of the company, a monolithic application requires \emph{retesting everything}: since everything lives in a single source code, the modification touches the core of the application and nobody knows whether it has impacted the way the other subroutines work. Managing a monolith with thousands of lines of code therefore requires a lot of time for testing, since all the prepared tests must be repeated for any change in any sub-service, and most likely also a lot of time for fixes: it is quite likely that the change interferes with the other subroutines, which then also have to be modified to be compatible with the update.
+
+\subsubsection*{Scalability}
+\addcontentsline{toc}{subsubsection}{Scalability}
+
+Suppose that the e-commerce platform is deployed on a cloud infrastructure and that the subroutine dedicated to the catalog needs more power, because many customers access it at the same time (for example during a Black Friday event). A first solution is to deploy multiple instances of the process of the application. But the application is monolithic: scaling it does not duplicate only the catalog sub-service, \emph{everything} is multiplied. Even if it would have been enough to duplicate the catalog, there are also multiple copies of the payment, cart and accounting sub-services, and so on. All this is extra overhead and is totally useless, because there was no overload of traffic directed to those sub-services.
+
+\subsubsection*{Fault propagation}
+\addcontentsline{toc}{subsubsection}{Fault propagation}
+
+When multiple sub-services are integrated in a tight way in the source code of a single application, a fault in any one of them, while the process is running, most likely makes the others unavailable too, or at least impacts their performance.
+
+\begin{notebox}
+	\textbf{In short.} Monolithic design leads to: a cumbersome development and testing process (changes to any component may require rebuilding and revalidating the entire application); difficulty updating or scaling individual components, since they are tightly coupled; limited scalability flexibility, because scaling replicates the entire monolith even when demand concentrates on a specific function; and propagation of faults across components.
+\end{notebox}
 
 \subsection{Microservices and the single-responsibility principle}
 
+For these reasons, a new development paradigm was proposed already at the end of the last century (the slides report that microservices were proposed in 1998 at Amazon): the paradigm based on \emph{microservices}. The idea is the opposite of the previous one. An application characterized by multiple sub-functions does not implement them as routines of the same program, but as \emph{separate programs}, separate services named microservices, because each one is most likely smaller than the monolithic application that would have resulted if all of them had been implemented in a single source code.
+
 A \emph{microservices} architecture arranges an application as a collection of loosely coupled services. Each service supports a single business task and is designed to be independently deployable.
 
-A guiding principle for service decomposition is the \emph{single-responsibility principle}. A software module should be responsible to one, and only one, actor, where an actor is a group of stakeholders or users that requires a change in that module. Applied to microservices, the principle motivates creating services whose evolution is driven by a well-defined set of requirements and stakeholders, reducing cross-cutting changes across unrelated functions.
+\subsubsection*{Loosely coupled services}
+\addcontentsline{toc}{subsubsection}{Loosely coupled services}
 
-Microservices commonly interact using request-response communication, frequently implemented using REST-style HTTP APIs. Service boundaries therefore shift inter-component interactions from in-process function calls to network communication.
+\emph{Loosely coupled} means that each microservice lives by itself, but has at least some loose relationship with the others, because they must interact: they are part of the same big purpose of the original monolithic application. In the e-commerce platform, the payment microservice must contact the accounting one to get information about the person who is paying; the microservice that saves items in a wish list must interact with the catalog microservice to understand which items are being saved.
+
+These relationships are no longer based on the invocation of functions, as in monolithic applications, but on \textbf{network communications}. The process of a microservice communicates with the process of another microservice through a network, which may also be the internal network of the server where they run, using virtualized networks in which no packets go outside of the server. Service boundaries therefore shift inter-component interactions from in-process function calls to network communication. The communications may follow different paradigms:
+
+\begin{itemize}
+\item \textbf{REST APIs}: a way to define programming interfaces according to some philosophies, based on the way resources are accessed (they are studied in more detail in the distributed systems programming course). Microservices commonly interact using request-response communication, frequently implemented with REST-style HTTP APIs;
+\item \textbf{gRPC}: an advanced version of remote procedure calls;
+\item in general, any paradigm based on the invocation of external services, with communications happening over the network.
+\end{itemize}
+
+This adds complexity, but it brings a benefit: microservices are small. Whenever one of them must be modified, only the source code of that microservice is changed and only that microservice is tested; the others are expected not to be impacted and, at most, one verifies that the REST API exposed by the modified microservice still works as expected. In the same way, scaling a microservice means duplicating it as many times as needed, without duplicating the other microservices, for which one instance each may be more than enough.
+
+\subsubsection*{The single-responsibility principle}
+\addcontentsline{toc}{subsubsection}{The single-responsibility principle}
+
+Microservices cannot be made smaller and smaller indefinitely: a criterion is needed to identify their proper size. This criterion is the \emph{single-responsibility principle} (SRP). A software module should be responsible to one, and only one, actor, where an actor is a group of stakeholders or users that requires a change in that module. Applied to microservices, the principle motivates creating services whose evolution is driven by a well-defined set of requirements and stakeholders, reducing cross-cutting changes across unrelated functions. In other words, each microservice should contain all the sub-functionalities required to perform one specific goal, one specific responsibility, completely implemented in it.
+
+\begin{notebox}
+	\textbf{Example.} The payment processing microservice should have everything needed for the successful operation of a payment, without requiring further sub-services below it (one for managing one specific type of card, another one for the others, and so on). The goal is one, managing payments, so the microservice should also be one. Otherwise two too fine-grained microservices are created, and making them interact becomes difficult, because communications would be excessive.
+\end{notebox}
 
 \subsection{Architectural consequences}
 
 In a monolith, the user interface, business logic, and data access layers are typically compiled and deployed together. In a microservices architecture, the user-facing component interacts with multiple back-end services, and each service can have its own data store. The resulting system resembles a network of services where each service exposes an API and can be scaled, updated, and deployed independently.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image174.png}
+\end{center}
+
+The figure shows the migration from a monolithic to a microservice architecture. In the monolithic architecture (right) everything is jointly coupled: a user interface, a business logic with many internal functions, and a data access layer with the database. In the microservice architecture (left) everything is separated. The user interface is the first access point of the users to the ecosystem of microservices, and as its backend there is typically an \textbf{API gateway}: a microservice responsible for receiving all the external requests and for understanding to which microservice each of them must be routed.
+
+Each microservice, after receiving a request, needs some information to provide an answer. Sometimes the information is local; other times it must contact another microservice to get it. In the previous example, the payment processing microservice contacts the accounts microservice to retrieve information about the person making the payment. These communications are the lines connecting the microservices in the figure: they may be calls to REST APIs, gRPC, or any other inter-process communication paradigm, but they always occur through a network. Each microservice listens on a certain port and sends messages through the corresponding socket.
+
+\subsubsection*{Database access}
+\addcontentsline{toc}{subsubsection}{Database access}
+
+There are several ways to manage the access to the databases:
+
+\begin{itemize}
+\item one (or two) microservice(s) are dedicated to database access, and all the other microservices must contact them whenever they need to write or retrieve data;
+\item (very common) most microservices access the database by themselves. The databases may be separate, or they may be only \emph{logical} separations of the same database, for example using control groups or namespaces to control the way the different processes use these resources or have visibility on them. Each microservice is one process, so the processes can be grouped with the features seen in the previous lecture.
+\end{itemize}
+
+\subsection{An example: Uber}
+
+The microservice paradigm is more and more used by big companies to create their applications. A well-known example is the Uber application, an app for booking rides in taxis, widely used all over Europe (perhaps less in Italy). Its sub-services include: passenger management, with all the information about passengers; payments, which allow consumers to pay the drivers; a part for the drivers, who declare their availability to be contacted by customers; notifications, such as pop-ups on the smartphones of the users; billing; and trip management, which allows any user to understand how much time is needed to go from a location to another.
+
+\begin{center}
+	\safeimg[width=5in]{media/image175.png}
+\end{center}
+
+In the original \emph{monolithic} version (left in the figure) all these sub-services were implemented in the source code of one single application. Everyone and everything had to contact this single application: drivers, passengers, the adapters related to the sub-services (for example the Stripe adapter for payments), and also the web user interface.
+
+In the current \emph{microservice-based} version (right in the figure) each sub-service is a separate microservice, that is, a separate process. The microservices interact with each other through inter-process communications such as REST APIs and gRPC, while the \textbf{API gateway} is the access point of external users (drivers or consumers) to the ecosystem: it redirects their API calls to the specific sub-services. Moreover, not every microservice communicates with all the others: the APIs exposed by each one are designed only for the microservices that need to interact with it. For example, trip management only provides REST APIs to the API gateway, for external users, who are interested in organizing a trip; the notification and payment sub-services are not interested in organizing trips, so the trip management microservice exposes no REST APIs for them.
+
+\subsection{Microservices versus monolithic architectures}
+
+The following table summarizes the comparison, which is explained in detail below.
+
+\begin{center}
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}@{}}
+\toprule
+\textbf{Characteristic} & \textbf{Microservices} & \textbf{Monolithic}\\
+\midrule
+Unit design & Loosely coupled services, each supporting a single business task (SRP) & One entire application\\
+Functionality reuse & Each microservice exposes APIs usable by any client, also other applications & Limited to the purposes for which the application was created\\
+Communication & Request-response through APIs (typically REST over HTTP) & Function calls\\
+Technological flexibility & Each microservice may use a different programming language & Typically a single programming language\\
+Data management & Centralized, or decentralized (each microservice with its own copy of the database) & Typically centralized access\\
+Deployment and scalability & Only the needed feature is scaled & The whole application is replicated at every copy\\
+Maintainability & Each microservice is independent and can be updated without interference & Testing must be repeated for any change\\
+Resiliency & The failure of one microservice leaves the others working & A problem takes down the whole process\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+\item \textbf{Functionality reuse.} A very big application is only useful for the purposes for which it was created. Each microservice, instead, can be used in the ecosystem of a different application: the payment processing microservice may serve the e-commerce platform and any other application that must manage payments. It is created once and reused anywhere, as long as its APIs are self-explanatory enough.
+\item \textbf{Communication.} In the monolithic version, sub-functions call each other with function calls, as in most software programming. Microservices typically use APIs such as REST APIs based on the HTTP protocol.
+\item \textbf{Technological flexibility.} A monolith is typically written in a single language, because otherwise it is difficult to let a function in one language invoke a function in another within the same source code. Microservices have no such limitation: each may be written in a different language, since what matters is that the processes can communicate over the network.
+\item \textbf{Data management.} Monoliths typically have centralized access to data; microservices may use a centralized one but, in many scenarios, a decentralized one in which each microservice contacts its own copy of the database.
+\item \textbf{Resiliency.} If the process of a monolith has a problem, the whole process is down and no longer accessible. If one microservice fails, all the others can continue to work, although in a limited way: if the payment microservice of the e-commerce platform fails, customers cannot pay, but they can still consult the catalog, save items in the wish list, modify their account information, and so on.
+\item \textbf{Scalability.} Each microservice can be scaled independently from the others, whereas in a monolith everything is scaled every time a copy of the process is created.
+\end{itemize}
+
 \subsection{Why containers fit microservices}
+
+Microservices may live on the same host and in the same operating system, but they should be loosely coupled, that is, as independent from each other as possible. \emph{How} can they be implemented?
+
+\begin{itemize}
+\item \textbf{Virtual machines.} Using VMs is still possible, but it is not the recommended solution. Microservices are designed to be small and lightweight, each corresponding to a very small number of lines of code; a virtual machine virtualizes the hardware and then the operating system, so it introduces more overhead than the resources required by the single microservice (the slide describes a VM as a server hosting multiple components: heavy and inefficient).
+\item \textbf{Containers.} The inefficiency is avoided by implementing microservices with containers: the processes representing the microservices are simply managed with cgroups and namespaces, without any additional overhead.
+\end{itemize}
 
 Containers provide a practical unit for packaging and executing microservices:
 
 \begin{itemize}
 \item \textbf{Self-contained deployment}: a container image bundles the service and its dependencies.
 \item \textbf{Low overhead}: many service instances can run on one host.
-\item \textbf{Fast start}: scaling a service can be accomplished by starting additional container instances.
-\item \textbf{Composability and replaceability}: service instances can be replaced frequently, facilitating rolling updates and rapid iteration.
+\item \textbf{Fast start}: scaling a service can be accomplished by starting additional container instances; it is enough to replicate the processes and put them in the same groups or namespaces as the ones related to the same feature.
+\item \textbf{Composability and replaceability}: service instances can be started, stopped and replaced easily, because containers are just groups of processes and there is no need to install an operating system every time one of them is activated. This facilitates rolling updates and rapid iteration.
 \end{itemize}
 
 \section{Operational challenges of microservices}
 
-While microservices improve modularity and independent deployment, they introduce operational complexity.
+While microservices improve modularity and independent deployment, they introduce operational complexity: new challenges arise because function calls can no longer be used for communication between components.
 
 \subsection{Communication and addressing}
 
-Microservices communicate over the network rather than using local interprocess communication mechanisms. Services therefore cannot assume that a dependency is reachable via localhost or shared memory. Instead, each service must locate other services using network addresses or names. If service instances scale dynamically, hard-coding addresses becomes infeasible.
+The first challenge concerns \emph{new programming paradigms}: microservices communicate over the network rather than using local interprocess communication mechanisms, so new paradigms such as REST APIs or gRPC are needed. Services cannot assume that a dependency is reachable via localhost or shared memory. Instead, each service must locate other services using network addresses or names (``which is the IP address of the database I need to connect to?''). If service instances scale dynamically, hard-coding addresses becomes infeasible.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image176.png}
+\end{center}
+
+The figure on the slide shows how many dependencies exist even in a small microservice application (a frontend that contacts checkout, cart, product catalog, currency, recommendation, advertisement services, and so on): each arrow is a network communication that must be found, kept reachable and, when instances change, updated.
 
 \subsection{Need for orchestration}
 
-Scaling microservices independently requires mechanisms to:
+The second challenge, not mentioned so far, is \emph{orchestration}. It is necessary to simplify the way microservices can reach each other and to simplify their management for human users. A human user cannot be expected to understand when a microservice must be scaled: all the decisions about providing communications for the microservices and about scaling them must be managed by automatic tools. These tools are the \textbf{orchestrators}, developed over the years to manage microservices and, in general, containers themselves. Scaling microservices independently requires mechanisms to:
 
 \begin{itemize}
 \item schedule service instances onto available machines,
@@ -296,58 +549,137 @@ These requirements motivate dedicated container orchestration systems.
 
 \section{Container deployment and orchestration}
 
+The deployment and orchestration of containers is not a trivial problem at all: it can be approached in different ways, with increasing levels of automation.
+
 \subsection{Manual deployment}
 
-A straightforward approach is to connect to machines and start containers manually. This approach has the advantage of simplicity and availability because it requires no additional tooling beyond remote access and the container runtime. However, it does not scale well, is difficult to reproduce reliably, and does not provide self-healing behavior.
+A first way to deploy, scale and maintain containers is to perform manual operations: a cloud administrator uses a protocol such as SSH to interact with the machines and the containers and runs some instructions to manage them. In computer networking and cloud computing manual configuration is always possible; one could do it, for example, for the ARP tables of the devices, even if it is not recommended, because IP addresses change continuously and a static ARP table is soon outdated. The same holds here.
+
+The advantage is simplicity and availability: the administrator does not need to choose the best tool, install it and learn how to interact with it, but reuses protocols like SSH, which are intuitive and which everybody has used in their work as cloud administrators. No additional tooling beyond remote access and the container runtime is required.
+
+The disadvantages are many. Operations are not automated, so a human must constantly understand how much traffic reaches each container and whether it must be scaled. Whenever a container has a problem, the user must understand why it happened and heal it, without \emph{self-healing} features, that is, automatic mechanisms that find the root cause of the problem if needed, kill the container and start another one of the same type. The approach is also difficult to reproduce reliably. Managing two or three containers manually may still be feasible (and not everyone needs to operate at scale, so this method may not be that bad), but in the context of a cloud provider it is completely impractical.
 
 \subsection{Deployment via scripting and configuration management}
 
-Automation can be introduced using configuration management systems or custom scripts. Such approaches improve reproducibility and integrate with existing operational environments. However, they often retain limitations such as manual scheduling decisions, limited portability across heterogeneous environments, and limited support for self-healing and cluster-wide policies.
+The first level of automation is a \emph{partial} automation via scripting. No orchestrator dedicated to the lifecycle management of all the containers is used; languages and tools such as \textbf{Puppet, Chef, Ansible and Salt} (or just custom-made scripts) allow writing \emph{reproducible} scripts, that is, sequences of code lines that repeat the same operations every time they are executed, and automate specific subroutines of container management. Such approaches improve reproducibility, integrate with existing operational environments, and give easily understood results.
+
+However, they retain several limitations:
+
+\begin{itemize}
+\item \textbf{manual scheduling} of the containers on the machines;
+\item \textbf{not scalable}, because someone must launch the script every time and understand that there is the need to activate it;
+\item \textbf{no self-healing}: when an issue occurs, the human must understand it and execute the remediation actions, so at most the remediation is automated, not the understanding of the issue;
+\item \textbf{generally not portable}, because scripts contain code related to a specific environment.
+\end{itemize}
+
+\begin{notebox}
+	\textbf{Scripts versus Dockerfile.} The scripts discussed here are scripts for \emph{managing} containers. A Dockerfile is a different thing: it is not a script for orchestrating Docker, but a script that provides the information needed to create \emph{one} container. Docker combines both: there is a script (the Dockerfile), which after some steps becomes a container, and then the containers are managed by a Docker orchestrator. The Dockerfile and the orchestrator are discussed separately in the following sections.
+\end{notebox}
 
 \subsection{Dedicated orchestrators}
 
-A dedicated orchestrator automatically matches containers to machines and manages lifecycle tasks. This can include scheduling based on resource needs, enforcing affinity constraints, managing replication, handling machine failures, and providing service discovery. Orchestrators introduce additional complexity and require operator training, but they enable scalable and automated operations.
+The best approach is a \emph{dedicated} orchestrator, that is, software specifically created for container management (not a generic software customized for it). A dedicated orchestrator automatically matches containers to machines, avoiding human intervention, and manages lifecycle tasks. This can include scheduling based on resource needs, enforcing affinity constraints, managing replication, handling machine failures, and providing service discovery. Examples:
+
+\begin{itemize}
+\item \textbf{Docker Swarm}, the orchestrator of the Docker ecosystem, in charge of managing the lifecycle of Docker containers;
+\item \textbf{Kubernetes}, which manages various types of containers with a very peculiar architecture (discussed in the next lecture). Today it is the \emph{de facto} standard for container orchestration, also because it can manage Docker containers themselves;
+\item \textbf{Mesos};
+\item home-grown systems: a very big company may create its own orchestrator, although this is not the case typically followed in enterprises.
+\end{itemize}
+
+The advantages are that everything can be automated, reproducible, scalable, portable and self-healing. The disadvantages are mainly the overhead of knowledge needed to understand how to use these tools, each of which must be used by human users and whose approach is not straightforward (in Kubernetes, for example, the way containers are deployed and interact is more complex than just providing a REST API and letting others contact them), and the fact that their outputs are more complex and not immediately intelligible. These cons are mostly limited to the training of the users: once a person has learned how to use an orchestrator, the advantages are much greater than those of manual or script-based orchestration.
+
+\begin{center}
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.16\linewidth}>{\raggedright\arraybackslash}p{0.38\linewidth}>{\raggedright\arraybackslash}p{0.38\linewidth}@{}}
+\toprule
+\textbf{Approach} & \textbf{Pros} & \textbf{Cons}\\
+\midrule
+Manual (SSH) & Simple, available everywhere, no special tools, easy to understand & Not automated, not reproducible, not scalable, not self-healing\\
+Scripting & Integrates with existing environments, easily understood results, reproducible & Manual scheduling, not scalable, not self-healing, generally not portable\\
+Dedicated orchestrator & Automated, reproducible, self-healing, scalable, generally portable & Some overhead, requires new tooling and training, more complex results\\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \subsection{Orchestration goals}
 
-Orchestration systems aim to provide a combination of essential and optional capabilities.
+Orchestration systems aim to provide a combination of essential (must-have) and optional (nice-to-have) capabilities. The list below is not exhaustive.
 
 \subsubsection*{Core goals}
 \addcontentsline{toc}{subsubsection}{Core goals}
 
 \begin{itemize}
 \item \textbf{Container lifecycle management}: start, stop, restart, and remove containers reliably.
-\item \textbf{Scheduling}: assign containers to machines based on resource requirements (CPU, memory), affinity constraints, and labels.
-\item \textbf{Replication}: run a specified number of replicas for fault tolerance and throughput.
-\item \textbf{Failure handling}: detect machine and process failures and reschedule workloads.
-\item \textbf{Discovery and inspection}: provide mechanisms to find services and to observe system state.
+\item \textbf{Scheduling}: deployment of the containers, that is, deciding which piece of hardware, which physical server, is the best one for each container, based on resource requirements (CPU, memory), affinity constraints, and labels. The research literature contains many scheduling algorithms that optimize different parameters (CPU usage, memory usage, communication latency, affinity requirements based on the functionalities of the containers, and so on). An orchestrator may embed several scheduling algorithms and a human decides which one is most suitable for the scenario in which the orchestrator is used.
+\item \textbf{Replication} (scalability): an automated mechanism to replicate a container and run a specified number of replicas for fault tolerance and throughput.
+\item \textbf{Failure handling} (self-healing): an automated mechanism to handle any failure of the containers or of the machines hosting them, rescheduling workloads.
+\item \textbf{Discovery}: automatic ways for each container to find the other containers in the same network.
+\item \textbf{Inspection}: constantly observing how the system works and reporting any problem to human users. In cloud computing it is also useful for \emph{billing}, since it gives an idea of how much traffic goes to which container.
+\item \textbf{Virtual networking}: managing the communication among containers (virtual networks and tenant isolation). The last theoretical lectures of the course (about four hours) are dedicated to virtual networking, with the paradigms \textbf{SDN} (Software Defined Networking) and \textbf{NFV} (Network Functions Virtualization), which provide ways for the automatic management of virtualized computer networks.
 \end{itemize}
 
-\textbf{Additional goals}
+\subsubsection*{Additional goals}
+\addcontentsline{toc}{subsubsection}{Additional goals}
+
+These are non-mandatory features, not implemented by all orchestrators (many of them, however, are implemented in Kubernetes, which is why it has become so common):
 
 \begin{itemize}
-\item \textbf{Virtual networking}: define virtual networks and tenant isolation for container communication.
 \item \textbf{Load balancing}: distribute traffic among replicas.
 \item \textbf{Automated updates}: perform rolling updates and rollbacks.
-\item \textbf{Autoscaling}: scale clusters and applications based on utilization and demand.
+\item \textbf{Autoscaling}: scale clusters and applications based on utilization and demand (cluster auto-scaling for better utilization, app auto-scaling to handle spikes and troughs).
 \item \textbf{Storage provisioning}: provide persistent storage abstractions.
+\item \textbf{Automatic restart}: restart an application when it crashed.
 \item \textbf{Late-binding configuration}: inject configuration at deployment time rather than baking it into images.
 \end{itemize}
 
 \section{Docker as a container platform}
 
-Docker is a widely used platform for building and running Linux containers. Although container-related technologies existed before its public release in 2013, Docker popularized containerization by emphasizing a developer-friendly workflow and portable image formats.
+Docker is a widely used platform for building and running Linux containers. It is more than a container implementation: it is an \emph{ecosystem}, a full suite of elements that specifically improve the user-friendliness of container management, and it is the first ecosystem that made the usage of containers popular all over the world.
+
+Today ``Docker'' and ``containers'' are sometimes used as synonyms, but they are not: Docker still uses Linux containers and enriches them with other features. The confusion arises because the userland of tools provided by Docker was much better than the one available with LXC containers by default, but containers existed years, even decades, before these tools were created. Container-related technologies existed before the public release of Docker in 2013; Docker \emph{democratized} containerization by bringing it to the masses through a developer-friendly and cloud-friendly implementation. Docker is built on the virtualization technology of LXC containers and provides more user-friendly features for developers to build, deploy and manage containers, accessible through simple commands and automated through an application programming interface (API).
+
+\begin{notebox}
+	\textbf{Security.} The Docker slides also list \emph{secure} among the advantages, but security, as usual, is not so strong when dealing with containers, and Docker does not provide much better security than normal LXC containers. Security is discussed in the second part of the course (second semester).
+\end{notebox}
 
 \subsection{Motivations and differentiating features}
 
-Docker extends traditional container mechanisms by focusing on:
+Compared with the traditional LXC containers discussed so far, Docker offers additional features.
 
-\begin{itemize}
-\item \textbf{Portability}: container images are designed to run without machine-specific configuration, enabling consistent execution across desktops, data centers, and cloud environments.
-\item \textbf{Granular packaging and update workflows}: images are built in layers that support reuse and efficient distribution.
-\item \textbf{Automation and APIs}: container build and runtime operations are exposed via a consistent command-line interface and a programmatic API.
-\item \textbf{Image distribution}: registries support storing, tagging, and sharing images.
-\end{itemize}
+\subsubsection*{Portability}
+\addcontentsline{toc}{subsubsection}{Portability}
+
+LXC containers are typically machine dependent: a container created for one operating system may work there but is not portable to others (perhaps to some, but not many). Docker makes it easier to move a container from one machine to another, even if they have different characteristics: container images run without machine-specific configuration across desktops, data centers, and cloud environments. In part, this is possible because some applications of the Docker ecosystem, such as \emph{Docker Desktop}, hide the presence of a virtual machine, with some peculiar characteristics, that allows running a Linux container; this is hidden from the user and done in the lightest way possible, to avoid consuming too many resources.
+
+\subsubsection*{Granular updates}
+\addcontentsline{toc}{subsubsection}{Granular updates}
+
+Each microservice can be maintained independently because microservices are separate containers. With Docker, however, one can also put several processes in a single container and modify one of them while the others continue to work as expected: granular updates are possible \emph{inside} the container itself. With LXC, instead, several processes can be combined in a container, but they can only be controlled as a group from the outside.
+
+\subsubsection*{Automated orchestration}
+\addcontentsline{toc}{subsubsection}{Automated orchestration}
+
+Docker allows automated container orchestration thanks to the \textbf{Docker Swarm} orchestrator. According to the slides, Swarm is integrated with Docker and mainly developed by the same company, focuses on ease of use and easy setup, scales to thousands of machines, but its use is shrinking nowadays. Using Swarm is not necessary: a single user who wants to activate one container can do it manually with the \texttt{run} command, starting the container from an image (the \texttt{run} can be executed manually or by an orchestrator). A cloud provider, on the other hand, needs an orchestrator such as Swarm, because activating all the containers manually is unfeasible.
+
+\subsubsection*{Automated container creation}
+\addcontentsline{toc}{subsubsection}{Automated container creation}
+
+Docker can automatically build a container based on the application source code, through the Dockerfile described below.
+
+\subsubsection*{Container versioning}
+\addcontentsline{toc}{subsubsection}{Container versioning}
+
+Docker can track the versions of the changes applied by a developer to an application. This information is stored in an object called \emph{image}: a read-only piece of information that contains all the layers of the previous changes and allows restoring, or rolling back, to a previous version whenever needed. Each layer tracks how binaries, code, etc.\ were modified with respect to the previous versions, so one can simply go back to a previous one because everything about the changes is known, in a way similar to commits on a GitHub repository. Docker can also trace who built a version and how, and upload only the deltas between an existing version and a new one.
+
+\subsubsection*{Shared container libraries}
+\addcontentsline{toc}{subsubsection}{Shared container libraries}
+
+The main reason why Docker became successful is that it provides shared container libraries, such as the Docker registry. Each developer can make available to the others, through images, the containers they have created, and anybody who wants to create a container does not need to start from scratch: they can take an image pre-created by another developer and slightly modify it. For example, to modify something in an Apache container, one takes an image provided by someone who has already added all the dependencies needed to run Apache and adds just some lines of code to alter its behavior slightly. This starts from a very pre-built knowledge for the creation and management of containers, something that could never be done with standard LXC containers.
+
+\begin{notebox}
+	\textbf{An analogy.} A registry works like a library of functions used to develop programs: it is a library of ``partial containers'', the container images, that can be reused to build one's own.
+\end{notebox}
 
 \subsection{Key concepts and components}
 
