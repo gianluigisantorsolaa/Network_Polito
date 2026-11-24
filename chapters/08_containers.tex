@@ -683,32 +683,59 @@ The main reason why Docker became successful is that it provides shared containe
 
 \subsection{Key concepts and components}
 
-Docker-based systems are commonly described using a set of core terms.
+Docker-based systems are commonly described using a set of core terms: Dockerfile, Docker images, Docker containers, Docker daemon and Docker registry. They are the basic entities of the Docker ecosystem, managed by the Docker daemon with the help and support of the Docker registry. The chain that leads from the description of a container to a running container has three steps, which are explained in the following paragraphs.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image177.png}
+\end{center}
 
 \subsubsection*{Dockerfile}
 \addcontentsline{toc}{subsubsection}{Dockerfile}
 
-A Docker image is typically built from a text file called a \emph{Dockerfile}. A Dockerfile specifies instructions that the Docker engine executes to assemble an image. The instruction set is extensive but standardized, so builds are reproducible across environments.
+A Docker image is typically built from a text file called a \emph{Dockerfile}. The Dockerfile is the basic element from which one starts to define how a container should behave: it is a very simple and user-friendly file in which a sequence of instructions specifies how the container image has to be created when the file is built. If a container must run a certain software, which requires specific dependencies, binaries and libraries, the Dockerfile is the place in which all of this must be written: that the software is going to be installed and that these binary dependencies and libraries are needed to make it work. Afterwards the Docker daemon, a process of the Docker engine, takes the Dockerfile and creates a Docker image starting from it.
+
+A Dockerfile specifies instructions that the Docker engine executes to assemble an image. The instruction set is extensive but standardized, so builds are reproducible across environments. Writing a Dockerfile does not require any specific knowledge beyond the common commands of the Linux command line interface, because the Dockerfile is a series of command line interface instructions, which the Docker engine (specifically the Docker daemon process) parses in order to assemble the final image.
 
 \subsubsection*{Images and layers}
 \addcontentsline{toc}{subsubsection}{Images and layers}
 
-A Docker \emph{image} is a read-only template that contains application code and all required dependencies. Images are composed of \emph{layers}, where each layer represents a build step. When changes are made, a new top layer is created. Previous layers remain available for reuse and rollback.
+A Docker \emph{image} is a read-only template that contains application code and all required dependencies. It is created by invoking the \texttt{build} command on the Docker daemon, which automatically builds it starting from the Dockerfile. The image is \emph{not} the active container: when the Dockerfile is written one is not yet ready to instantiate the container, the image must be created first. It is a pre-assembled, passive entity, as if one had a bundle of all the software ready to be executed, but not executed yet.
+
+Building the image from one's own Dockerfile is possible, but today it is not the standard procedure. A very large number of Docker images are available in open-source repositories, the \emph{Docker registries}, to which the developers who created them have pushed them. The standard way to create an image is to \emph{pull} an already existing image from a registry and add what is needed, such as a new dependency or new configuration parameters of the main software. In this way one does not reinvent the wheel every time, rewriting the full Dockerfile, but takes an existing image and adds only the bit of information required to provide more features. Moreover, many images shared in the registries have a lot in common in their stack: whenever there is an issue in the common part, it is enough to apply some changes to the so-called \emph{base image} from which all of them started, and all of them get the variation immediately, because the modification is reflected on all the images that share the same base.
+
+Images are composed of \emph{layers}, where each layer represents a build step. Any time a modification is applied to an image (the one built from a Dockerfile, or one pulled from a registry and extended) a new top layer is created, and previous layers remain available for reuse and rollback.
+
+\begin{notebox}
+	\textbf{Layers and git.} A layer can be thought of as a commit in a git repository: a commit contains the information about the differences of the new files with respect to the previous ones, and in the same way every layer specifies how the things that were included earlier have been modified. As with a git repository, one can \emph{roll back} to previous commits if not satisfied by the newer ones: with Docker, at any time one can return to the configuration of the image given not by the top layer, but by an intermediate or by the bottom one.
+
+	\medskip
+	This also gives higher flexibility in \emph{reusing} an image. Another developer is not required to start from the top layer: one may start from the bottom (the vanilla image), another from an intermediate layer, because perhaps they do not want the latest features introduced in the last layer, which may be too invasive in terms of memory usage. Every intermediate layer is therefore a possible starting point, a possible new base image to create new ones.
+\end{notebox}
 
 \subsubsection*{Containers}
 \addcontentsline{toc}{subsubsection}{Containers}
 
-A Docker \emph{container} is a running instance of an image. Containers are ephemeral in the sense that they are intended to be disposable and recreatable. Users can interact with containers, and administrators can adjust runtime settings using Docker commands.
+A Docker \emph{container} is a running instance of an image. To summarize: Docker images are just the software of the main program of the container (binaries, dependencies and libraries packaged together), which is similar to the definition of container given in the introduction to containerization, but they are not containers, because they are passive, read-only entities that are not running. When the \texttt{run} command is invoked on the Docker daemon for one image, the next step of the chain is performed: from the read-only image a container is created, which is a live, running instantiation of the software with the dependencies specified in that image.
+
+The image can therefore be seen as a \emph{blueprint} to instantiate containers, and as many containers as needed can be instantiated from a single image. Every time a new one is needed there is no need to repeat the whole process of writing the Dockerfile and building it: it is enough to take the image and ask the Docker daemon to run a corresponding container. This can be done also days, weeks or years after the image was built. Containers are ephemeral in the sense that they are intended to be disposable and recreatable. Users can interact with containers, and administrators can adjust runtime settings using Docker commands.
+
+From the technological point of view, Docker containers are based on the same concepts seen for LXC containers: at low level they use namespaces and control groups to provide resource visibility control and resource usage limitation for the groups of processes combined inside one container. The low-level features are the same, but with respect to LXC containers there is no need for a human user who specifies the sequence of commands for the containers themselves: the intermediate passage through the Docker image provides an easier instantiation.
 
 \subsubsection*{Docker daemon and host}
 \addcontentsline{toc}{subsubsection}{Docker daemon and host}
 
-The Docker \emph{daemon} is a service that creates and manages images and containers. The machine on which the daemon runs is the Docker \emph{host}. Clients interact with the daemon through a local or remote API.
+The Docker \emph{daemon} is a service that creates and manages images and containers. It is an essential process of the Docker engine, in charge of answering all the commands coming from the client (all the operations of building and running are managed by it). The machine on which the daemon runs is the Docker \emph{host}. Clients interact with the daemon through a local or remote API.
+
+\begin{notebox}
+	\textbf{Remember the pair daemon/host.} These two names are also used in other platforms, including Kubernetes itself, as we will see below.
+\end{notebox}
 
 \subsubsection*{Registries}
 \addcontentsline{toc}{subsubsection}{Registries}
 
-A Docker \emph{registry} is a storage and distribution system for images. Images are organized into repositories and identified using tags. Registries enable version tracking and sharing of images, including incremental uploads of changes.
+A Docker \emph{registry} is a scalable, open-source storage and distribution system for images that any developer can access, to \emph{push} images after building them from their own Dockerfiles or to \emph{pull} images pushed by other developers. Images are organized into repositories and identified using tags. The existence of the registries created a community of developers who continuously help each other by providing images: nowadays nobody starts a Dockerfile from scratch. In the worst case one starts from the image of an already existing operating system such as Ubuntu; in most cases one starts from quite pre-configured images and just customizes them with new Dockerfiles that start from them.
+
+Registries also allow tracking the changes of the different images by looking directly at their layers, and this is based on \emph{git} as the tracking tool. They enable version tracking and sharing of images, including incremental uploads of changes.
 
 \subsection{Workflow: Dockerfile to image to container}
 
@@ -719,6 +746,75 @@ A typical workflow is:
 \item build an image from that Dockerfile,
 \item run one or more containers from the image.
 \end{enumerate}
+
+\subsubsection*{A Dockerfile example: MongoDB on Ubuntu}
+\addcontentsline{toc}{subsubsection}{A Dockerfile example: MongoDB on Ubuntu}
+
+The slides show a Dockerfile that contains the most common instructions that are written before building. Its goal is to create a container running one instance of the MongoDB database, starting from an Ubuntu image.
+
+\begin{codeblock}
+# Dockerfile to build MongoDB container images, based on Ubuntu
+
+# Set the base image to Ubuntu, with a specific tag (1910)
+FROM Ubuntu:1910
+
+# File Author / Maintainer
+MAINTAINER Example McAuthor
+
+# Update the repository sources list.
+RUN apt-get update
+
+################## BEGIN INSTALLATION ######################
+# Add the package verification key
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+
+# Add MongoDB to the Ubuntu default repository sources list
+RUN echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' \
+    | tee /etc/apt/sources.list.d/mongodb.list
+
+# Update the repository sources list once more
+RUN apt-get update
+
+# Install MongoDB package (.deb)
+RUN apt-get install -y mongodb-10gen
+
+# Create the default data directory
+RUN mkdir -p /data/db
+##################### INSTALLATION END #####################
+
+# Expose the default port
+EXPOSE 27017
+
+# Default port to execute the entrypoint (MongoDB)
+CMD ["--port 27017"]
+
+# Set default container command
+ENTRYPOINT usr/bin/mongod
+\end{codeblock}
+
+\begin{itemize}
+\item \textbf{FROM}: almost all Dockerfiles start with this command, which specifies the \emph{base image} from which the new image is created. Here an Ubuntu image with the tag 1910 is selected, which already has some dependencies for software to run on Ubuntu. This avoids replicating all the commands already specified in the Dockerfile from which that image was created. This base image is a straightforward one, but one may select a base image that already contains the installation of a web server, a database, etc., that is, a sort of pre-prepared platform.
+\item \textbf{Metadata}: for example the \texttt{MAINTAINER}, which can be considered the author of the Dockerfile.
+\item \textbf{Basic commands}, such as the update of the APT repository, as is usually done when installing libraries or tools from the command line of Debian-based operating systems.
+\item \textbf{RUN}: the main part of the Dockerfile is a sequence of command line instructions prefaced by the \texttt{RUN} keyword. Each is a command that the Docker daemon executes, in order, when it must \emph{build} the image, that is, when it prepares the passive, prepackaged platform that will later be instantiated as a container. Here: first the package verification key is added, then MongoDB is added to the Ubuntu default repository source list, the APT repository is updated again, the MongoDB package is installed and the default directory for making it work is created. These instructions are \emph{not} executed when they are written, but later, when the image is built.
+\item \textbf{Configuration of the future container}: besides the installation instructions, the first configuration instructions for the active container can be written. Here the port on which the MongoDB database service will listen is specified: 27017.
+\end{itemize}
+
+After the Dockerfile has been prepared, the image is built with the \texttt{docker build} command:
+
+\begin{codeblock}
+docker build --pull -t mymongo .
+\end{codeblock}
+
+\texttt{-{}-pull} requests to execute the build starting from the latest version of the image that is available, for example from the Docker registries; \texttt{-t} specifies the name of the image to create (here an image named \texttt{mymongo}); the final dot is the current folder, in which the Dockerfile is searched, but any path where the Dockerfile is located can be specified.
+
+\begin{notebox}
+	\textbf{Does the daemon check the Dockerfile?} No. The Docker daemon does not perform any check: it just takes what is written in the Dockerfile or in the corresponding image and tries the instantiation. At most the \texttt{run} fails, for example because the port is not available. Additional checks can be performed by auxiliary tools and also by the \textbf{Docker Swarm} orchestrator, which checks the life cycle and may verify, for example, the availability of the port on which a service must listen, and in some cases may even apply variations if allowed by the administrator of the orchestrator. Extra checks can also be added by the user, but then they are native in the image itself, completely customized for the scenario and written by a human, not managed automatically by an orchestrator. This is feasible, because anything that can be written in a batch script with command line commands can be rewritten in the Dockerfile, but it means writing more and having more difficulty in keeping everything under control.
+\end{notebox}
+
+\begin{notebox}
+	\textbf{Base image versus operating system.} A base image such as Ubuntu is \emph{not} the full operating system: it only contains the minimum amount of libraries (drivers, libraries) that enable the Docker container to run on an Ubuntu-based operating system, that is, the compatibility requirements. The container should therefore preferably run on an Ubuntu host, because it shares the kernel of the Ubuntu operating system. If this is not possible, the \emph{Docker Desktop} application hides the presence of a virtual machine containing the operating system needed: a user on Windows can install Docker Desktop and launch the container built from the Dockerfile, which works because Docker Desktop hides a virtual machine that virtualizes a full computer with Ubuntu. The user friendliness is higher, but one goes back to full virtualization in these conditions.
+\end{notebox}
 
 The following example illustrates a minimal Dockerfile for a Python web service. It demonstrates the principle of declarative build steps, dependency installation, and container startup command.
 
@@ -739,13 +835,28 @@ The port value 8080 is written in a monospaced typeface because it is a computer
 
 A Docker deployment is commonly organized into a client, a daemon running on the host, and one or more registries.
 
+\begin{center}
+	\safeimg[width=4.5in]{media/image178.png}
+\end{center}
+
 \begin{itemize}
-\item The \textbf{client} issues commands such as build, pull, and run. Commands may be executed locally on the host or transmitted to a remote daemon.
-\item The \textbf{daemon} receives commands, builds images, pulls images from registries, and runs containers.
+\item The \textbf{client} issues commands such as build, pull, and run. The access point to the Docker host, where the engine runs, is the Docker daemon, which a user can interact with through a command line interface, remote APIs or, today, tools based on a graphical user interface. Commands may be executed locally on the host or transmitted to a remote daemon.
+\item The \textbf{daemon} receives commands, builds images, pulls images from registries, and runs containers. When the client requests the build of a Dockerfile, the daemon accesses the file system of the Docker host to read it and create the corresponding image, which most likely is then put in the Docker registry. When the client asks to \emph{pull} an existing image, the Docker host, through the daemon, interacts directly with the registry to extract it. Whenever the client wants to \emph{run} an image, taken from the registry or from a local file system, the daemon is again the service in charge of making it active.
 \item The \textbf{registry} stores images. When an image is pulled, layers are downloaded and cached.
 \end{itemize}
 
-In this arrangement, the daemon acts as the control center: it maintains local image storage, starts and monitors containers, and mediates network and storage integration.
+In this arrangement, the daemon acts as the control center: it maintains local image storage, starts and monitors containers, and mediates network and storage integration. It is the basic fundamental block of everything, in charge of \emph{almost} everything: building images, interacting with the registries and instantiating containers.
+
+\begin{notebox}
+	\textbf{The Docker daemon is not an orchestrator.} It does not provide any of the features that characterize a container orchestrator: it does not manage the full life cycle of the containers, it does not provide self-healing when a container crashes, it does not check the memory and CPU usage of each container to verify that they reflect some required quotas. The list of must-have and nice-to-have features of an orchestrator seen in the previous lecture is almost entirely missing, simply because the daemon is not an orchestrator.
+
+	\medskip
+	In the Docker ecosystem the orchestrator is another piece of software, \textbf{Docker Swarm}, created by the developers of the ecosystem to interact natively with the Docker daemon and all the other elements of the system. With it there is no need to write scripts to run containers any more: one specifies the number of containers wanted and some requirements in terms of memory and CPU usage, and everything is set up and maintained automatically over time.
+\end{notebox}
+
+\begin{notebox}
+	\textbf{A paradox.} Docker containers are today among the most commonly used containers, but Docker Swarm, which should be the native orchestrator, is \emph{not} the most commonly used one. Over the last 10--15 years another orchestrator got much more popular, thanks to a lot of nice features that were introduced there and that Swarm lacks. It is also supported by a very active community of developers on open-source repositories, and it has been adopted by the big players of cloud computing, starting from Google, Amazon and Microsoft. It is almost definable as the \emph{de facto} orchestrator choice for containers, so even when Docker containers are used they are orchestrated with this other orchestrator: \textbf{Kubernetes}. In the laboratory activities the students will not start by writing a Dockerfile: they will first pull a Docker image from the registry, then modify it and instantiate it to see how everything works in practice.
+\end{notebox}
 
 \section{Why orchestration becomes necessary}
 
@@ -761,61 +872,95 @@ These concerns motivate orchestration systems that provide a declarative control
 
 \section{Kubernetes as a container orchestration platform}
 
-Kubernetes (often abbreviated as k8s) is a container orchestration platform for scheduling and automating the deployment, management, and scaling of containerized applications. Kubernetes is designed as a composable system that can manage large clusters and has been widely adopted.
+Kubernetes is a container orchestration platform for scheduling and automating the deployment, management, and scaling of containerized applications. It manages the full life cycle of containers, from their deployment and management to self-healing, or the stopping of a container when it is no longer needed, providing the flexibility and scalability required by any cloud provider: for this reason a large majority of cloud platforms are today based on Kubernetes. Kubernetes is designed as a composable system that can manage large clusters and has been widely adopted.
+
+\begin{notebox}
+	\textbf{Why ``k8s''?} Kubernetes is often abbreviated as \emph{k8s}. The name is obtained by keeping the first and the last letter and putting in between the number of letters omitted: K, then eight letters (u, b, e, r, n, e, t, e), then s. Whoever does not like it can pronounce the full name (\emph{coo-ber-net-ees}, also when it is shortened as k8s).
+\end{notebox}
+
+Kubernetes derives from platforms developed by Google (Borg and Omega), and being directly backed by Google is part of the reason why it became so powerful and successful. The slides also list the following characteristics: it is designed to be composable, it is more complex than some others, it scales to thousands of machines, it had a very rapid adoption and it has a large community of thousands of developers. Even more than for Docker, technical information is required to understand how it works in practice: that is why the laboratory activity on Kubernetes is important.
+
+The study of Kubernetes has two goals. The first, and the most crucial, is to understand at high level its \emph{architecture}. It is quite complex and very peculiar: with Docker Swarm there is one software running on the Docker host and all the containers run on the same machine managed by it, whereas Kubernetes introduces many extra terms and extra actors that are not found in any other container orchestration. The architecture is \emph{modular}, and it is useful to see how its actors map to what is already known about Docker creation, management and deployment. The second goal is to see the main goals that Kubernetes, as an orchestrator for cloud computing, is able to achieve, most of which have already been mentioned: it is a systematization of knowledge already acquired.
 
 \subsection{Cluster model}
 
-A Kubernetes system is organized as a \emph{cluster} composed of multiple \emph{nodes}. Each node represents a compute host, which may be a physical machine or a virtual machine. Cluster operations are typically managed via kubectl, a command-line interface that communicates with the Kubernetes API.
+A Kubernetes system is organized as a \emph{cluster} composed of multiple \emph{nodes}. Each node represents a compute host, which may be a physical machine or a virtual machine. This is already different with respect to other platforms: in Kubernetes the set of compute hosts may be full virtual machines (not containers) or traditional physical hosts. Cluster operations are typically managed via kubectl, a command-line interface that communicates with the Kubernetes API.
+
+\begin{center}
+	\safeimg[width=5in]{media/image179.png}
+\end{center}
 
 A cluster logically separates:
 
 \begin{itemize}
-\item a \textbf{control plane} that exposes the API and coordinates global decisions such as scheduling,
-\item and \textbf{worker nodes} that run application workloads.
+\item a \textbf{control plane} that exposes the API and coordinates global decisions such as scheduling. It runs on one node of the cluster, the \textbf{master node}: a sort of brain of the platform that manages all the nodes of that cluster;
+\item and \textbf{worker nodes} that run application workloads. By themselves they do not provide extra intelligence: they are in charge of executing the commands that come from the control plane, that is, from the master node.
 \end{itemize}
+
+The figure shows, on the left, one master node (a physical computer or a virtual machine) and three worker nodes (physical computers, virtual machines or a combination of them). The user does \emph{not} interact directly with the worker nodes, but only with the master node, typically with the command line tool \texttt{kubectl}, which gives access to the Kubernetes API server running on the master node.
+
+A data center may host \emph{multiple clusters}, each with its single master node and multiple worker nodes, and, if desired, a top-level orchestrator that provides decisions to the local clusters.
 
 \subsection{Control plane responsibilities}
 
-The control plane oversees nodes and manages workload scheduling. It maintains cluster state and drives the actual system towards a desired state specified by users.
+The control plane oversees nodes and manages workload scheduling. It maintains cluster state and drives the actual system towards a desired state specified by users. All the decisions about the scheduling, activation and stop of containers are taken at the level of the master node, but they are implemented by the worker nodes.
 
 The control plane commonly includes:
 
 \begin{itemize}
-\item \textbf{API server (kube-apiserver)}: the front-end that exposes the Kubernetes API.
-\item \textbf{State store (etcd)}: a key-value store that holds cluster state.
-\item \textbf{Scheduler (kube-scheduler)}: assigns pods to nodes based on constraints and available resources.
-\item \textbf{Controllers}: reconcile actual state with desired state by continuously observing resources and taking actions.
+\item \textbf{API server (kube-apiserver)}: the front-end that exposes the Kubernetes API. It accepts the requests of the user, interacts with the other modules of the same master node and gives commands to the worker nodes. The name may recall the API gateway seen for microservices, but it covers a different role.
+\item \textbf{State store (etcd)}: a key-value (database) service that holds the cluster state, keeping track of the current state of the whole cluster.
+\item \textbf{Scheduler (kube-scheduler)}: the software that understands which is the best compute host, among the worker nodes, on which a container requested by a user should be activated, and assigns pods to nodes based on constraints and available resources. It may adopt different scheduling algorithms, for example giving priority to the compute host on which fewer resources have been used, or trying to put containers with many communication requirements on the same host, to avoid many communications over the internal network. Since the architecture is modular, a developer can extend the scheduler of the master node with a custom scheduling algorithm without modifying any other part. When a new container must be instantiated, the API server interacts with the scheduler to find the best compute host.
+\item \textbf{Controllers (controller manager)}: reconcile the actual state with the desired state by continuously observing resources and taking actions. The controller manager oversees the life cycle of all the containers already activated and requests the modifications from the worker nodes when needed. If a container fails, it notices it, updates the status and requests, through the API server, the activation of a new replacing container.
+\item \textbf{Cloud controller manager} (optional): a more user-friendly interface to oversee everything when one does not want to use only \texttt{kubectl} to interact with the API server. It is not mandatory and not the main element of the architecture: it serves user friendliness more than functionality.
 \end{itemize}
 
-Conceptually, users and automation systems interact with the API server. The scheduler and controllers act on the resulting desired state, while nodes report status back to the control plane.
+\begin{center}
+	\safeimg[width=3.6in]{media/image181.png}
+\end{center}
+
+Conceptually, users and automation systems interact with the API server. The scheduler and controllers act on the resulting desired state, while nodes report status back to the control plane. In the figure of the master node the API server interacts with every other element: there is no direct communication between two other elements without the intermediation of the API server itself.
 
 \subsection{Node agents and runtime}
 
-Worker nodes run agent processes that implement the control plane directives.
+Worker nodes run agent processes that implement the control plane directives. There must be a way of interaction between the API server of the master node and the worker nodes.
 
 \begin{itemize}
-\item \textbf{Kubelet}: communicates with the API server, receives pod specifications, and ensures the corresponding containers are running.
-\item \textbf{Container runtime}: pulls images from registries and creates and runs containers. Historically Docker was widely used, but Kubernetes supports multiple runtimes.
-\item \textbf{Kube-proxy}: manages network rules on the host to implement service networking abstractions.
+\item \textbf{Kubelet}: runs on each worker node, communicates with the API server of the master node, receives requests (pod specifications), ensures the corresponding containers are running, and sends the final reply to the API server. It also provides the telemetry information about the status of the single worker node, so that the controller manager can take global decisions with a comprehensive view of the whole cluster.
+\item \textbf{Kube-proxy}: runs on each worker node. On the one hand, it takes control of the life cycle of the containers within the single worker node, so that they cannot interfere with the others; on the other hand, it configures some security-oriented parameters such as the network policies, that define which containers can communicate with which others, and manages network rules on the host to implement service networking abstractions.
+\item \textbf{Container runtime}: a service that allows the creation and destruction of containers, preferably present on each worker node. Historically Docker was widely used, and Kubernetes supports multiple runtimes. In this role the \emph{Docker daemon} is a worker process that runs containers every time it gets commands from the master node. Docker Swarm would be redundant here, because the orchestration is already provided by the modular components of the master node. The instructions that earlier came from the user (when only Docker was discussed) now come from the API server: the scheduler decides where to put each container, the API server creates the request and sends it to the kubelet, and the kubelet sends it to the Docker daemon of that node.
 \end{itemize}
 
 \section{Kubernetes object model}
 
 Kubernetes represents workloads and configuration as objects. Users define objects in a declarative format, and the system attempts to realize the declared state.
 
+\begin{notebox}
+	\textbf{Imperative versus declarative languages.} In an \emph{imperative} language the full course of action that should be performed to reach a goal has to be specified. For example, in security: ``block port 80 for the server hosted at the IP address 130.192.10.1'' would require installing a firewall (a packet filter) in the middlebox connected to the gateway of the subnetwork, giving all the information on the addresses and also providing the configuration of this packet filter. In a \emph{declarative} language the same command is just ``I want to achieve the goal of blocking this port for that server'', without specifying how the goal is achieved.
+
+	\medskip
+	Kubernetes follows the declarative philosophy: whenever pods, containers or deployments are wanted, declarative files are created that only state the goals, and the different elements of the master node, in collaboration among them, decide the best course of action for the specific platform.
+\end{notebox}
+
 \subsection{Pods}
 
-A \emph{pod} is the basic execution unit of a Kubernetes application. It is the smallest object in the Kubernetes model that can be created and deployed. A pod contains one or more containers that cooperate to perform a function and that share certain resources.
+A \emph{pod} is the basic execution unit of a Kubernetes application. It is the smallest and simplest object in the Kubernetes model that can be created and deployed: the basic execution unit of any application running on a worker node. A pod contains one or more containers that cooperate to perform a function and that share certain resources.
+
+By the definition of the Kubernetes standard, a pod is one container \emph{or} a group of containers serving the same functionality (for example providing load balancing among them), so it would be incorrect to say that a pod is one container. In reality, however, for simplicity and to ease the management of the clusters, in the majority of cases (roughly 90--95\%) a pod corresponds to a single container.
+
+\begin{center}
+	\safeimg[width=4.5in]{media/image180.png}
+\end{center}
 
 Key properties of pods include:
 
 \begin{itemize}
-\item \textbf{Single-node placement}: a pod is scheduled to exactly one node and its containers run on that node.
+\item \textbf{Single-node placement}: a pod is scheduled to exactly one node and its containers run on that node. This is a strict requirement, whatever the pod is: if a pod is made of three containers, they cannot be split among different worker nodes, and a single container cannot use the CPU of one compute host and the memory of another. In the figure there are two worker nodes governed by the master node, each with two pods of two containers each, and no pod crosses two worker nodes.
 \item \textbf{Shared context}: containers in a pod can share network identity and storage volumes, enabling sidecar patterns such as log shipping or proxying.
 \item \textbf{Process analogy}: a pod plays a role analogous to a process in an operating system, in the sense that it is the unit scheduled by the system and represents a running workload instance.
 \end{itemize}
 
-The following YAML specification illustrates a simple pod running an nginx container, exposing a port and mounting an ephemeral volume for logs.
+The following YAML specification illustrates a simple pod running an nginx container, exposing a port and mounting an ephemeral volume for logs. The only thing specified is how the pod must be structured: a pod corresponding to the nginx-based image, whose container listens on the port 8080 with TCP as transport protocol (and HTTP as application protocol).
 
 \begin{codeblock}
 apiVersion: v1
@@ -843,9 +988,11 @@ spec:
 
 The field containerPort: 8080 indicates that the container listens on port 8080 for TCP traffic.
 
+This definition of a pod is, however, a \emph{passive} definition: it does not request the instantiation of the pod. It only says that pods of this type, named nginx and with this label, use the image (like a Docker image) written in the \texttt{spec: containers} part of the file.
+
 \subsection{Deployments}
 
-Pods are typically managed by higher-level controllers. A \emph{Deployment} declares a desired state for a replicated set of pods, such as running a fixed number of replicas of an application. The deployment controller then creates and updates pod replicas to converge to the desired state.
+To \emph{instantiate} pods another Kubernetes resource is needed: the deployment. Pods are typically managed by higher-level controllers. A \emph{Deployment}, a YAML declarative file, is used to roll out pods based on the goals and requests of the user: it declares a desired state for a replicated set of pods, such as running a fixed number of replicas of an application. The deployment controller then creates and updates pod replicas to converge to the desired state.
 
 A deployment supports:
 
@@ -856,7 +1003,7 @@ A deployment supports:
 \item \textbf{Pause and resume}: controlling the progress of updates.
 \end{itemize}
 
-The following YAML specification illustrates a deployment of three replicas of an nginx container.
+The following YAML specification illustrates a deployment of three replicas of an nginx container: the user creates a resource named nginx-deployment whose goal is to replicate three times, that is, to instantiate three containers for the pod named nginx defined in the previous file.
 
 \begin{codeblock}
 apiVersion: apps/v1
@@ -884,7 +1031,11 @@ spec:
 
 In this specification, the selector matches pods labeled app: nginx. The template describes the pod to be replicated.
 
+Note that there is no specification of which worker nodes must host these containers, nor of how or when they must be activated: all these decisions are left to the master node. The controller of the master node tries to reach the goal as soon as possible, understanding the current situation of the cluster and scheduling the containers in order to meet all the requirements and goals specified in the declarative file.
+
 \subsection{Services}
+
+After the pods are rolled out through deployments, they do not have, by default, an IP address by means of which they can be reached. To make them reachable (also from the outside) addresses must be assigned, and this is done by creating another Kubernetes resource, the \emph{Service}. The term is used in a peculiar way with respect to application development: a service is a resource that groups similar deployed pods so that they receive traffic under the same name or the same IP address. In general services are created together with deployments: the pods are rolled out and then they are allowed to receive traffic with a service. Their main goals are to assign IP addresses (also static ones) and to configure load balancing.
 
 A \emph{Service} provides a stable network endpoint for a set of pods. Because pods are ephemeral and their IP addresses can change when they are rescheduled, services decouple clients from pod identities. A service selects pods using labels and can implement load balancing across the selected pods.
 
@@ -896,7 +1047,7 @@ Services commonly provide:
 \item load balancing among pod backends.
 \end{itemize}
 
-The following YAML specification illustrates a cluster-internal service that targets pods labeled app: nginx. It exposes a service port and forwards traffic to a target port on pods.
+The following YAML specification illustrates a cluster-internal service that targets pods labeled app: nginx. It is a \emph{ClusterIP} service, which does not provide load balancing by itself but simply provides an IP address: all the containers that match the selector are reachable with the IP address 10.96.0.100. It is just a resource that enables a pod, a group of containers, to receive traffic under a specific IP address.
 
 \begin{codeblock}
 apiVersion: v1
@@ -916,9 +1067,13 @@ spec:
 
 In this example, the service uses the cluster-internal IP address 10.96.0.100. The service receives TCP traffic on port 8080 and forwards it to port 80 on the selected pods.
 
+Pods, deployments and services are managed on the worker nodes by the \emph{kubelet}, which communicates with the Kubernetes API server of the master node and gets the requests, and by a container runtime such as the Docker daemon process, which activates, stops and scales the containers as needed.
+
 \section{Network policy}
 
-Kubernetes provides a \emph{NetworkPolicy} object to implement network access control between pods. A network policy specifies allowed flows by describing selectors and layer 3 and layer 4 parameters.
+Each worker node also runs a kube-proxy which, among its tasks, manages the \emph{network rules} of that node. Network rules are comparable to firewall rules: their goal is to establish whether a certain communication involving that worker node is allowed or not. In Kubernetes these network rules are called network policies.
+
+Kubernetes provides a \emph{NetworkPolicy} object to implement network access control between pods. A network policy specifies allowed flows by describing selectors and layer 3 and layer 4 parameters. Traffic can be blocked in different ways: one may specify a 5-tuple as in a normal packet filter, but in most cases the source or destination of an enabled or blocked communication is expressed with the \emph{labels} put in the previous files (for example the nginx service label or the nginx deployment label), so that low-level configuration parameters such as IP addresses are avoided and everything stays at a higher level.
 
 A policy typically:
 
@@ -931,23 +1086,38 @@ A policy typically:
 
 Network policies form a declarative firewall mechanism. Their enforcement depends on the cluster networking implementation supporting policy evaluation.
 
+\begin{notebox}
+	\textbf{Security and labs.} Network policies are a way to filter traffic, so they concern security and will be studied in more detail in the second semester, which includes one laboratory activity entirely focused on them. In the first semester the laboratory activities practice the basic entities seen above (pods, deployments, services, etc.), whereas in the second semester the students will also modify the way the different actors interact by configuring Kubernetes network policies.
+\end{notebox}
+
 \section{Core orchestration functions in Kubernetes}
 
-Kubernetes schedules and automates container-related tasks throughout the application lifecycle.
+Kubernetes schedules and automates container-related tasks throughout the application lifecycle. Given the services running on the master node, the main goals it achieves are: rolling deployments, service discovery, load balancing, health checking, cluster networking, autoscaling and declarative configuration. Almost all these terms are already known from the previous lectures; they are reviewed here for the last time, since this is the last theoretical topic on containerization and, in general, on virtualization before moving to the next part of the course.
 
 \subsection{Rolling deployments}
 
-A deployment defines the desired number of replicas and the pod template for an application. A \emph{rollout} is a controlled change to the deployment, often involving a new container image version. Kubernetes performs rollouts incrementally, for example by creating new pods one at a time, verifying their health, and then terminating old pods.
+A deployment defines the desired number of replicas and the pod template for an application. Kubernetes automatically rolls out containers based on the declarative YAML file of the deployment without requiring any extra information from the user: the master node only gets the desired state and, supported by the controllers and by the scheduler, reaches this state as soon as possible and in the best possible way. A \emph{rollout} is a controlled change to the deployment, often involving a new container image version. Kubernetes performs rollouts incrementally, for example by creating new pods one at a time, verifying their health, and then terminating old pods.
+
+Deployments can be stopped, if the controller notices that they impact the behavior of the cluster or if the user requests it with \texttt{kubectl}, and they can be put in a frozen state and resumed when possible. This is possible because the control plane has a complete view of the whole cluster, keeps track of how the state of the worker nodes evolves and can continuously decide to send new requests to them.
 
 Zero-downtime updates can be achieved by ensuring that sufficient healthy replicas remain available while new replicas are created. Rollouts can be paused, resumed, and rolled back. A common alternative strategy is a \emph{blue-green} deployment in which two versions run simultaneously and traffic is switched to the new version once it is stable.
 
+\begin{notebox}
+	\textbf{Blue-green deployment, in detail.} Suppose an application has been updated and the existing container must be upgraded with a new one. A simple possibility is to kill the first container and then execute the new one, but this causes a period of disservice in which the new container is not yet available. With a blue-green deployment the previous container is kept as it was instantiated and the new one is created. When the new one is up, the previous is \emph{not} killed immediately: the control plane starts to send instructions from the API server to the kubelets of the worker nodes, informing them to redirect the traffic \emph{part by part} to the new instance. The two instances coexist for a certain period, and only when all the traffic has been successfully moved to the new instance, and the controllers have verified that the new instance works as expected, is the original one killed.
+
+	\medskip
+	A human could do this manually, but not easily at such a big scale: the control plane completely abstracts this operation away from the users and provides very high scalability for it. Deployments are in this sense even more intelligent than what can be done with simple scripts.
+\end{notebox}
+
 \subsection{Service discovery}
 
-Applications running in a cluster require mechanisms to locate other services. Kubernetes supports service discovery through DNS and, in some environments, through injected environment variables. A service name is resolved to a stable endpoint, enabling clients to depend on logical service identities rather than on changing pod addresses.
+Applications running in a cluster require mechanisms to locate other services. In Kubernetes any entity (any container, pod or service) can find the other applications deployed in the cluster automatically, even without knowing their IP addresses. Kubernetes supports service discovery through DNS and, in some environments, through injected environment variables. A service name is resolved to a stable endpoint, enabling clients to depend on logical service identities rather than on changing pod addresses.
+
+The implementation may be an internal DNS or another ad hoc mechanism created for the cluster, such as local environment variables that map names to IP addresses and can be easily interrogated by any container. This is not something expected from a normal orchestrator, since the containers could be expected to interact with an external DNS cache in the local area network outside the cluster; but that would be redundant, as it requires interacting with an external element. Here the DNS or the ad hoc mechanism is implemented within the cluster, so the interrogation is done by a worker node towards another element of the architecture (possibly another worker node), and the information is then used to perform the communication.
 
 \subsection{Load balancing}
 
-When a service selects multiple pod replicas, traffic must be distributed among them. Kubernetes supports load balancing at the service level within the cluster, and it can integrate with external load balancers provided by the underlying infrastructure.
+When a service selects multiple pod replicas, traffic must be distributed among them. Kubernetes supports load balancing at the service level within the cluster, and it can integrate with external load balancers provided by the underlying infrastructure. In particular there is a service of type \emph{load balancer} that manages the distribution of the requests to the containers (pods) created with the same label, perhaps within the same deployment. No explicit configuration parameters are required from the user: it is managed automatically by the control plane thanks to the support of the controllers.
 
 The service abstraction enables both internal and external request distribution.
 
@@ -955,19 +1125,23 @@ The service abstraction enables both internal and external request distribution.
 
 High availability requires detecting failed or unhealthy containers and replacing them. Kubernetes provides probing mechanisms to assess container health. When a container fails or does not meet health requirements, Kubernetes can restart it or replace its pod instance, thereby reducing downtime.
 
+For example, if the goal declared in a deployment is five containers, five are created and one of them fails, the master node notices that the goal is no longer satisfied and, without informing the user or asking for authorization, immediately activates a new one, minimizing the downtime. This is possible because there is no human intervention: the Kubernetes controllers send the requests directly to the worker nodes through the kube API server.
+
 \subsection{Cluster networking}
 
 Cluster networking connects pods across machines and manages address assignment. Kubernetes networking aims to provide a model in which each pod can communicate with other pods without network address translation, subject to policies and topology. Implementations provide mechanisms for IP management, routing, and integration with services.
 
+Through the network policies it can be specified that the containers or pods of one cluster may communicate with the ones of another cluster, or that, within the same cluster, only pairs selected in a specific way may communicate while all the others are forbidden. It is a way of creating \emph{virtual networking}, establishing how the different containers can communicate with each other without needing someone from the outside to provide such restrictions or allowances.
+
 \subsection{Autoscaling}
 
-As load increases, more pod replicas may be required to maintain performance. Kubernetes supports autoscaling by monitoring metrics such as CPU and memory usage and by using user-defined telemetry. Based on configured policies, the system increases or decreases the number of replicas.
+As load increases, more pod replicas may be required to maintain performance. Kubernetes supports autoscaling by monitoring metrics such as CPU and memory usage and by using user-defined telemetry. Based on configured policies, the system increases or decreases the number of replicas: the controllers of the master node understand when more instances are needed, if they have been configured to scale depending on the volume of requests, and automatically increase or decrease the number of running containers.
 
-Autoscaling can also apply to cluster resources, where node counts are adjusted to improve utilization or to accommodate increased workload demand.
+Autoscaling can also apply to cluster resources, where node counts are adjusted to improve utilization or to accommodate increased workload demand. It perfectly suits the \emph{on-demand} usage characteristic of cloud computing, one of the first discussed at the beginning of the cloud computing part, thus closing the loop in a certain way.
 
 \subsection{Declarative configuration}
 
-A central design principle of Kubernetes is \emph{declarative configuration}. Users declare a desired state (for example four running replicas of a web server), and the system continuously acts to achieve and maintain that state.
+A central design principle of Kubernetes is \emph{declarative configuration}. Users declare a desired state (for example four running replicas of a web server) in configuration files, specifying only the final goal, and the system continuously acts to achieve and maintain that state by interacting with all the modular elements of its architecture.
 
 Declarative configuration contrasts with imperative approaches where operators specify sequences of actions to produce a state. Imperative procedures can be error-prone and can complicate rollback because the system state depends on the exact history of executed actions. With declarative configuration, the desired state is the primary artifact, and reconciliation logic aims to make the actual state match it.
 
