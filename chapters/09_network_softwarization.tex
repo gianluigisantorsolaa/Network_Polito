@@ -1,375 +1,260 @@
 \chapter{Network Softwarization}
 
-\section{Logical planes in a network device}
+\section{From physical to virtual networks}
 
-A network device such as a switch, router, or middlebox can be described by a logical partitioning into three planes: the \emph{management plane}, the \emph{control plane}, and the \emph{data plane}. This partitioning is conceptual rather than necessarily physical, and it is useful to clarify which functions must operate at high speed on every packet and which functions can instead operate at slower timescales.
+The first part of the course dealt with advanced topics in computer networking, that is, with the different ways in which computer networks can be managed. The second part was dedicated to cloud computing and, within it, to the virtualization techniques that make it possible, from traditional virtualization up to containerization. \emph{Network softwarization} combines these two aspects: the goal is no longer to have physical networks, but \emph{virtual} networks, in which the different aspects of network management are addressed through virtualization.
 
-\subsection{Management plane}
+Network softwarization is a quite recent topic. Most of the proposals, technologies and standards discussed in this chapter were defined starting from around 2010, that is, at the beginning of the previous decade, and are therefore considerably more recent than most of the other topics of the course.
 
-The management plane contains functions used by administrators and operators to configure the device and to retrieve operational status. Typical management-plane interactions include the configuration of interfaces, access control lists, static routes, and device parameters (for example, enabling or disabling protocols, setting link speeds, or establishing administrative policies). Management access may be local (console) or remote (for example, via secure remote login and configuration protocols). The management plane typically changes device behavior indirectly by adjusting control-plane parameters and by altering persistent configuration.
-
-\subsection{Control plane}
-
-The control plane is responsible for producing and maintaining the forwarding state required by the data plane. It implements distributed or centralized algorithms that react to network events such as topology changes, link failures, and policy updates.
-
-Typical control-plane tasks include:
+Two main paradigms enable network softwarization. They are not one the replacement of the other: they are \emph{complementary}, because they serve different purposes and are therefore based on completely different mechanisms.
 
 \begin{itemize}
-\item computing routes and next hops (for example, using link-state or distance-vector routing protocols),
-\item maintaining adjacency and reachability information,
-\item establishing tunnels or label-switched paths,
-\item installing, updating, and removing forwarding entries and other data-plane tables.
+\item \textbf{SDN} (\emph{Software Defined Networking}) provides an \emph{abstraction for the operation of forwarding}. Forwarding is no longer performed only by normal routers on their own: they rely on the support of external software, which understands the best way to reach a certain destination.
+\item \textbf{NFV} (\emph{Network Functions Virtualization}) aims at \emph{virtualizing the way network functions compute their decisions}. The network functions themselves are no longer instantiated as physical middleboxes, but as virtual machines or containers deployed on general-purpose servers.
 \end{itemize}
 
-Control-plane decisions occur at a slower timescale than packet forwarding (milliseconds to seconds or more), but they must still be sufficiently responsive to maintain connectivity and enforce policy.
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{5.3cm}>{\raggedright\arraybackslash}p{5.3cm}@{}}
+\toprule
+ & \textbf{SDN} & \textbf{NFV} \\
+\midrule
+Focus & the operation of \emph{forwarding} & the \emph{computation} performed by the network functions \\
+Idea & external software decides how to reach a destination & functions run as VMs or containers on general-purpose servers instead of physical middleboxes \\
+\bottomrule
+\end{tabular}
+\caption{The two complementary paradigms of network softwarization.}
+\end{table}
 
-\subsection{Data plane}
+One paradigm is therefore more focused on forwarding, the other on the computation, which is completely virtualized. The discussion starts with SDN.
 
-The data plane performs per-packet processing and forwarding. For each packet, it applies a sequence of operations that typically include parsing headers, matching packet fields against forwarding tables, applying actions (for example, output to a port, drop, or header rewrite), and updating counters. Because the data plane is on the critical path of traffic, it is commonly implemented in specialized hardware, in optimized software, or as a combination of both.
+\section{Software-Defined Networking (SDN)}
 
-\section{Software-defined networking}
+\subsection{Background: management, control and data plane}
 
-Software-defined networking (SDN) is a network architecture in which the control plane is separated from the forwarding plane, and the forwarding behavior of multiple devices can be controlled programmatically by software.
+To understand why SDN was introduced, and later how it works with its main pillars, it is useful to recall how network functions are typically structured from the architectural point of view. The different functionalities, the different tasks that a network function may perform, can be classified into three groups, called \emph{planes}: the \emph{management plane}, the \emph{control plane} and the \emph{data plane}.
 
-\subsection{Original SDN idea}
-
-In traditional network architectures, each network device contains both the control logic (for example, routing and signaling protocols) and the data-plane forwarding mechanisms. SDN reorganizes this architecture by moving significant control functionality into software that is logically separate from the forwarding devices. Forwarding devices are then expected to provide a programmable interface through which external software can install and update forwarding behavior.
-
-This architectural change has two important consequences. First, the network control logic becomes easier to evolve because it is implemented as software that can be updated, replaced, or extended. Second, forwarding devices can be simplified, focusing on fast packet processing while relying on external software for sophisticated decisions.
-
-\subsection{The SDN pillars}
-
-SDN is often characterized by three main pillars, with a fourth property becoming prominent in early SDN implementations.
-
-\subsubsection*{Separation of control and data planes}
-\addcontentsline{toc}{subsubsection}{Separation of control and data planes}
-
-The control plane is implemented as software running outside the data plane of forwarding devices. Forwarding devices export an \emph{open interface} through which software can configure their forwarding state. The communication between control software and forwarding devices is realized through a \emph{southbound interface}. Early SDN systems used the OpenFlow protocol as a representative southbound interface.
-
-\subsubsection*{A simple data plane as a plumbing substrate}
-\addcontentsline{toc}{subsubsection}{A simple data plane as a plumbing substrate}
-
-The data plane is primarily responsible for forwarding traffic using a \emph{match-action} paradigm. In this paradigm, a packet is compared against a set of match conditions, and if a match is found, a set of actions is applied. Common actions include forwarding to one or more output ports or dropping the packet. More advanced actions (for example, encapsulation or header rewriting) extend the expressive power of the data plane while preserving a uniform programming model.
-
-The term \emph{plumbing} emphasizes that the data plane provides generic primitives to construct traffic paths (network pipes). By selecting appropriate matches and actions, the same mechanism can realize different behaviors, such as layer-2 bridging (matching MAC addresses), layer-3 forwarding (matching IP prefixes), and policy enforcement (matching on transport-layer ports or other fields).
-
-\subsubsection*{Centralized control as a logical property}
-\addcontentsline{toc}{subsubsection}{Centralized control as a logical property}
-
-SDN emphasizes centralized control in the sense that control software can compute and enforce network-wide behavior using a global view. Centralized decision-making is often simpler than distributed control because it avoids requiring every device to reach decisions based solely on local state.
-
-Centralization in SDN is \emph{logical} rather than necessarily physical. The control plane may run on a single server, on a cluster of servers, on multiple distributed instances, or partially within network devices. The defining feature is that the network behaves as if controlled by a single coherent control logic.
-
-\subsubsection*{Context-based forwarding and control}
-\addcontentsline{toc}{subsubsection}{Context-based forwarding and control}
-
-A prominent additional property, particularly associated with OpenFlow-based SDN, is the ability to make forwarding decisions based on runtime traffic context. In conventional IP routing, forwarding decisions are typically computed ahead of time from topology information and then applied uniformly to matching packets. In a context-based approach, a forwarding device can send selected packets (or packet metadata) to the controller when a suitable rule is missing or when additional intelligence is required. The controller then decides how to handle that traffic and can install new rules so that subsequent packets are forwarded directly by the data plane.
-
-\section{SDN control abstractions and deployment models}
-
-\subsection{The ``big switch'' abstraction}
-
-A useful programming abstraction is to treat an SDN-controlled network as a single large logical switch. Under this abstraction, the internal topology is hidden from applications, and the control software exposes high-level operations (often called \emph{intents}) such as:
+\begin{center}
+	\safeimg[width=5in]{media/image182.png}
+\end{center}
 
 \begin{itemize}
-\item applying a uniform configuration to all edge ports,
-\item creating a direct logical path from an ingress port to an egress port,
-\item enforcing reachability and isolation properties between endpoint groups.
+\item \textbf{Data plane}: forwarding. The action is not an intelligent operation: it is simply the application of a normal algorithm to data that is already available, such as a routing table or a filtering database.
+\item \textbf{Control plane}: the dynamic configuration of the data plane tables (for example routing with OSPF). These are the operations that should have more intelligence, because they must create all the data structures that the operations of the data plane will use later to take their decisions. If the data plane works on routing tables or filtering databases, the control plane is composed of the protocols that write those data structures.
+\item \textbf{Management plane}: the configuration made by the user or the administrator. These operations are not strictly related to the management of data, but to the management of the network function itself: they establish how the function should work, through APIs or a graphical user interface, if the middlebox offers one.
 \end{itemize}
 
-To realize these intents, the controller computes concrete paths through the network and installs the corresponding forwarding rules. One practical method is to install a sequence of rules that steer packets hop-by-hop, potentially using tags (for example, VLAN identifiers) to encode path information.
+The interaction between control plane and data plane always involves the \emph{sharing of some data}, which is typically stored in tables: the control plane writes them and the data plane reads them.
 
-The big-switch abstraction is not mandatory. Applications may instead use a topology-aware view that exposes internal structure and allows fine-grained control over individual devices and links.
+\begin{notebox}
+	\textbf{An IP router.} A router applies a forwarding algorithm that reads the routing table and decides the next hop of a received packet, based on its destination IP address and on the content of the table; typically it uses the \emph{longest prefix match} algorithm (data plane). It also writes the routing tables themselves, by interacting with the other routers through routing protocols such as BGP, RIP and OSPF (control plane). Finally, it may offer APIs by means of which an administrator, a human user or an external orchestrator, can configure its behavior (management plane).
 
-\subsection{Physically centralized, logically centralized, and embedded control}
+	\medskip
+	\textbf{An Ethernet switch.} A switch has forwarding algorithms that look at its filtering database (data plane), an algorithm that automatically populates this database, the \emph{backward learning} algorithm (control plane), and a way for a user to interact with it remotely, for example through SSH, in order to configure it (management plane).
+\end{notebox}
 
-Control-plane placement can be characterized by where the control software executes.
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{3.4cm}@{}}
+\toprule
+ & \textbf{Data plane} & \textbf{Control plane} & \textbf{Management plane} \\
+\midrule
+IP router & longest prefix match on the routing table & BGP, RIP, OSPF write the routing table & APIs for an administrator or an orchestrator \\
+Ethernet switch & lookup in the filtering database & backward learning populates the database & remote configuration (e.g.\ SSH) \\
+\bottomrule
+\end{tabular}
+\caption{The three planes in an IP router and in an Ethernet switch.}
+\end{table}
+
+Traditionally, when a network function such as a Cisco router is bought, it implements operations of all three planes: a ``stupid'' forwarding algorithm that just looks at data, a very diligent control plane algorithm (an instance of a routing protocol that writes the data structures) and some APIs that support the management by the users.
+
+\subsection{The original definition of SDN}
+
+In SDN the main idea has been to break this paradigm, which lasted for many years, of having all the planes within a single middlebox. Engineers started to think that it may be \emph{redundant}, because everything has to be replicated and, above all, the control plane has to be replicated in all the devices. It may also be \emph{expensive}: if 100 routers are needed just to do forwarding, 100 routers must be bought for their capabilities even though perhaps nothing about the control plane is needed.
+
+A possible way to proceed is therefore to \emph{separate the planes}: some devices are only responsible for the operations of the data plane, and other devices are only responsible for the operations of the control plane. The management plane is kept aside, because it is a bit peculiar and it is not addressed in these lectures.
+
+\begin{center}
+	\safeimg[width=4in]{media/image183.png}
+\end{center}
+
+The original definition of SDN is therefore the following: a new network paradigm that \emph{physically separates} the control plane from the forwarding plane, and where a control plane can \emph{programmatically} control several devices. A network based on this principle is no longer composed of middleboxes that have both data plane and control plane operations. Instead:
 
 \begin{itemize}
-\item \textbf{Physically centralized control}: a single controller instance (or a single tightly coupled system) controls multiple forwarding devices.
-\item \textbf{Physically distributed but logically centralized control}: multiple controller instances cooperate to provide the behavior of a single control plane. Each instance may handle a subset of devices or events, while shared state is synchronized to preserve a coherent network view.
-\item \textbf{Embedded control}: some control functionality executes within network devices that also contain data-plane forwarding. This reduces separation, but it can be practical for performance or operational reasons.
+\item some middleboxes only do forwarding, and take their decisions on data structures written by other elements. The functions in charge of the data plane are typically \emph{physical} middleboxes, so even in SDN there is still hardware responsible for forwarding. They are called \textbf{SDN switches}, or programmable switches;
+\item the control plane is \emph{virtualized}: it is managed by a process that instantiates some orchestration software, the \textbf{SDN controller}. The controller is a \emph{single} element, a software, that programmatically writes and controls the forwarding tables of the SDN switches. It should have a comprehensive view of the physical network and it creates the tables of all the programmable switches, so that they can use them to take a forwarding decision for each received packet.
 \end{itemize}
 
-\subsection{State distribution and the CAP constraint}
+In a traditional network each router or switch is composed of both a data plane and a control plane; in an SDN network there is a clear separation. In this way the network designer does not have to buy many routers, which may be quite expensive: it is enough to buy very simple \emph{white label} switches, which are ``stupid'' because all they implement is an algorithm that reads a table and makes forwarding decisions, plus a separate server on which the software of the SDN controller is installed. This software automatically interacts with all the SDN switches.
 
-Physically distributed controllers must maintain shared state, such as topology, host locations, and policy data. Distributed systems face a fundamental trade-off: in the presence of network partitions, a distributed data store cannot simultaneously guarantee \emph{consistency} (all nodes observe the same state), \emph{availability} (every request receives a response), and \emph{partition tolerance} (continued operation despite communication failures).
+\begin{notebox}
+	\textbf{SDN and automation.} SDN was also the first way to bring \emph{automation} to computer networks. In cloud computing automation was introduced with orchestrators such as the ones that manage Docker containers (Docker Swarm, Kubernetes); almost in the same years, around 2010, in networks the orchestration was introduced with the concept of SDN controller. The controller is a de facto orchestrator, because it checks how the different programmable switches work and may automatically alter their behavior.
+\end{notebox}
 
-Because partitions are unavoidable in realistic networks, distributed SDN controllers typically adopt \emph{eventual consistency}: if updates to a data item cease, then all replicas eventually converge to the last updated value. To implement replication and leader election, controllers may rely on consensus algorithms such as Paxos or Raft.
+When a human user wants to interact with the network, the user interacts with the SDN controller. The controller therefore also offers some API or interface towards the user, as part of a management plane, to establish how the controller should work and, consequently, how it will configure the SDN switches.
 
-A crucial software-engineering goal is to provide application developers with a programming model that resembles a single-instance controller while the controller platform internally executes multiple instances for robustness and scalability. In practice, developers often must still distinguish between state that should be shared across instances and state that is local to a particular instance. If these mechanisms are exposed through non-standard interfaces, application portability can be reduced and vendor lock-in can arise.
+Moreover, since the controller is software, everyone may write their own controller, or search repositories for controllers that are already available. Another advantage is therefore a reduced \emph{lock-in} with specific vendors: simple programmable switches are the same for everyone, so a vendor cannot add more features to them than the others. The controller software, stored on a general-purpose server, may be proprietary but is most often free and open, so both expenses and lock-in are reduced.
 
-\section{Layered SDN architecture}
+\subsection{The intelligence is in the controller}
 
-SDN is commonly described as a layered architecture consisting of an application plane, a control plane, and a data plane.
+SDN is not just a new layer on top of existing routers: it reorganizes the network architecture by moving some functions to other places. The controller (distributed or centralized) keeps the intelligence, and routers become simpler, cheaper and faster.
 
-\subsection{Application plane}
+The way SDN works is simple, because it is based only on the idea of separating control and data plane. In this separation the distributed architecture of the switches should be \emph{as simple as possible}, whereas every time a complex decision is needed, it must be put in the code of the SDN controller. The controller keeps the whole intelligence of the network, as if it were a single administrator with a complete overview of the entire network. This is possible because the controller interacts with all the very simple SDN switches and takes its decisions on the basis of the data they simply provide. The switches can at most provide data to the controller: they cannot order the controller to do something, they only have to be subject to the decisions it takes.
 
-The application plane contains network applications that implement policies and services. Examples include:
+\subsection{The three SDN pillars (plus one)}
 
-\begin{itemize}
-\item network control applications (for example, routing, traffic engineering, and load balancing),
-\item security applications (for example, access control, anomaly detection, and isolation),
-\item business and operational applications (for example, service provisioning and accounting).
-\end{itemize}
-
-Applications interact with the control plane through a \emph{northbound interface}. Northbound interfaces are frequently realized as programmatic APIs (for example, REST-style APIs) or as libraries in a controller framework.
-
-\subsection{Control plane}
-
-The control plane includes the SDN controller platform and the services it provides. A controller typically implements:
-
-\begin{itemize}
-\item network state acquisition (topology discovery, device and port status, host tracking),
-\item network state storage and distribution,
-\item path computation and policy resolution,
-\item rule compilation and installation toward the data plane,
-\item abstractions that simplify application development.
-\end{itemize}
-
-When multiple controllers cooperate, they exchange information through \emph{eastbound} and \emph{westbound} interfaces, which support coordination and state synchronization.
-
-\subsection{Data plane}
-
-The data plane consists of forwarding elements that implement the match-action processing model and execute the rules installed by the controller. Forwarding elements may be physical switches, virtual switches within hypervisors, or other programmable forwarding devices.
-
-\section{OpenFlow as a southbound protocol}
-
-OpenFlow is a protocol designed to enable a controller to program the forwarding behavior of a switch.
-
-\subsection{Basic capabilities}
-
-At a conceptual level, OpenFlow supports the following interactions between controller and switch.
-
-\begin{itemize}
-\item The controller installs, modifies, and deletes forwarding rules in the switch.
-\item The switch sends packets or packet headers to the controller when a matching rule is absent or when a rule explicitly requests controller involvement.
-\item The controller can inject packets into the switch, for example to forward a packet that was sent to the controller.
-\item The controller queries statistics (such as packet and byte counters) and receives measurement data from the switch.
-\end{itemize}
-
-\subsection{Context-based control path}
-
-In a context-based workflow, the switch acts as a cache of forwarding decisions.
+When SDN was originally standardized, some pillars, some building blocks of any SDN-based network, were defined. They are three.
 
 \begin{enumerate}
-\item A packet arrives at the switch.
-\item If no installed rule matches (or if a rule requests controller processing), the switch sends the packet (or a truncated version plus metadata) to the controller.
-\item The controller examines the packet, applies policy and logic, and decides how to handle it.
-\item The controller may send back a packet-out message to forward the packet and may install a new flow entry so that subsequent packets of the same class are handled directly by the switch.
+\item \textbf{Separate the control plane from the data plane}, from the physical point of view. The SDN controller cannot run on an SDN switch: it is not possible to take one SDN switch and make it the controller of all the others. It must be a separate physical element running some software.
+\item \textbf{Simple data plane} (``plumbing''). The data plane should be as simple as possible, and all the intelligent decisions should be placed in the control plane.
+\item \textbf{Centralized control}, \emph{at least logically}. Only one entity oversees all the SDN switches of the data plane. As will be seen later, a distributed controller is also possible, but from the logical point of view its different instances must work as if they were a single one.
 \end{enumerate}
 
-This pattern supports features such as dynamic host discovery, user- or tenant-specific policies, and on-demand provisioning.
+\begin{notebox}
+	\textbf{When is a network SDN?} If a network satisfies these three characteristics (separation of data and control plane, simplicity of the data plane and control centralization, at least logically) it can already be called an SDN-compliant, or SDN-aware, network.
+\end{notebox}
 
-\section{Reactive and proactive rule installation}
+\subsubsection*{A fourth, de facto pillar: context-based forwarding}
+\addcontentsline{toc}{subsubsection}{A fourth, de facto pillar: context-based forwarding}
 
-OpenFlow enables both reactive and proactive approaches to populating flow tables.
+When the first implementations of the paradigm were created, they added new features, as usual. Among them, one was deemed so important and so impactful that today it has become almost a synonym of SDN, a \emph{fourth de facto pillar}: \textbf{context-based forwarding}, introduced for the first time by the \textbf{OpenFlow} protocol. Its idea is that the controller does not need to take all the decisions at the beginning: it may take them \emph{on the fly}, based on the context of the network, that is, on the current status of the network and on how the switches have behaved in the past. This pillar was not originally envisioned when SDN was first defined in its document, but today it is considered almost as important as the others. It is discussed in detail later.
 
-\subsection{Reactive installation}
+\subsection{Pillar 1: separation of control plane and data plane}
 
-In a reactive approach, the controller installs flow entries in response to traffic.
+The data plane is implemented with very simple packet forwarding hardware, the SDN switches, which contain \emph{lookup tables}: the equivalents of routing tables and filtering databases are embedded in hardware in the SDN switches. The control plane is instead placed on a physical \emph{server} running the SDN controller. The controller may be enriched with the software one wants for the \emph{routing logic}. The overall software may be composed of two separate modules: a sub-module only for the controlling, that is, for the interface with the switches, and another one that takes the routing decisions. The software with the routing logic communicates its decisions to the SDN controller, and the SDN controller communicates them to the SDN switches.
 
-\begin{itemize}
-\item Only necessary rules are installed, which can reduce flow-table usage.
-\item The first packets of a new flow experience additional delay due to controller interaction and rule setup.
-\item If the control connection is lost, the switch can forward only those traffic classes covered by pre-existing rules.
-\end{itemize}
+\begin{center}
+	\safeimg[width=3in]{media/image184.png}
+\end{center}
 
-\subsection{Proactive installation}
+\subsubsection*{Northbound and southbound interfaces}
+\addcontentsline{toc}{subsubsection}{Northbound and southbound interfaces}
 
-In a proactive approach, the controller pre-populates the flow table before traffic arrives.
-
-\begin{itemize}
-\item Packets do not incur additional setup delay.
-\item Traffic is less sensitive to controller outages, provided that appropriate rules remain installed.
-\item Proactive configurations often rely on aggregated rules with wildcards, similar to traditional routing tables.
-\end{itemize}
-
-\section{Flow granularity: fine-grained and aggregated forwarding}
-
-The match-action model supports different granularities of control.
-
-\subsection{Fine-grained forwarding}
-
-Fine-grained forwarding installs separate rules for distinct flows, often using exact-match entries. A flow may be identified by a tuple of header fields such as ingress port, MAC addresses, IP addresses, transport protocol, and transport ports. Fine-grained control enables precise per-flow policy enforcement and detailed traffic steering, and it is often suitable for environments such as campus networks and data centers, where the controller can react rapidly and where detailed policies are beneficial.
-
-\subsection{Aggregated forwarding}
-
-Aggregated forwarding installs rules that cover a large set of flows, typically using wildcards and prefix matches. This approach reduces the number of table entries required and is suitable for environments with very large numbers of flows, such as backbone networks. A common example is destination-prefix forwarding, where many individual connections are aggregated into a single rule based on the longest prefix match of an IP destination address.
-
-\section{Flow rules and flow table entries}
-
-\subsection{Flow rules as an abstraction}
-
-A \emph{flow rule} is a traffic abstraction defined by a match condition and a set of actions. It can be understood at two levels.
+A physical separation creates a gap that must be filled. The same happened with microservices: at the beginning there was a single process and everything was done internally; with microservices the different parts have to communicate with each other to provide the overall service. Here too, new APIs and new protocols were needed, to allow the different elements of this distributed network to communicate. On the host in which the SDN controller runs there are two main interfaces (some others are discussed later):
 
 \begin{itemize}
-\item At the switch level, a flow rule corresponds to a flow table entry (or a set of entries across multiple tables) that matches packets and specifies actions.
-\item At the network level, a flow rule can represent an end-to-end behavior that connects two switch ports and may traverse multiple switches, provided that compatible entries are installed along the path.
+\item the \textbf{northbound interface}, most often based on REST APIs, which allows users or other pieces of software to interact with the system;
+\item the \textbf{southbound interface}, through which controller and switches communicate with each other.
 \end{itemize}
 
-Flow rules are intended to be isolated from each other, meaning that the behavior specified for one class of traffic should not unintentionally interfere with the behavior specified for another class.
+When SDN was first proposed, the main focus was on the southbound interface, because all the elements communicating through it were novel. Different protocols that establish the messages exchanged between server and SDN switches were defined. One of the first was the \textbf{OpenFlow} protocol, which was created for this communication but then became almost a synonym of the idea of separation between control plane and data plane.
 
-\subsection{Flow modification messages}
+\begin{notebox}
+	\textbf{Switches do not talk to each other.} At most, SDN switches communicate with the controller, for example by sending some statistics about the traffic they inspect. They do not provide information to one another. This is completely different from what happens with IP routers, which exchange routing information to build their routing tables and to have a shared view of the whole network. SDN switches do \emph{not} have a comprehensive view of the network: they only read data structures written by the controller, without understanding anything about them.
+\end{notebox}
 
-A \emph{flow modification} (often abbreviated \emph{flowmod}) is a controller-to-switch message that instantiates, updates, or deletes flow entries on a switch. While OpenFlow defines the message formats and semantics, controller platforms frequently provide higher-level APIs that compile policies into sequences of flowmod messages.
+\subsubsection*{Advantages of the separation}
+\addcontentsline{toc}{subsubsection}{Advantages of the separation}
 
-\subsection{Structure of a flow table entry}
+\paragraph{Control plane.} Maintainability and the ease of modifying the behavior of the controller are the main reasons why SDN became popular. The routing logic is easy to change: new applications can be executed, replacing the original routing logic with more sophisticated algorithms.
 
-A typical OpenFlow flow table entry contains at least the following components.
+Consider an IP network, and a research team of a company that wants to change the way forwarding is done, because it does not want to use the longest prefix match any more and wants to test other forwarding algorithms. One possibility is \emph{MPLS} (Multi-Protocol Label Switching), whose idea is that forwarding should not be based on destination IP addresses, but on labels, numbers placed within the packets. Another is a new network layer protocol with a new kind of routing, closer to \emph{ATM}, an alternative to IP based on the idea of connection: before a communication starts, the peers reserve all the resources for the connection along all the routers.
+
+With a hardware network, the only way to move from one type of network to another is to trash the IP routers, of Cisco or of any other vendor, and buy completely new devices working in different ways, because each one works on different principles. With SDN all the switches are ``stupid'': they only read a table, so what really matters is \emph{the way the table is written}. The semantics of the table can be altered, because it is written by the controller. The sequence is the following:
+
+\begin{enumerate}
+\item the controller is associated with routing logic 1, the IP routing logic, which was used to populate all the forwarding tables of the switches;
+\item the controller is associated with a second routing logic, which creates the new forwarding tables (in the example of the figure, seven switches, so seven new tables). They are \emph{not} pushed immediately;
+\item in the meantime the switches \emph{continue to work with the previous tables}, those based on routing logic 1. With physical devices, instead, the routers would be down while they are dismantled and replaced, and the network would suffer a complete disservice;
+\item only when all the tables are ready they are pushed to the switches, through protocols such as OpenFlow, potentially in parallel.
+\end{enumerate}
+
+There is of course a very small delay for pushing the tables, in the order of one second or a few seconds, much less than the hours of disservice needed to dismantle a network, install a new one, activate the new routing protocol instances and let the routers synchronize their routing tables. It is much faster also because everything is done in software: nothing is touched in the hardware, only the routing logic attached to the controller is modified.
+
+The network may even have \emph{multiple routing logics at the same time}: for example, the left part of the network may work with the IP routing logic and the right part with a new label-based logic (a \emph{sliced} network). The controller knows this, creates the forwarding tables of the left switches for the first logic and those of the right switches for the second one, and pushes them. The switches are not aware of it: they receive the tables and read them, without knowing that they were created with completely different logics. The slides also mention a third example, the separation of a research network from a production network.
+
+\begin{notebox}
+	\textbf{Do the switches communicate with each other?} No. They only get the tables from the controller and read them to understand how to forward packets, without exchanging any information. If a packet has to go from a switch on the left to a switch on the right, it is the \emph{controller} that decides: it has the complete overview of the network and chooses the best path according to its logic, so everything is decided by the controller. The switches can only provide it with information about the network and then wait for its decisions.
+\end{notebox}
+
+\paragraph{Data plane.} The advantages are not limited to the control plane. The switches are simple, so they are \emph{faster}: they have no extra overhead due to the control and the management plane, they just wait for the decisions and enforce them. Since they are all simple and equal, they are also really \emph{cheap}, and no vendor can claim that its SDN switch is more powerful than the others: all of them are identical and only apply forwarding algorithms. It is therefore easy to replace one vendor with another, and many southbound protocols are \emph{standard}, hence applicable to any SDN switch: the standard southbound interface guarantees interoperability.
+
+\subsection{Pillar 2: simple data plane (``plumbing'')}
+
+The second pillar is the simplicity of the data plane, also called \emph{plumbing}. The picture of pipes on the slide is the hint: the data plane is just a sequence of interconnections that can be seen as pipes. Once a pipe has been installed, it simply lets water flow through it, but the direction of the water is established at the moment of installation. Likewise, the controller installs the ``pipes'' and the switches simply forward traffic according to the way they were attached to each other. All of this is possible thanks to the forwarding tables stored in the switches and written by the controller.
+
+\begin{center}
+	\safeimg[width=5in]{media/image185.png}
+\end{center}
+
+The data plane mainly performs traffic forwarding, based on the \emph{match/action} paradigm: each rule has a condition on some fields (the match) and an action. The two most used actions are:
 
 \begin{itemize}
-\item \textbf{Match fields}: packet and ingress metadata fields, optionally with masks.
-\item \textbf{Priority}: a number used to select among multiple matching entries.
-\item \textbf{Instructions or actions}: operations applied to packets that match.
-\item \textbf{Counters}: statistics such as packet and byte counts associated with the entry.
-\item \textbf{Timeouts}: limits on how long an entry remains installed, including idle timeouts and hard timeouts.
-\item \textbf{Cookie}: an opaque value selected by the controller to identify or classify entries for later queries and modifications.
-\item \textbf{Flags}: modifiers that affect entry management, such as requesting notification when the entry is removed.
+\item \textbf{forward}: send the packets that satisfy the condition to a given port (or ports);
+\item \textbf{drop}: block the traffic.
 \end{itemize}
 
-Priority resolves ambiguity when multiple rules match a packet. Let $E$ be the set of installed entries whose match predicates are satisfied by a packet $p$. The switch selects the entry $e^* \in E$ with the highest priority. If multiple entries share the same highest priority, tie-breaking depends on implementation and specification details, and robust configurations should avoid such ties.
+The \emph{drop} action is interesting because it can be used as a form of \emph{filtering}: SDN switches also work as very simple filters, deciding that a packet must be blocked explicitly, because a rule contains a drop action, and not just by exclusion. More powerful actions may be defined and are seen later.
 
-\subsection{Matching semantics}
+The same flexibility holds for the conditions of the rules, which may consider different header fields:
 
-OpenFlow can match on arbitrary bits in headers for a supported set of fields. Common fields include:
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{6.3cm}>{\raggedright\arraybackslash}p{6.5cm}@{}}
+\toprule
+\textbf{Fields in the match} & \textbf{Forwarding logic that is replicated} \\
+\midrule
+destination MAC address only & a bridge (an Ethernet switch) \\
+destination IP address (longest prefix match) & an IP router \\
+source IP address and destination IP address & a custom logic that decides on the pair \\
+the above, plus source and destination transport ports & a custom logic that also uses transport-level ports \\
+\bottomrule
+\end{tabular}
+\caption{Examples of match fields of the forwarding rules.}
+\end{table}
+
+For a custom logic one has to create the corresponding routing logic in the controller, but from the point of view of the switches nothing changes: they just look at those fields. If later the logic is enriched with other fields, a new routing logic is created and the switches are already compliant, because they can read almost all the fields available in any received packet.
+
+\subsection{Pillar 3: centralized control}
+
+The third pillar is the centralization of the control plane, at least from the logical point of view. Centralization is a prerequisite: without a comprehensive view of the entire network the controller cannot establish the forwarding tables of all the switches. In a \emph{distributed} routing protocol each router can compute its own routing table because, in a way, it has a comprehensive view of the network thanks to the information coming from the other routers (current routing protocols operate on each node in isolation). In SDN, instead, the decisions are centralized and based on the information that the controller receives from the switches: it knows how each switch is connected to the others, reconstructs the full picture of the network and computes the forwarding tables of all the switches. Centralized control is usually easier than distributed control, and the software can easily control the entire network.
+
+Through its northbound interface, towards users and external software, the controller may offer \emph{different visibilities} of the structure of the network:
 
 \begin{itemize}
-\item ingress port,
-\item MAC source and destination addresses,
-\item VLAN identifiers and VLAN priority code points,
-\item IP source and destination addresses (often with prefix masks),
-\item transport protocol identifiers,
-\item TCP and UDP source and destination ports.
+\item the \textbf{full network topology}: the user knows how the switches are interconnected;
+\item a more limited and controlled view, the \textbf{big switch abstraction}.
 \end{itemize}
 
-Wildcards allow a match predicate to ignore selected fields. For example, a rule may match only the destination IP prefix while wildcarding all other fields. Matching on application-layer fields (layer 7) is generally outside the scope of basic OpenFlow matching and is typically handled by higher-level systems that classify traffic before applying OpenFlow rules.
+\subsubsection*{The big switch abstraction}
+\addcontentsline{toc}{subsubsection}{The big switch abstraction}
 
-\subsection{Common actions}
+Consider an SDN network with several edge ports, say P1 to P5, through which packets enter the network. Each port may be connected to another, separate network: a subnetwork of a company, a data center, and so on. If one is in charge of these subnetworks, one does not really care about the way packets cross the intermediate SDN-based network. One may just want to specify, for example, that the subnetwork connected to P1 can communicate with the one connected to P5, and that the subnetwork of P4 can communicate with P2 and P3.
 
-Common OpenFlow actions and instructions include:
+\begin{center}
+	\safeimg[width=3in]{media/image186.png}
+\end{center}
+
+In this scenario, when there is no need to know the topology, the controller may export a \emph{control view} of the network: for a user application, acting as a management plane, the whole network appears as \emph{a single big switch} with five ports. The user states ``I want communication from 1 to 5, and from 2 to 3 and 4'' (or the opposite, blocking some communications, since SDN switches can also drop packets) and the controller internally finds the best path according to its routing logic and creates the forwarding tables. The user knows nothing about this, and does not need to: the only purpose was to enable (or block) those communications.
+
+The abstraction hides the internal details of the network and lets the software issue high-level commands, often called \emph{intents}, for example:
 
 \begin{itemize}
-\item \textbf{Forwarding}: output to one or more ports.
-\item \textbf{Controller processing}: encapsulate and send the packet (or metadata) to the controller.
-\item \textbf{Normal pipeline}: send the packet to a device-specific processing path (for example, a traditional L2 bridging pipeline).
-\item \textbf{Drop}: discard the packet.
-\item \textbf{Header rewrite}: modify header fields (for example, rewriting an IP source address from 10.0.0.1 to 20.0.0.2).
-\item \textbf{Tag push and pop}: add or remove encapsulation headers such as VLAN tags, MPLS labels, or GRE keys.
-\item \textbf{Rate limiting}: forward traffic subject to a specified rate, when supported by the switch.
+\item set a given configuration on all the \emph{edge} ports;
+\item create a direct, circuit-like path \emph{from port A to port B}. The controller sets up the path, for instance through a chain of VLANs.
 \end{itemize}
 
-Multiple actions can be associated with the same match, enabling composite behaviors such as forwarding and mirroring, or forwarding with tagging.
+The software can use either the normal view, which offers visibility of the internals of the network, or the big switch view.
 
-\subsection{Illustrative flow table example}
+\begin{notebox}
+	\textbf{Privacy.} The big switch abstraction is also useful in terms of privacy: a provider that manages an SDN-based network does not have to give complete information about its structure to the users, the customers. It just provides information about the \emph{access points}, and the users decide how the networks connected to those access points should, and can, interact with each other.
+\end{notebox}
 
-Consider a switch with two ports connected to two hosts, one using IP address 10.1.1.1 and the other using IP address 20.2.2.2. A simple policy that forwards traffic destined to 10.1.1.1 to port 1 and traffic destined to 20.2.2.2 to port 2 can be realized using two entries that match on the destination IP address while wildcarding other fields.
+\subsection{Intent-based networking and policy-based management}
 
-A controller could install entries using an Open vSwitch command-line interface as follows.
+The big switch abstraction is an element of another paradigm which, in the last fifteen years, has become fundamental for network management. It is not addressed in this course, but is mentioned to give an idea of it. Depending on the scenario it is called \textbf{IBN}, \emph{Intent-Based Networking}, or \textbf{PBM}, \emph{Policy-Based Management}; applied specifically to networks it is \textbf{PBNM}, \emph{Policy-Based Network Management}.
 
-\emph{\# Forward packets destined to 10.1.1.1 out of port 1} ovs-ofctl add-flow br0 "priority=100,ip,nw\_dst=10.1.1.1 actions=output:1"
+The main concept is that a human user should only specify \emph{high-level intents} or \emph{high-level policies}, which express goals, such as allowing a communication or blocking another one, \emph{without caring about the course of action} by which they are resolved. In the big switch example, the user does not care about the exact path that allows a communication: he or she only says ``I want a communication''. This recalls the \emph{declarative configuration} of Kubernetes seen in the previous chapter: IBN and PBNM bring that paradigm to computer networks.
 
-\emph{\# Forward packets destined to 20.2.2.2 out of port 2} ovs-ofctl add-flow br0 "priority=100,ip,nw\_dst=20.2.2.2 actions=output:2"
+In the literature, and at conferences, some authors state that intents and policies are completely different things (intents should be written in natural language, or should be just goals, whereas policies should already hint at the course of action), while others consider them almost the same. What matters is that high-level sentences, written in natural language or in predefined languages based on templates, are \emph{automatically converted into real configurations} by a piece of software such as the SDN controller.
 
-\emph{\# Default behavior: send unmatched traffic to the controller} ovs-ofctl add-flow br0 "priority=0 actions=CONTROLLER"
+\begin{notebox}
+	\textbf{The same idea in network security.} Consider a firewall. In the lab activity the iptables firewall was configured by writing low-level rules by hand, knowing the exact syntax. With IBN or PBNM one only writes a sentence such as ``this source cannot communicate with this destination'', perhaps using labels instead of IP addresses, and without any firewall-specific language. The statement, a policy or an intent, is given to a software, an orchestrator or a controller, that performs a \emph{refinement}: through refinement the high-level policy becomes low level, and the software is in charge of writing the iptables rules.
 
-In this example, the first two entries represent aggregated behavior with respect to transport-layer fields (they are wildcarded), but they are specific to the destination IP address. The third entry implements the context-based behavior by diverting unmatched traffic to the controller.
-
-\section{SDN controller platforms}
-
-An SDN controller is a software system that enables programmatic control of a network infrastructure. It provides abstractions and services that allow applications to express desired network behavior while the controller translates those desires into concrete device configurations.
-
-\subsection{Functional responsibilities}
-
-A controller platform typically includes:
-
-\begin{itemize}
-\item \textbf{Device and protocol drivers}: support for heterogeneous forwarding devices and multiple southbound protocols.
-\item \textbf{Service abstraction layer}: a common internal model that hides protocol- and device-specific details.
-\item \textbf{Core network services}: topology services, host and link discovery, path computation, policy engines, and state distribution.
-\item \textbf{Northbound interfaces}: APIs through which applications request network behavior.
-\item \textbf{External services}: optional components such as graphical management interfaces and integration modules.
-\end{itemize}
-
-In wide-area network scenarios, heterogeneity is common. A controller may need to support different device types and different forwarding technologies (for example, packet switching, MPLS transport, optical transport, and data center fabrics). This motivates a rich southbound interface with multiple protocol drivers and a unifying abstraction layer.
-
-\subsection{Examples of controller ecosystems}
-
-Controller platforms exist both as open-source projects and as proprietary products. Open-source platforms are often developed by communities or consortia, while proprietary controllers are commonly provided by vendors to integrate tightly with their equipment and to offer differentiated capabilities. Competition among vendors often shifts toward higher-level services and operational tooling, while the underlying programmable-control ideas become shared across the ecosystem.
-
-\section{Service function chaining}
-
-\subsection{Service chains and middleboxes}
-
-At the edge of a network, traffic often must traverse a sequence of specialized network functions, traditionally implemented as dedicated hardware appliances. Typical functions include firewalls, intrusion detection systems, WAN accelerators, traffic monitors, and quality-of-service shapers. The ordered composition of such functions for a traffic class is called a \emph{service function chain}.
-
-\subsection{Operational challenges}
-
-Hardware-based service chains present several recurring challenges.
-
-\begin{itemize}
-\item \textbf{Inefficient resource utilization}: appliances are dimensioned and deployed as separate boxes, so CPU, memory, and I/O resources cannot be easily shared across functions or across tenants.
-\item \textbf{Service disruption during changes}: inserting, removing, or reordering a function often requires physical recabling or topology modifications, which can disrupt traffic.
-\item \textbf{Tenant differentiation}: distinct tenants may purchase different service bundles. Enforcing that only certain tenants traverse certain functions requires per-tenant steering and often per-tenant configuration within appliances.
-\item \textbf{Provisioning latency}: acquiring, installing, and integrating new appliances can be slow.
-\end{itemize}
-
-\subsection{Traffic steering with SDN}
-
-SDN provides a software-based method to steer traffic through service chains.
-
-A practical design is to connect appliances (or their attachment points) to a programmable switch. The controller installs match-action rules that direct packets to the next function in the chain based on identifiers such as ingress port, source and destination addresses, transport ports, or tenant tags.
-
-For example, a policy could state that traffic arriving from a specific local network and matching a given user or tenant identity must be sent first to a firewall, then to an intrusion detection function, and finally to a WAN accelerator before reaching the external network. Steering rules can be installed proactively for known tenants or installed on demand when a user session begins. Local placement of the controller near the service functions can reduce latency for reactive decisions.
-
-\section{Network functions virtualization}
-
-Network functions virtualization (NFV) generalizes the idea of network softwarization by implementing network functions as software components that run on standard hardware, often using computing virtualization.
-
-\subsection{Principles and components}
-
-NFV is based on four core components.
-
-\begin{itemize}
-\item \textbf{Standard high-performance hardware}: general-purpose servers (often commercial off-the-shelf hardware) provide compute capacity.
-\item \textbf{Software-based network functions}: functions previously implemented as dedicated appliances become software images.
-\item \textbf{Computing virtualization}: hypervisors and virtualization technologies (for example, Linux KVM) support isolation, multitenancy, mobility, and elastic scaling.
-\item \textbf{Standardized management interfaces}: common frameworks enable interoperable management and orchestration.
-\end{itemize}
-
-Virtualization introduces operational advantages such as rapid provisioning, flexible scaling, failure recovery, reduced capital expenditure, and reduced operational expenditure. It also enables consolidating multiple functions onto shared infrastructure while maintaining isolation between tenants.
-
-\subsection{Service chains with NFV}
-
-In an NFV-based design, service functions are instantiated as virtual machines (VMs) or containers, each executing a virtualized network function (VNF). Multiple VNFs can be colocated on the same physical server under a hypervisor, while other VNFs may run on different servers. SDN can still be used to steer traffic among these VNFs by programming virtual switches or physical switches that interconnect the servers.
-
-A service chain in this setting becomes a \emph{service function graph} (SFG), which generalizes a linear chain to a graph structure. An SFG can represent branching (for example, only some traffic traverses a deep inspection function) and merging (for example, multiple branches rejoin before egress).
-
-\section{ETSI NFV framework and terminology}
-
-Standardization efforts provide a reference architecture for NFV. A prominent framework defines terminology, architectural components, and interfaces to enable interoperability of NFV systems.
-
-\subsection{Core terms}
-
-\begin{itemize}
-\item \textbf{Network function (NF)}: a functional building block with well-defined interfaces and behavior.
-\item \textbf{Virtualized network function (VNF)}: a software implementation of an NF that can be deployed on virtualized infrastructure.
-\item \textbf{NFV infrastructure (NFVI)}: the hardware and software resources required to deploy, manage, and execute VNFs, including compute, storage, and networking, together with the virtualization layer.
-\end{itemize}
-
-\subsection{Management and orchestration functions}
-
-The management and orchestration domain includes several key roles.
-
-\begin{itemize}
-\item \textbf{VNF manager (VNFM)}: performs VNF lifecycle management, including instantiation, configuration, scaling, monitoring, fault diagnosis, healing, and termination.
-\item \textbf{Virtualized infrastructure manager (VIM)}: manages and allocates virtualized compute, storage, and network resources, and controls their interaction with the virtualization layer.
-\item \textbf{NFV orchestrator (NFVO)}: coordinates the deployment and operation of network services by composing VNFs and managing resources across the NFVI, including orchestration of multiple VNFMs and one or more VIMs.
-\end{itemize}
-
-\subsection{Single-domain and multi-domain orchestration}
-
-In a single-domain setting, an orchestrator manages services within one administrative and infrastructure domain, interacting with the corresponding VNFM and VIM instances.
-
-In a multi-domain setting, a higher-level orchestration function coordinates multiple domains. Each domain may have its own orchestrator, VNFM, and VIM, while a multi-domain service layer manages end-to-end service requirements and negotiates resource usage and policies across domains. This structure is important when services span different operator networks, technology domains, or geographic regions.
-
+	\medskip
+	If one changes mind and wants to use a different firewall instead of iptables, the original sentence does \emph{not} change: only the logic of the controller does. The same happens with SDN switches: the user specifies that a communication between two parts of the network is wanted, and the controller refines this decision into the low-level rules written on the switches. The concept of IBN and PBNM is therefore broader than forwarding: it is applicable to any context.
+\end{notebox}
